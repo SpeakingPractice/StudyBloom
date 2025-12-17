@@ -42,14 +42,13 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    // If unauthorized, throw specific error to trigger UI prompt
     if (response.status === 401 || response.status === 403) {
       throw new Error("INVALID_KEY");
     }
     throw new Error(data.error || `API Error: ${response.status}`);
   }
 
-  return data; // Returns { text: "..." }
+  return data;
 }
 
 const responseSchema = {
@@ -70,7 +69,7 @@ const responseSchema = {
           correctAnswer: { type: Type.STRING, description: "Correct answer string." },
           explanation: { type: Type.STRING, description: "Vietnamese explanation." },
           topic: { type: Type.STRING },
-          listeningScript: { type: Type.STRING, description: "Text for TTS to read. Use 'Speaker: Text' format for dialogues. Ensure proper punctuation (. ! ?)." },
+          listeningScript: { type: Type.STRING, description: "Text for TTS to read." },
           speakingTarget: { type: Type.STRING, description: "Sentence to read aloud (Speaking mode only)." },
         },
         required: ["id", "questionText", "explanation", "topic"],
@@ -89,12 +88,11 @@ export const generateGameContent = async (
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
   
   const modelId = "gemini-3-flash-preview"; 
-
   let specificInstruction = "";
   
   const gradeLevelInstruction = parseInt(grade.replace('Grade ', '')) <= 9 
-    ? "Difficulty: Secondary School (A1-A2/B1). Focus on fundamental tenses (Present/Past/Future), comparisons, modals, basic prepositions, and daily vocabulary."
-    : "Difficulty: High School (B1+/B2). Focus on advanced tenses, inversion, subjunctive, phrasal verbs, collocations, idioms, and academic vocabulary.";
+    ? "Difficulty: Secondary School (A1-A2/B1). Focus on fundamental vocabulary."
+    : "Difficulty: High School (B1+/B2). Focus on B2 level vocabulary.";
 
   switch (gameType) {
     case GameType.Grammar:
@@ -110,35 +108,25 @@ export const generateGameContent = async (
             Format: Give 4 words. The 'questionText' should be: "Choose the word that has a different stress pattern from the others."`;
             break;
           case GrammarSubSkill.GrammarQuiz:
-            specificInstruction = `Create 5 Multiple Choice Questions covering general grammar points suitable for ${grade}.
-            Includes tenses, prepositions, articles, conjunctions.`;
+            specificInstruction = `Create 5 Multiple Choice Questions covering general grammar points suitable for ${grade}.`;
             break;
           case GrammarSubSkill.FillBlank:
-            specificInstruction = `Create 5 Multiple Choice Questions (Cloze style).
-            'questionText' must contain a '______' placeholder. Provide 4 options to fill the blank.`;
+            specificInstruction = `Create 5 Multiple Choice Questions (Cloze style) with '______' placeholder.`;
             break;
           case GrammarSubSkill.Synonym:
-            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Synonyms (CLOSEST in meaning).
-            'questionText' should be a sentence with a CAPITALIZED word. Ask for the word CLOSEST in meaning.`;
+            specificInstruction = `Create 5 Multiple Choice Questions for Synonyms (CLOSEST in meaning).`;
             break;
           case GrammarSubSkill.Antonym:
-            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Antonyms (OPPOSITE in meaning).
-            'questionText' should be a sentence with a CAPITALIZED word. Ask for the word OPPOSITE in meaning.`;
+            specificInstruction = `Create 5 Multiple Choice Questions for Antonyms (OPPOSITE in meaning).`;
             break;
           case GrammarSubSkill.Paragraph:
-            specificInstruction = `Create 5 Questions based on a short paragraph context.
-            Present them as individual sentences with blanks related to a cohesive topic (e.g., Environment, Technology).
-            'questionText' should have a blank. Options should be transition words or context-dependent vocabulary.`;
+            specificInstruction = `Create 5 Questions based on a short paragraph context.`;
             break;
           case GrammarSubSkill.WordForm:
-            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Word Forms (Noun, Verb, Adjective, Adverb).
-            'questionText': A sentence with a blank. Options: 4 variations of the same root word (e.g., beauty, beautiful, beautifully, beautify).`;
+            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Word Forms.`;
             break;
           case GrammarSubSkill.SentenceTrans:
-            specificInstruction = `Create 5 Sentence Transformation Questions. Topic: Sentence Transformation.
-            'questionText': Provide the original sentence AND the starting words of the new sentence (e.g., "I haven't seen him for two years. -> The last time...").
-            'correctAnswer': The FULL correct rewritten sentence (e.g., "The last time I saw him was two years ago").
-            'options': Leave empty array [].`;
+            specificInstruction = `Create 5 Sentence Transformation Questions. Provide original and starting words.`;
             break;
           default:
             specificInstruction = `Create 5 grammar Multiple Choice Questions.`;
@@ -149,31 +137,29 @@ export const generateGameContent = async (
       break;
 
     case GameType.Listening:
-      specificInstruction = `Create 2 listening challenges. 'listeningScript' MUST be a dialogue (e.g., 'Mom: Time for bed!\nTom: Not yet.') or a short story. Ensure distinct speakers and emotions. 'questionText' is a comprehension question with 4 options. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 2 listening challenges. 'listeningScript' MUST be a dialogue or short story. ${gradeLevelInstruction}`;
       break;
     case GameType.Speaking:
       specificInstruction = `Create 4 speaking challenges. 
-      'questionText' is the context/instruction (e.g., 'You want to invite a friend to a coffee shop. Say this:'). 
-      'speakingTarget' is the sentence the student must say.
-      IMPORTANT: 'speakingTarget' MUST be NATURAL SPOKEN ENGLISH. Use contractions (e.g., "I'm", "can't", "we'll"), informal connectors (e.g., "Actually", "Well", "You know"), and natural phrasing. Avoid overly formal written vocabulary or complex sentence structures. Focus on fluency and coherence suitable for a conversation. ${gradeLevelInstruction}`;
+      'speakingTarget' MUST be NATURAL SPOKEN ENGLISH using contractions and A1-B2 vocabulary. ${gradeLevelInstruction}`;
       break;
     case GameType.Writing:
       specificInstruction = `Create 1 writing challenge. 
-      'questionText' must be the essay prompt followed by 3-4 bullet points (suggestions) on what to include. 
-      Format: "Write a paragraph about [Topic].\n- Suggestion 1\n- Suggestion 2\n- Suggestion 3". 
-      'topic' is the genre. ${gradeLevelInstruction}`;
+      IMPORTANT FORMAT for 'questionText':
+      Line 1: The main task/essay prompt (e.g., "Write a paragraph about...").
+      Subsequent lines: Each suggestion must start with a dash '-' on a NEW LINE.
+      Vocabulary: Use simple, common English (Level A1 to B2) for all suggestions. Avoid academic jargon.
+      ${gradeLevelInstruction}`;
       break;
   }
 
   const prompt = `
-    Role: Expert English Teacher for Vietnam MOET Curriculum (Secondary & High School).
+    Role: Expert English Teacher for Vietnam MOET Curriculum.
     Grade: ${grade}.
     Task: ${specificInstruction}
-    Textbook Reference: ${specificTextbook || "Standard MOET Curriculum (Global Success, Friends Global, etc.)"}.
-    
+    Textbook: ${specificTextbook || "Standard MOET Curriculum"}.
     ${gradeLevelInstruction}
-
-    Output: JSON only. Ensure explanations are in Vietnamese.
+    Output: JSON only. Explanations in Vietnamese.
   `;
 
   try {
@@ -188,7 +174,7 @@ export const generateGameContent = async (
   } catch (error: any) {
     if (error.message === 'INVALID_KEY') throw error;
     console.error("Gemini API Error:", error);
-    throw error; // Throw the actual error so UI can display it
+    throw error;
   }
 };
 
@@ -196,9 +182,9 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
   const gradingSchema = {
     type: Type.OBJECT,
     properties: {
-      score: { type: Type.INTEGER, description: "Score out of 20" },
-      feedback: { type: Type.STRING, description: "Constructive feedback in Vietnamese" },
-      corrections: { type: Type.STRING, description: "Corrected version of the text" }
+      score: { type: Type.INTEGER },
+      feedback: { type: Type.STRING },
+      corrections: { type: Type.STRING }
     }
   };
 
@@ -217,7 +203,39 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
     if (error.message === 'INVALID_KEY') throw error;
-    console.error("Evaluation Error:", error);
     return {};
+  }
+};
+
+export const evaluateSpeaking = async (target: string, transcript: string, grade: string) => {
+  const speakingGradingSchema = {
+    type: Type.OBJECT,
+    properties: {
+      score: { type: Type.INTEGER },
+      feedback: { type: Type.STRING },
+      correctnessLevel: { type: Type.STRING, enum: ["EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT"] }
+    },
+    required: ["score", "feedback", "correctnessLevel"]
+  };
+
+  try {
+    const result = await callGeminiProxy("gemini-3-flash-preview", `Evaluate this speaking attempt for a ${grade} Vietnamese student.
+      Target: "${target}"
+      Student Spoke: "${transcript}"
+      
+      Instructions:
+      - Even if the transcript is not 100% correct, provide a score (0-100).
+      - Point out EXACTLY what was wrong (e.g., missed words, mispronunciation of specific letters) in Vietnamese.
+      - Be encouraging but strict on clarity.`, 
+      {
+        responseMimeType: "application/json",
+        responseSchema: speakingGradingSchema
+      }
+    );
+    
+    if (!result.text) return null;
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch (error: any) {
+    return null;
   }
 };
