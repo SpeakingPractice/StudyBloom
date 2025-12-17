@@ -1,7 +1,27 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { Type, Schema } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to call the backend proxy
+async function callGeminiProxy(model: string, contents: any, config: any) {
+  const response = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      contents,
+      config
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `API Request failed with status ${response.status}`);
+  }
+
+  return response.json(); // Returns { text: "..." }
+}
 
 const responseSchema: Schema = {
   type: Type.OBJECT,
@@ -126,17 +146,13 @@ export const generateGameContent = async (
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: modelId,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: responseSchema,
-        temperature: 0.7,
-      },
+    const result = await callGeminiProxy(modelId, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: responseSchema,
+      temperature: 0.7,
     });
 
-    const text = response.text;
+    const text = result.text;
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text);
   } catch (error) {
@@ -155,17 +171,20 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     }
   };
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: `Grade this English writing for a ${grade} Vietnamese student.
-    Prompt: ${prompt}
-    Student Answer: "${studentText}"
-    Provide score (0-20), helpful feedback in Vietnamese, and a corrected version.`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: gradingSchema
-    }
-  });
-  
-  return JSON.parse(response.text || "{}");
+  try {
+    const result = await callGeminiProxy("gemini-2.5-flash", `Grade this English writing for a ${grade} Vietnamese student.
+      Prompt: ${prompt}
+      Student Answer: "${studentText}"
+      Provide score (0-20), helpful feedback in Vietnamese, and a corrected version.`, 
+      {
+        responseMimeType: "application/json",
+        responseSchema: gradingSchema
+      }
+    );
+    
+    return JSON.parse(result.text || "{}");
+  } catch (error) {
+    console.error("Evaluation Error:", error);
+    return {};
+  }
 };
