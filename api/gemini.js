@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const ai = new GoogleGenAI({ apiKey });
     
     const result = await ai.models.generateContent({
-      model: model || 'gemini-2.5-flash',
+      model: model || 'gemini-3-flash-preview',
       contents,
       config
     });
@@ -41,10 +41,19 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: result.text });
   } catch (error) {
     console.error("Gemini Proxy Error:", error);
-    // Return specific error message if key is invalid
-    if (error.message?.includes('400') || error.message?.includes('403')) {
-        return res.status(403).json({ error: "Invalid API Key. Please check your key and try again." });
+    
+    // Handle specific API error codes
+    const status = error.status || 500;
+    const message = error.message || "Internal Server Error";
+    
+    if (message.includes('403') || message.includes('API_KEY_INVALID')) {
+        return res.status(403).json({ error: "Invalid API Key. Please check your key in settings." });
     }
-    return res.status(500).json({ error: error.message });
+    
+    if (message.includes('429')) {
+        return res.status(429).json({ error: "Rate limit reached. Please wait a minute before trying again." });
+    }
+
+    return res.status(status).json({ error: message });
   }
 }

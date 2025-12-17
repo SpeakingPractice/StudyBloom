@@ -14,13 +14,11 @@ import { ApiKeyModal } from './components/ApiKeyModal';
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
   Trophy: () => <svg className="w-5 h-5 mr-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>,
-  // Changed to Graduation Cap (Mortarboard)
   Badge: () => <svg className="w-6 h-6 mr-1 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>,
   Close: () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
   Key: () => <svg className="w-4 h-4 mr-2 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11.536 11l-.448-.448A4.75 4.75 0 009.25 10h.5a3 3 0 012.122.879l.586.586a1 1 0 00.707.293H15a1 1 0 110 2h-1.586a1 1 0 01-.707-.293l-1.379-1.379A5.998 5.998 0 005.657 16H6a3 3 0 012.121 0h.001A3 3 0 0110.242 16H11a3 3 0 012.121 0h.001A3 3 0 0115.242 16H16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 01-.707.293H8a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l3.657-3.657A1 1 0 0011 16h-.758a1 1 0 00-.707-.707H8.9a1 1 0 00-.707-.707h-.758a1 1 0 00-.707.293L3 18.243V21a1 1 0 001 1h2.757l2.586-2.586a1 1 0 00.293-.707V18a1 1 0 00-.293-.707L6.536 15A5 5 0 018 7h7z" /></svg>
 };
 
-// Decorative Background Component
 const BackgroundDecor = () => (
   <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
     <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-red-500 rounded-full mix-blend-overlay filter blur-3xl opacity-60 animate-blob"></div>
@@ -31,7 +29,6 @@ const BackgroundDecor = () => (
 );
 
 const App: React.FC = () => {
-  // State
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | null>(null);
   const [selectedGameType, setSelectedGameType] = useState<GameType | null>(null);
   const [selectedSubSkill, setSelectedSubSkill] = useState<GrammarSubSkill | null>(null);
@@ -45,11 +42,9 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [showKeyModal, setShowKeyModal] = useState(false);
 
-  // Calculate current rank info
   const currentBadge = BADGE_LEVELS.slice().reverse().find(b => totalPoints >= b.score);
   const nextBadge = BADGE_LEVELS.find(b => totalPoints < b.score);
 
-  // Load points & API Key
   useEffect(() => {
     const pts = localStorage.getItem('vieteng_points');
     if (pts) setTotalPoints(parseInt(pts));
@@ -62,7 +57,6 @@ const App: React.FC = () => {
     }
   }, [finalScore, showBadges]); 
 
-  // Handlers
   const handleSaveKey = (key: string) => {
     localStorage.setItem('GEMINI_API_KEY', key);
     setApiKey(key);
@@ -97,7 +91,8 @@ const App: React.FC = () => {
         setApiKey('');
         setShowKeyModal(true);
       } else {
-        setError("Có lỗi xảy ra khi tạo bài học. Vui lòng thử lại! (Error generating content)");
+        // Show real error message for debugging
+        setError(`${err.message || "Unknown error"}`);
       }
     } finally {
       setLoading(false);
@@ -130,14 +125,12 @@ const App: React.FC = () => {
       case GameType.Writing:
         return <WritingGame {...commonProps} grade={gameData.grade} />;
       case GameType.Grammar:
-        // Pass subSkill here
         return <QuizGame {...commonProps} subSkill={gameData.subSkill} />;
       default:
         return <QuizGame {...commonProps} />;
     }
   };
 
-  // Badge Modal
   const renderBadgeModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
       <div className="bg-white/95 backdrop-blur-xl rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto border border-white/50">
@@ -191,7 +184,6 @@ const App: React.FC = () => {
            </div>
         )}
 
-        {/* Change API Key Section */}
         <div className="border-t border-gray-200 pt-6 flex justify-center">
             <button
                 onClick={() => {
@@ -208,7 +200,6 @@ const App: React.FC = () => {
     </div>
   );
 
-  // Views
   const renderGradeSelection = () => (
     <div className="animate-fade-in space-y-8">
       <div className="text-center space-y-4">
@@ -246,7 +237,6 @@ const App: React.FC = () => {
   );
 
   const renderConfiguration = () => {
-    // Determine which textbooks to show based on selected grade
     let availableTextbooks: string[] = [];
     if (selectedGrade) {
       const gradeNum = parseInt(selectedGrade.split(' ')[1]);
@@ -269,7 +259,6 @@ const App: React.FC = () => {
           </h2>
           
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Column 1: Textbook */}
             <div>
               <label className="block text-gray-700 font-bold mb-3 uppercase text-xs tracking-wider">Giáo trình (Textbook)</label>
               <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
@@ -292,7 +281,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Column 2: Game Mode */}
             <div>
               <label className="block text-gray-700 font-bold mb-3 uppercase text-xs tracking-wider">Kỹ năng (Skill)</label>
               <div className="grid grid-cols-2 gap-3 mb-6">
@@ -302,9 +290,8 @@ const App: React.FC = () => {
                     variant={selectedGameType === type ? 'primary' : 'outline'} 
                     onClick={() => {
                         setSelectedGameType(type);
-                        // Reset subskill if switching away from grammar
                         if (type !== GameType.Grammar) setSelectedSubSkill(null);
-                        else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); // Default
+                        else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz);
                     }}
                     className="text-sm py-4 h-full"
                   >
@@ -313,7 +300,6 @@ const App: React.FC = () => {
                 ))}
               </div>
 
-              {/* Sub-skill Selection for Grammar */}
               {selectedGameType === GameType.Grammar && (
                 <div className="animate-fade-in bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                   <label className="block text-blue-800 font-bold mb-3 uppercase text-xs tracking-wider">Loại bài tập (Exercise Type)</label>
@@ -355,7 +341,6 @@ const App: React.FC = () => {
       {showKeyModal && <ApiKeyModal onSave={handleSaveKey} />}
 
       <div className="relative p-4 md:p-8 max-w-7xl mx-auto z-10">
-        {/* Header */}
         <header className="flex justify-between items-center mb-8">
            <div className="font-black text-xl text-white/90 tracking-tight drop-shadow-md">StudyBloom</div>
            <div className="flex gap-2">
@@ -380,12 +365,11 @@ const App: React.FC = () => {
            </div>
         </header>
 
-        {/* Error Banner */}
         {error && (
           <div className="bg-red-100/90 backdrop-blur-sm border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 max-w-2xl mx-auto shadow-sm animate-bounce">
              <p className="font-bold">Lỗi (Error)</p>
-             <p>{error}</p>
-             <button onClick={() => setError(null)} className="underline mt-2">Đóng</button>
+             <p className="text-sm break-words">{error}</p>
+             <button onClick={() => setError(null)} className="underline mt-2 text-xs font-bold">Đóng (Close)</button>
           </div>
         )}
 

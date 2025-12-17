@@ -13,6 +13,11 @@ const Type = {
 // Helper to get key
 const getApiKey = () => localStorage.getItem('GEMINI_API_KEY') || '';
 
+// Helper to clean AI response (removes markdown code blocks if present)
+function cleanJsonResponse(text: string): string {
+  return text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+}
+
 // Helper to call the backend proxy
 async function callGeminiProxy(model: string, contents: any, config: any) {
   const apiKey = getApiKey();
@@ -34,18 +39,17 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
     }),
   });
 
+  const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    
     // If unauthorized, throw specific error to trigger UI prompt
     if (response.status === 401 || response.status === 403) {
       throw new Error("INVALID_KEY");
     }
-
-    throw new Error(errorData.error || `API Request failed with status ${response.status}`);
+    throw new Error(data.error || `API Error: ${response.status}`);
   }
 
-  return response.json(); // Returns { text: "..." }
+  return data; // Returns { text: "..." }
 }
 
 const responseSchema = {
@@ -84,11 +88,10 @@ export const generateGameContent = async (
   subSkill?: GrammarSubSkill
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
   
-  const modelId = "gemini-2.5-flash"; 
+  const modelId = "gemini-3-flash-preview"; 
 
   let specificInstruction = "";
   
-  // Define grade-based difficulty instructions
   const gradeLevelInstruction = parseInt(grade.replace('Grade ', '')) <= 9 
     ? "Difficulty: Secondary School (A1-A2/B1). Focus on fundamental tenses (Present/Past/Future), comparisons, modals, basic prepositions, and daily vocabulary."
     : "Difficulty: High School (B1+/B2). Focus on advanced tenses, inversion, subjunctive, phrasal verbs, collocations, idioms, and academic vocabulary.";
@@ -170,7 +173,7 @@ export const generateGameContent = async (
     
     ${gradeLevelInstruction}
 
-    Output: JSON. Ensure explanations are in Vietnamese and explain clearly why the answer is correct based on grammar rules.
+    Output: JSON only. Ensure explanations are in Vietnamese.
   `;
 
   try {
@@ -180,13 +183,12 @@ export const generateGameContent = async (
       temperature: 0.7,
     });
 
-    const text = result.text;
-    if (!text) throw new Error("No response from AI");
-    return JSON.parse(text);
+    if (!result.text) throw new Error("No response content from AI");
+    return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
     if (error.message === 'INVALID_KEY') throw error;
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate content.");
+    throw error; // Throw the actual error so UI can display it
   }
 };
 
@@ -201,7 +203,7 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
   };
 
   try {
-    const result = await callGeminiProxy("gemini-2.5-flash", `Grade this English writing for a ${grade} Vietnamese student.
+    const result = await callGeminiProxy("gemini-3-flash-preview", `Grade this English writing for a ${grade} Vietnamese student.
       Prompt: ${prompt}
       Student Answer: "${studentText}"
       Provide score (0-20), helpful feedback in Vietnamese, and a corrected version.`, 
@@ -211,7 +213,8 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
       }
     );
     
-    return JSON.parse(result.text || "{}");
+    if (!result.text) return {};
+    return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
     if (error.message === 'INVALID_KEY') throw error;
     console.error("Evaluation Error:", error);
