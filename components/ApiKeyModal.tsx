@@ -71,7 +71,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ onSave }) => {
               👉 Lấy Key miễn phí tại Google AI Studio
             </a>
             <div className="mt-4 text-[10px] text-gray-400">
-               Click "Create API Key" -> Chọn Project -> Copy Key và dán vào đây.
+               Click "Create API Key" &rarr; Chọn Project &rarr; Copy Key và dán vào đây.
             </div>
           </div>
         </div>
