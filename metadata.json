@@ -1,0 +1,7 @@
+{
+  "name": "StudyBloom",
+  "description": "An AI-powered English learning platform tailored for the Vietnam Ministry of Education curriculum (Grades 6-12), focusing on Grammar, Listening, Speaking, and Writing skills.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
