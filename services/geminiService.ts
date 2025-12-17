@@ -10,12 +10,22 @@ const Type = {
   OBJECT: 'OBJECT'
 };
 
+// Helper to get key
+const getApiKey = () => localStorage.getItem('GEMINI_API_KEY') || '';
+
 // Helper to call the backend proxy
 async function callGeminiProxy(model: string, contents: any, config: any) {
+  const apiKey = getApiKey();
+  
+  if (!apiKey) {
+    throw new Error("API Key missing. Please refresh and enter your key.");
+  }
+
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'x-api-key': apiKey // Pass key to backend
     },
     body: JSON.stringify({
       model,
@@ -26,6 +36,12 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // If unauthorized, throw specific error to trigger UI prompt
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("INVALID_KEY");
+    }
+
     throw new Error(errorData.error || `API Request failed with status ${response.status}`);
   }
 
@@ -82,58 +98,61 @@ export const generateGameContent = async (
       if (subSkill) {
         switch (subSkill) {
           case GrammarSubSkill.Pronunciation:
-            specificInstruction = `Create 10 Multiple Choice Questions. Topic: Pronunciation.
+            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Pronunciation.
             Format: Give a list of 4 words as options. The 'questionText' should be: "Choose the word whose underlined part is pronounced differently from the others." 
             IMPORTANT: In the 'options', wrap the specific phoneme part in parentheses e.g. "h(a)t".`;
             break;
           case GrammarSubSkill.Stress:
-            specificInstruction = `Create 10 Multiple Choice Questions. Topic: Word Stress.
+            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Word Stress.
             Format: Give 4 words. The 'questionText' should be: "Choose the word that has a different stress pattern from the others."`;
             break;
           case GrammarSubSkill.GrammarQuiz:
-            specificInstruction = `Create 10 Multiple Choice Questions covering general grammar points suitable for ${grade}.
+            specificInstruction = `Create 5 Multiple Choice Questions covering general grammar points suitable for ${grade}.
             Includes tenses, prepositions, articles, conjunctions.`;
             break;
           case GrammarSubSkill.FillBlank:
-            specificInstruction = `Create 10 Multiple Choice Questions (Cloze style).
+            specificInstruction = `Create 5 Multiple Choice Questions (Cloze style).
             'questionText' must contain a '______' placeholder. Provide 4 options to fill the blank.`;
             break;
           case GrammarSubSkill.Synonym:
-            specificInstruction = `Create 10 Multiple Choice Questions. Topic: Synonyms (CLOSEST in meaning).
+            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Synonyms (CLOSEST in meaning).
             'questionText' should be a sentence with a CAPITALIZED word. Ask for the word CLOSEST in meaning.`;
             break;
           case GrammarSubSkill.Antonym:
-            specificInstruction = `Create 10 Multiple Choice Questions. Topic: Antonyms (OPPOSITE in meaning).
+            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Antonyms (OPPOSITE in meaning).
             'questionText' should be a sentence with a CAPITALIZED word. Ask for the word OPPOSITE in meaning.`;
             break;
           case GrammarSubSkill.Paragraph:
-            specificInstruction = `Create 10 Questions based on a short paragraph context.
-            However, present them as individual sentences with blanks related to a cohesive topic (e.g., Environment, Technology).
+            specificInstruction = `Create 5 Questions based on a short paragraph context.
+            Present them as individual sentences with blanks related to a cohesive topic (e.g., Environment, Technology).
             'questionText' should have a blank. Options should be transition words or context-dependent vocabulary.`;
             break;
           case GrammarSubSkill.WordForm:
-            specificInstruction = `Create 10 Multiple Choice Questions. Topic: Word Forms (Noun, Verb, Adjective, Adverb).
+            specificInstruction = `Create 5 Multiple Choice Questions. Topic: Word Forms (Noun, Verb, Adjective, Adverb).
             'questionText': A sentence with a blank. Options: 4 variations of the same root word (e.g., beauty, beautiful, beautifully, beautify).`;
             break;
           case GrammarSubSkill.SentenceTrans:
-            specificInstruction = `Create 10 Sentence Transformation Questions. Topic: Sentence Transformation.
+            specificInstruction = `Create 5 Sentence Transformation Questions. Topic: Sentence Transformation.
             'questionText': Provide the original sentence AND the starting words of the new sentence (e.g., "I haven't seen him for two years. -> The last time...").
             'correctAnswer': The FULL correct rewritten sentence (e.g., "The last time I saw him was two years ago").
             'options': Leave empty array [].`;
             break;
           default:
-            specificInstruction = `Create 10 grammar Multiple Choice Questions.`;
+            specificInstruction = `Create 5 grammar Multiple Choice Questions.`;
         }
       } else {
-        specificInstruction = `Create 10 mixed grammar Multiple Choice Questions.`;
+        specificInstruction = `Create 5 mixed grammar Multiple Choice Questions.`;
       }
       break;
 
     case GameType.Listening:
-      specificInstruction = `Create 3 listening challenges. 'listeningScript' MUST be a dialogue (e.g., 'Mom: Time for bed!\nTom: Not yet.') or a short story. Ensure distinct speakers and emotions. 'questionText' is a comprehension question with 4 options. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 2 listening challenges. 'listeningScript' MUST be a dialogue (e.g., 'Mom: Time for bed!\nTom: Not yet.') or a short story. Ensure distinct speakers and emotions. 'questionText' is a comprehension question with 4 options. ${gradeLevelInstruction}`;
       break;
     case GameType.Speaking:
-      specificInstruction = `Create 5 speaking challenges. 'questionText' is instruction (e.g., 'Read this sentence'). 'speakingTarget' is the English sentence the student must say. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 4 speaking challenges. 
+      'questionText' is the context/instruction (e.g., 'You want to invite a friend to a coffee shop. Say this:'). 
+      'speakingTarget' is the sentence the student must say.
+      IMPORTANT: 'speakingTarget' MUST be NATURAL SPOKEN ENGLISH. Use contractions (e.g., "I'm", "can't", "we'll"), informal connectors (e.g., "Actually", "Well", "You know"), and natural phrasing. Avoid overly formal written vocabulary or complex sentence structures. Focus on fluency and coherence suitable for a conversation. ${gradeLevelInstruction}`;
       break;
     case GameType.Writing:
       specificInstruction = `Create 1 writing challenge. 
@@ -164,7 +183,8 @@ export const generateGameContent = async (
     const text = result.text;
     if (!text) throw new Error("No response from AI");
     return JSON.parse(text);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'INVALID_KEY') throw error;
     console.error("Gemini API Error:", error);
     throw new Error("Failed to generate content.");
   }
@@ -192,7 +212,8 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     );
     
     return JSON.parse(result.text || "{}");
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'INVALID_KEY') throw error;
     console.error("Evaluation Error:", error);
     return {};
   }
