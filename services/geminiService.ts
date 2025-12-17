@@ -1,5 +1,14 @@
-import { Type, Schema } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
+
+// Define Type locally to avoid importing the heavy Node.js SDK in the browser
+const Type = {
+  STRING: 'STRING',
+  NUMBER: 'NUMBER',
+  INTEGER: 'INTEGER',
+  BOOLEAN: 'BOOLEAN',
+  ARRAY: 'ARRAY',
+  OBJECT: 'OBJECT'
+};
 
 // Helper to call the backend proxy
 async function callGeminiProxy(model: string, contents: any, config: any) {
@@ -23,7 +32,7 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
   return response.json(); // Returns { text: "..." }
 }
 
-const responseSchema: Schema = {
+const responseSchema = {
   type: Type.OBJECT,
   properties: {
     questions: {
@@ -162,7 +171,7 @@ export const generateGameContent = async (
 };
 
 export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
-  const gradingSchema: Schema = {
+  const gradingSchema = {
     type: Type.OBJECT,
     properties: {
       score: { type: Type.INTEGER, description: "Score out of 20" },
