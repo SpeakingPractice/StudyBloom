@@ -26,13 +26,14 @@ function parseErrorMessage(error: any): string {
   }
 }
 
-// @google/genai guidelines: API key selection is handled via process.env.API_KEY injected automatically.
-// Removed local userApiKey management as per "must not ask the user for it" rule.
+// User can provide their own API Key which we send to our proxy
 async function callGeminiProxy(model: string, contents: any, config: any) {
+  const userApiKey = localStorage.getItem('user_api_key');
+  
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, contents, config }),
+    body: JSON.stringify({ model, contents, config, userApiKey }),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -60,7 +61,6 @@ async function callGeminiWithFallback(defaultModel: string, contents: any, confi
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
     const contents = [{ parts: [{ text: `Read: "${text}"` }] }];
-    // @google/genai guidelines: Use Modality.AUDIO
     const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", contents, {
       responseModalities: [Modality.AUDIO],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } }
@@ -210,7 +210,6 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
   } catch { return null; }
 };
 
-// @google/genai guidelines: Added missing evaluatePronunciation function
 export const evaluatePronunciation = async (target: string, transcript: string) => {
   const schema = {
     type: Type.OBJECT,

@@ -10,12 +10,12 @@ import { ListeningGame } from './components/ListeningGame';
 import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
-import { SayItRightGame } from './components/SayItRightGame';
 
 // Helper icons
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
   Badge: () => <svg className="w-6 h-6 mr-1 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>,
+  Key: () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
 };
 
 const BackgroundDecor = () => (
@@ -28,6 +28,8 @@ const BackgroundDecor = () => (
 );
 
 const App: React.FC = () => {
+  const [apiKey, setApiKey] = useState(localStorage.getItem('user_api_key') || '');
+  const [showKeyInput, setShowKeyInput] = useState(!localStorage.getItem('user_api_key'));
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | null>(null);
   const [selectedGameType, setSelectedGameType] = useState<GameType | null>(null);
   const [selectedSubSkill, setSelectedSubSkill] = useState<GrammarSubSkill | null>(null);
@@ -44,8 +46,26 @@ const App: React.FC = () => {
     if (pts) setTotalPoints(parseInt(pts));
   }, [finalScore, showBadges]);
 
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newKey = e.target.value;
+    setApiKey(newKey);
+    localStorage.setItem('user_api_key', newKey);
+    // Auto-hide when a key seems validly pasted (usually > 20 chars)
+    if (newKey.trim().length > 20) {
+      setShowKeyInput(false);
+    }
+  };
+
   const handleStartGame = async () => {
     if (!selectedGrade || !selectedGameType) return;
+    
+    // Check key locally
+    if (!apiKey.trim() && !localStorage.getItem('user_api_key')) {
+      setError("Vui lòng nhập API Key để bắt đầu học nhé!");
+      setShowKeyInput(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -60,6 +80,10 @@ const App: React.FC = () => {
     } catch (err: any) {
       const msg = err.message || "Unknown error";
       setError(msg);
+      // Re-show input if it's a key/quota error
+      if (msg.includes("API Key") || msg.includes("Quota") || msg.includes("limit") || msg.includes("not found")) {
+        setShowKeyInput(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,11 +103,6 @@ const App: React.FC = () => {
     if (!gameData) return null;
     const commonProps = { questions: gameData.questions, onComplete: setFinalScore };
     
-    // Handle specific Grammar sub-skills
-    if (gameData.gameType === GameType.Grammar && gameData.subSkill === GrammarSubSkill.Pronunciation) {
-      return <SayItRightGame {...commonProps} />;
-    }
-
     switch (gameData.gameType) {
       case GameType.Listening: return <ListeningGame {...commonProps} />;
       case GameType.Speaking: return <SpeakingGame {...commonProps} />;
@@ -102,6 +121,7 @@ const App: React.FC = () => {
       
       <div className="relative p-2 md:p-8 max-w-7xl mx-auto z-10">
         <header className="flex items-center justify-between mb-8 gap-2 bg-black/10 backdrop-blur-md p-3 rounded-2xl md:bg-transparent md:p-0 md:rounded-none transition-all duration-500">
+           {/* LOGO + API KEY BOX - LEFT SIDE */}
            <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
               <div 
                 className="font-black text-lg md:text-xl text-white tracking-tight drop-shadow-md cursor-pointer whitespace-nowrap shrink-0 hover:scale-105 transition-transform" 
@@ -110,12 +130,41 @@ const App: React.FC = () => {
                 StudyBloom
               </div>
               
-              <div className="flex items-center">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse mr-2 shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
-                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest hidden sm:block">AI Link Active</span>
-              </div>
+              {showKeyInput ? (
+                <div className="flex flex-col flex-1 max-w-[180px] md:max-w-xs animate-fade-in">
+                  <div className="flex items-center bg-white rounded-lg border-2 border-white/20 shadow-lg px-2 py-1 focus-within:ring-2 focus-within:ring-blue-400 transition-all">
+                    <span className="text-gray-400 mr-1.5 shrink-0"><Icons.Key /></span>
+                    <input 
+                      type="password"
+                      value={apiKey}
+                      onChange={handleApiKeyChange}
+                      placeholder="Dán API Key..."
+                      className="bg-transparent border-none text-gray-800 text-[10px] md:text-xs font-bold placeholder:text-gray-400 focus:ring-0 w-full outline-none"
+                    />
+                  </div>
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    className="text-[9px] md:text-[10px] text-white/90 font-bold underline mt-1 ml-1 hover:text-white transition-colors decoration-white/40"
+                  >
+                    Get a free API key here
+                  </a>
+                </div>
+              ) : (
+                <div className="group relative flex items-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse mr-2 shadow-[0_0_10px_rgba(74,222,128,0.8)]"></div>
+                  <span className="text-[10px] font-black text-white/50 uppercase tracking-widest hidden sm:block">AI Link Active</span>
+                  <button 
+                    onClick={() => setShowKeyInput(true)} 
+                    className="ml-2 text-[10px] font-bold text-white/40 hover:text-white/90 transition-colors hidden group-hover:block"
+                  >
+                    (Edit Key)
+                  </button>
+                </div>
+              )}
            </div>
 
+           {/* BADGE / POINTS - RIGHT SIDE */}
            <div className="flex shrink-0">
               <button onClick={() => setShowBadges(true)} className="bg-white/95 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-lg flex items-center gap-1.5 md:gap-2 border border-white/50 hover:bg-white transition-colors">
                 {currentBadge ? (
