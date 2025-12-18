@@ -135,7 +135,7 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
 
         <div className="absolute left-[30%] transition-transform duration-200 ease-out z-20"
           style={{ top: `${birdY}%`, transform: `translateY(-50%) rotate(${velocityRef.current * 10}deg)` }}>
-          <div className="text-5xl filter drop-shadow-lg select-none">🐤</div>
+          <div className="text-5xl filter drop-shadow-lg select-none scale-x-[-1]">🐤</div>
         </div>
 
         {!hasStarted && (
