@@ -59,4 +59,5 @@ export const BADGE_LEVELS: Badge[] = [
   { score: 2700, name: "Star Traveler", icon: "🚀", color: "text-blue-700" },
   { score: 3000, name: "Golden Hero", icon: "🦸", color: "text-yellow-500" },
   { score: 3300, name: "Super Star Legend", icon: "🌟", color: "text-rose-600" },
+  { score: 3600, name: "Language Light", icon: "✨", color: "text-amber-400" },
 ];

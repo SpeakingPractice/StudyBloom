@@ -20,6 +20,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
   const recognitionRef = useRef<any>(null);
   const shouldListenRef = useRef<boolean>(false);
+  const finalTranscriptRef = useRef<string>("");
 
   const current = questions[index];
   
@@ -28,10 +29,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        shouldListenRef.current = false;
-        recognitionRef.current.stop();
-      }
+      stopRecordingSession();
     };
   }, [index]);
 
@@ -39,13 +37,13 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
   const toggleRecord = () => {
     if (isListening) {
-      stopRecording();
+      stopRecordingSession();
     } else {
-      startRecording();
+      startRecordingSession();
     }
   };
 
-  const startRecording = () => {
+  const startRecordingSession = () => {
     if (!Recognition) {
       alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói (hãy thử dùng Google Chrome).");
       return;
@@ -53,7 +51,10 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
     setFeedback(null);
     setTranscript("");
+    finalTranscriptRef.current = "";
     shouldListenRef.current = true;
+    setIsListening(true);
+    setStatusText("Đang lắng nghe liên tục... (Listening continuously...)");
 
     const recognition = new Recognition();
     recognition.lang = 'en-US';
@@ -63,31 +64,18 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
     recognitionRef.current = recognition;
 
-    setIsListening(true);
-    setStatusText("Đang lắng nghe... (Listening...)");
-
-    try {
-      recognition.start();
-    } catch (e) {
-      console.error(e);
-      setIsListening(false);
-      setStatusText("Lỗi khởi động micro.");
-    }
-
     recognition.onresult = (event: any) => {
-      let finalTranscript = '';
       let interimTranscript = '';
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscriptRef.current += result[0].transcript + ' ';
         } else {
-          interimTranscript += event.results[i][0].transcript;
+          interimTranscript += result[0].transcript;
         }
       }
-      
-      const currentText = finalTranscript || interimTranscript;
-      setTranscript(currentText);
+      // Combine stable text and ongoing interim text for visual display
+      setTranscript(finalTranscriptRef.current + interimTranscript);
     };
 
     recognition.onerror = (event: any) => {
@@ -97,18 +85,35 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
         shouldListenRef.current = false;
         setIsListening(false);
       }
+      // Other errors (like network) might trigger onend, which handles restart
     };
 
     recognition.onend = () => {
+      // THE CRITICAL PART: If we haven't manually stopped, restart immediately.
+      // This ensures silence or browser timeouts don't end the session.
       if (shouldListenRef.current) {
-        try { recognition.start(); } catch (e) {}
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          console.warn("Recognition restart attempt failed:", e);
+        }
       } else {
         setIsListening(false);
       }
     };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error("Initial start failed:", e);
+      setIsListening(false);
+      setStatusText("Lỗi khởi động micro.");
+    }
   };
 
-  const stopRecording = async () => {
+  const stopRecordingSession = async () => {
+    if (!shouldListenRef.current && !isListening) return; // Prevent double trigger
+    
     shouldListenRef.current = false;
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -116,14 +121,15 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     setIsListening(false);
     setStatusText("");
 
-    if (!transcript.trim()) {
+    const fullTranscript = transcript.trim();
+    if (!fullTranscript) {
       setStatusText("Bạn chưa nói gì cả. Hãy thử lại!");
       return;
     }
 
     // Trigger AI Evaluation
     setIsEvaluating(true);
-    const result = await evaluateSpeaking(current.speakingTarget || "", transcript, grade);
+    const result = await evaluateSpeaking(current.speakingTarget || "", fullTranscript, grade);
     setIsEvaluating(false);
 
     if (result) {
@@ -144,6 +150,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     setFeedback(null);
     setTranscript("");
     setStatusText("");
+    finalTranscriptRef.current = "";
     if (index < questions.length - 1) {
       setIndex(i => i + 1);
     } else {
@@ -178,7 +185,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
         ) : transcript ? (
           <p className="text-gray-700 text-lg font-medium italic">"{transcript}"</p>
         ) : (
-          <p className="text-gray-400 italic text-sm">Nội dung bạn nói sẽ hiện ở đây...</p>
+          <p className="text-gray-400 italic text-sm">Ghi âm sẽ tiếp tục cho đến khi bạn nhấn Dừng (Continuous Recording...)</p>
         )}
       </div>
       
@@ -204,7 +211,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
            </div>
 
            <div className="mt-6 flex gap-3">
-             <Button onClick={startRecording} variant="outline" fullWidth>Nói lại (Retry)</Button>
+             <Button onClick={startRecordingSession} variant="outline" fullWidth>Nói lại (Retry)</Button>
              <Button onClick={nextQuestion} variant="secondary" fullWidth>Tiếp theo (Next)</Button>
            </div>
         </div>
@@ -214,7 +221,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
             onClick={toggleRecord} 
             variant={isListening ? 'danger' : 'primary'}
             disabled={isEvaluating}
-            className={`rounded-full w-28 h-28 flex flex-col items-center justify-center transition-all shadow-xl ${isListening ? 'ring-8 ring-red-100 scale-110 animate-pulse' : 'hover:scale-105 active:scale-95'}`}
+            className={`rounded-full w-28 h-28 flex flex-col items-center justify-center transition-all shadow-xl ${isListening ? 'ring-8 ring-red-100 scale-110' : 'hover:scale-105 active:scale-95'}`}
           >
             {isListening ? (
                <>
@@ -231,7 +238,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
             )}
           </Button>
           <p className="text-xs text-gray-400 mt-6 font-bold uppercase tracking-widest">
-              {isListening ? "Hệ thống đang ghi âm..." : "Nhấn Micro để bắt đầu"}
+              {isListening ? "Ghi âm đang diễn ra... (Silence is okay!)" : "Nhấn Micro để bắt đầu nói"}
           </p>
         </div>
       )}

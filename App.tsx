@@ -91,7 +91,6 @@ const App: React.FC = () => {
         setApiKey('');
         setShowKeyModal(true);
       } else {
-        // Show real error message for debugging
         setError(`${err.message || "Unknown error"}`);
       }
     } finally {
@@ -192,7 +191,6 @@ const App: React.FC = () => {
                 }}
                 className="flex items-center text-xs font-bold text-gray-500 hover:text-blue-600 transition-colors"
             >
-                <Icons.Key />
                 Change API Key
             </button>
         </div>

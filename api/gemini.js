@@ -1,7 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
-  // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -15,11 +14,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // 1. Get Key from Header (User provided)
   const apiKey = req.headers['x-api-key'];
-
   if (!apiKey) {
-    return res.status(401).json({ error: "Missing API Key. Please enter your Google Gemini API Key in the settings." });
+    return res.status(401).json({ error: "Missing API Key." });
   }
 
   if (req.method !== 'POST') {
@@ -28,8 +25,6 @@ export default async function handler(req, res) {
 
   try {
     const { model, contents, config } = req.body;
-    
-    // Initialize AI with user's key
     const ai = new GoogleGenAI({ apiKey });
     
     const result = await ai.models.generateContent({
@@ -38,22 +33,17 @@ export default async function handler(req, res) {
       config
     });
 
+    // Check if the response contains audio data
+    const audioPart = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+    if (audioPart) {
+      return res.status(200).json({ audio: audioPart.inlineData.data });
+    }
+
     return res.status(200).json({ text: result.text });
   } catch (error) {
     console.error("Gemini Proxy Error:", error);
-    
-    // Handle specific API error codes
     const status = error.status || 500;
     const message = error.message || "Internal Server Error";
-    
-    if (message.includes('403') || message.includes('API_KEY_INVALID')) {
-        return res.status(403).json({ error: "Invalid API Key. Please check your key in settings." });
-    }
-    
-    if (message.includes('429')) {
-        return res.status(429).json({ error: "Rate limit reached. Please wait a minute before trying again." });
-    }
-
     return res.status(status).json({ error: message });
   }
 }
