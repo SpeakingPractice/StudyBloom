@@ -114,9 +114,10 @@ export const generateGameContent = async (
       specificInstruction = `5 speaking tasks. Level ${diffLevel}. Simple words for secondary.`;
       break;
     case GameType.TypeToFly:
+      // UPDATED STRICT LOGIC: 1-2 words only, sorted by difficulty.
       specificInstruction = isSecondary 
-        ? `Generate 20 English words or very short phrases (max 2 words). NO Vietnamese. Level: EASY (CEFR A1-A2). Examples: blue sky, apple, sit down.`
-        : `Generate 20 English words or short phrases (max 3 words). NO Vietnamese. Level: EASY to HARD (A1 to B2). Start simple, then increase complexity. Examples: beautiful flower, artificial intelligence.`;
+        ? `Generate 20 English items. Each item MUST be exactly ONE word or at most TWO words (phrase). NO full sentences. Difficulty: EASY (A1-A2). Order the 20 items from easiest to slightly more complex.`
+        : `Generate 20 English items. Each item MUST be exactly ONE word or at most TWO words (phrase). NO full sentences. Difficulty: PROGRESSIVE (A1 at start to B2 at end). The items MUST get noticeably harder as the list goes on.`;
       break;
     case GameType.SayItRight:
       specificInstruction = `10 pronunciation words. Level ${diffLevel}.`;
