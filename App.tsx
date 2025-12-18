@@ -30,6 +30,7 @@ const BackgroundDecor = () => (
 
 const App: React.FC = () => {
   const [apiKey, setApiKey] = useState(localStorage.getItem('user_api_key') || '');
+  const [showKeyInput, setShowKeyInput] = useState(!localStorage.getItem('user_api_key'));
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | null>(null);
   const [selectedGameType, setSelectedGameType] = useState<GameType | null>(null);
   const [selectedSubSkill, setSelectedSubSkill] = useState<GrammarSubSkill | null>(null);
@@ -50,12 +51,17 @@ const App: React.FC = () => {
     const newKey = e.target.value;
     setApiKey(newKey);
     localStorage.setItem('user_api_key', newKey);
+    // Hide input once a full key seems to be pasted (typically ~39 chars for AIza...)
+    if (newKey.trim().length > 20) {
+      setShowKeyInput(false);
+    }
   };
 
   const handleStartGame = async () => {
     if (!selectedGrade || !selectedGameType) return;
     if (!apiKey.trim()) {
       setError("Vui lòng nhập API Key ở ô phía trên trước khi bắt đầu.");
+      setShowKeyInput(true);
       return;
     }
     setLoading(true);
@@ -70,7 +76,12 @@ const App: React.FC = () => {
         textbookContext: data.textbookContext
       });
     } catch (err: any) {
-      setError(err.message || "Unknown error");
+      const msg = err.message || "Unknown error";
+      setError(msg);
+      // Re-show input if it's a key/quota related error
+      if (msg.includes("API Key") || msg.includes("Quota") || msg.includes("limit") || msg.includes("Requested entity was not found")) {
+        setShowKeyInput(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -107,34 +118,48 @@ const App: React.FC = () => {
       <BackgroundDecor />
       
       <div className="relative p-2 md:p-8 max-w-7xl mx-auto z-10">
-        <header className="flex items-center justify-between mb-8 gap-2 bg-black/10 backdrop-blur-md p-3 rounded-2xl md:bg-transparent md:p-0 md:rounded-none">
+        <header className="flex items-center justify-between mb-8 gap-2 bg-black/10 backdrop-blur-md p-3 rounded-2xl md:bg-transparent md:p-0 md:rounded-none transition-all duration-500">
            {/* LOGO + API KEY BOX - LEFT SIDE */}
            <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
               <div 
-                className="font-black text-lg md:text-xl text-white tracking-tight drop-shadow-md cursor-pointer whitespace-nowrap shrink-0" 
+                className="font-black text-lg md:text-xl text-white tracking-tight drop-shadow-md cursor-pointer whitespace-nowrap shrink-0 hover:scale-105 transition-transform" 
                 onClick={handleReset}
               >
                 StudyBloom
               </div>
               
-              <div className="relative flex-1 max-w-[200px] md:max-w-xs group">
-                <div className="flex items-center bg-white rounded-lg border-2 border-white/20 shadow-lg px-2 py-1.5 focus-within:ring-2 focus-within:ring-blue-400 transition-all">
-                   <span className="text-gray-400 mr-1.5 shrink-0"><Icons.Key /></span>
-                   <input 
-                     type="password"
-                     value={apiKey}
-                     onChange={handleApiKeyChange}
-                     placeholder="Dán API Key..."
-                     className="bg-transparent border-none text-gray-800 text-[10px] md:text-xs font-bold placeholder:text-gray-400 focus:ring-0 w-full outline-none"
-                   />
+              {showKeyInput ? (
+                <div className="flex flex-col flex-1 max-w-[180px] md:max-w-xs animate-fade-in">
+                  <div className="flex items-center bg-white rounded-lg border-2 border-white/20 shadow-lg px-2 py-1 focus-within:ring-2 focus-within:ring-blue-400 transition-all">
+                    <span className="text-gray-400 mr-1.5 shrink-0"><Icons.Key /></span>
+                    <input 
+                      type="password"
+                      value={apiKey}
+                      onChange={handleApiKeyChange}
+                      placeholder="Dán API Key..."
+                      className="bg-transparent border-none text-gray-800 text-[10px] md:text-xs font-bold placeholder:text-gray-400 focus:ring-0 w-full outline-none"
+                    />
+                  </div>
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    className="text-[9px] md:text-[10px] text-white/80 font-bold underline mt-1 ml-1 hover:text-white transition-colors"
+                  >
+                    Get a free API key here
+                  </a>
                 </div>
-                {/* Tooltip on hover/focus */}
-                <div className="absolute top-full left-0 mt-2 hidden group-focus-within:block group-hover:block bg-white rounded-xl p-3 shadow-2xl border border-gray-100 w-48 md:w-64 z-50 text-[10px] animate-fade-in-up">
-                   <p className="font-bold text-blue-600 mb-1">Hướng dẫn nhanh:</p>
-                   <p className="text-gray-600 mb-1 leading-relaxed">Dán Gemini API Key vào ô này để bắt đầu học.</p>
-                   <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-blue-500 font-bold underline block">Lấy Key tại đây (Google AI Studio)</a>
+              ) : (
+                <div className="group relative flex items-center">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse mr-2 shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
+                  <span className="text-[10px] font-black text-white/50 uppercase tracking-widest hidden sm:block">AI Link Active</span>
+                  <button 
+                    onClick={() => setShowKeyInput(true)} 
+                    className="ml-2 text-[10px] font-bold text-white/40 hover:text-white/90 transition-colors hidden group-hover:block"
+                  >
+                    (Edit Key)
+                  </button>
                 </div>
-              </div>
+              )}
            </div>
 
            {/* BADGE / POINTS - RIGHT SIDE */}
