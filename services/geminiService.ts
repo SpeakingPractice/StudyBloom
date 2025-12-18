@@ -2,15 +2,30 @@
 import { Type } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
-// Priority list for fallback models
+// Danh sách các model dự phòng với tên chính xác theo SDK mới nhất
 const FALLBACK_MODELS = [
   "gemini-3-flash-preview",
-  "gemini-3-pro-preview",
-  "gemini-2.5-flash-lite-latest"
+  "gemini-flash-latest",
+  "gemini-flash-lite-latest"
 ];
 
 function cleanJsonResponse(text: string): string {
   return text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+}
+
+/**
+ * Phân tích thông báo lỗi từ API để lấy thông tin hữu ích cho người dùng
+ */
+function parseErrorMessage(error: any): string {
+  try {
+    if (typeof error === 'string') {
+      const parsed = JSON.parse(error);
+      return parsed.error?.message || parsed.message || error;
+    }
+    return error.message || "Đã xảy ra lỗi không xác định.";
+  } catch {
+    return error.message || String(error);
+  }
 }
 
 /**
@@ -34,7 +49,8 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
     if (errorMsg.includes("quota") || errorMsg.includes("rate limit")) {
       throw new Error("QUOTA_EXCEEDED");
     }
-    throw new Error(data.error || `API Error: ${response.status}`);
+    // Trả về nội dung lỗi thô để callGeminiWithFallback xử lý
+    throw new Error(typeof data.error === 'object' ? JSON.stringify(data.error) : data.error || `API Error: ${response.status}`);
   }
   return data;
 }
@@ -50,12 +66,17 @@ async function callGeminiWithFallback(defaultModel: string, contents: any, confi
     } catch (error: any) {
       lastError = error;
       if (error.message === "QUOTA_EXCEEDED") {
+        console.warn(`Model ${model} hết quota, đang chuyển sang model tiếp theo...`);
         continue;
       }
-      throw error;
+      // Nếu là lỗi 404 hoặc lỗi khác không phải quota, vẫn thử model tiếp theo nếu có thể
+      if (error.message.includes("404") || error.message.includes("NOT_FOUND")) {
+        continue;
+      }
+      throw new Error(parseErrorMessage(error.message));
     }
   }
-  throw lastError || new Error("Dịch vụ AI đang tạm thời gián đoạn.");
+  throw new Error(lastError ? parseErrorMessage(lastError.message) : "Dịch vụ AI đang tạm thời gián đoạn.");
 }
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
@@ -145,7 +166,7 @@ export const generateGameContent = async (
       responseMimeType: "application/json",
       responseSchema: responseSchema,
       temperature: 0.7,
-      thinkingConfig: { thinkingBudget: 0 } // SPEED OPTIMIZATION: Disable thinking
+      thinkingConfig: { thinkingBudget: 0 }
     });
     
     const parsed = JSON.parse(cleanJsonResponse(result.text));

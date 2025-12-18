@@ -41,9 +41,6 @@ const App: React.FC = () => {
   const [totalPoints, setTotalPoints] = useState(0);
   const [showBadges, setShowBadges] = useState(false);
 
-  // API Key management is handled exclusively via server environment variables.
-  // Removed states and effects that requested or stored user API keys.
-
   const currentBadge = BADGE_LEVELS.slice().reverse().find(b => totalPoints >= b.score);
   const nextBadge = BADGE_LEVELS.find(b => totalPoints < b.score);
 
@@ -73,7 +70,15 @@ const App: React.FC = () => {
         textbookContext: data.textbookContext
       });
     } catch (err: any) {
-      setError(`${err.message || "Unknown error"}`);
+      // Làm sạch thông báo lỗi trước khi hiển thị
+      let cleanMsg = err.message || "Unknown error";
+      try {
+        if (cleanMsg.startsWith('{')) {
+          const parsed = JSON.parse(cleanMsg);
+          cleanMsg = parsed.message || cleanMsg;
+        }
+      } catch {}
+      setError(cleanMsg);
     } finally {
       setLoading(false);
     }
