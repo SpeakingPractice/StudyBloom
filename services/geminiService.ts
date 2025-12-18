@@ -108,8 +108,11 @@ export const generateGameContent = async (
       specificInstruction = `10 grammar MCQs. Level ${diffLevel}. Use simple vocabulary for secondary.`;
       if (subSkill === GrammarSubSkill.SentenceTrans) {
         specificInstruction = `10 Sentence Transformation tasks.
-        MANDATORY: For each task, provide 'questionText' (the original sentence), 'correctAnswer' (the target rewrite), and 'hint' (the first 2-3 words the student should start with).
-        MANDATORY: 'explanation' must be in Vietnamese and explain the grammar rule simply.`;
+        MANDATORY:
+        1. 'topic' field MUST be in Vietnamese (e.g., "Câu Bị Động", "Câu Tường Thuật", "Câu Điều Kiện").
+        2. 'hint' field MUST contain the grammatical structure of the answer (e.g., "S + said + (that) + S + V(lùi thì)..." or "S + was/were + V3/ed...").
+        3. 'correctAnswer' is the target rewrite.
+        4. 'explanation' must be in Vietnamese explaining the rule simply.`;
       }
       break;
     case GameType.Listening:
@@ -134,7 +137,7 @@ export const generateGameContent = async (
       specificInstruction = `10 MCQs. Level ${diffLevel}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Output: JSON. All explanations and meanings MUST be in Vietnamese.`;
+  const prompt = `Task: ${specificInstruction}. Output: JSON. All explanations, topics, and meanings MUST be in Vietnamese.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {

@@ -105,8 +105,8 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   const getHintText = () => {
     if (!currentQuestion.correctAnswer) return "";
     const words = currentQuestion.correctAnswer.split(' ');
-    // Always start with at least 2 words if requested
-    const reveal = Math.max(2, hintCount);
+    // Reveal more words if requested
+    const reveal = Math.max(3, hintCount);
     return words.slice(0, Math.min(words.length, reveal)).join(' ') + "...";
   };
 
@@ -130,7 +130,9 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
           <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest">
             Câu hỏi {currentIndex + 1}/{questions.length}
           </span>
-          <span className="text-gray-400 font-bold text-sm tracking-tight">{currentQuestion.topic}</span>
+          <span className="text-blue-500 font-black text-xs uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full">
+            {currentQuestion.topic}
+          </span>
         </div>
 
         <div className="text-center mb-8">
@@ -138,11 +140,17 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             {currentQuestion.questionText}
           </h3>
           {isInputMode && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-2xl border-2 border-dashed border-blue-200">
-              <p className="text-xs font-black text-blue-400 uppercase tracking-widest mb-1">Bắt đầu bằng (Start with):</p>
-              <p className="text-xl font-bold text-blue-700 underline decoration-blue-300 underline-offset-4">
-                {currentQuestion.hint || (currentQuestion.correctAnswer?.split(' ').slice(0, 2).join(' ') + "...")}
+            <div className="mt-4 p-5 bg-blue-50 rounded-2xl border-2 border-dashed border-blue-200 shadow-inner">
+              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Bắt đầu bằng (Start with):</p>
+              <p className="text-xl font-bold text-blue-700 underline decoration-blue-300 underline-offset-4 mb-3">
+                {currentQuestion.correctAnswer?.split(' ').slice(0, 2).join(' ') + "..."}
               </p>
+              <div className="pt-2 border-t border-blue-100">
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Cấu trúc gợi ý (Structure Hint):</p>
+                <p className="text-sm font-bold text-blue-800 italic">
+                  {currentQuestion.hint || "S + V..."}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -178,14 +186,14 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
                    disabled={isEvaluating}
                    className="bg-yellow-50 border-yellow-200 text-yellow-700 whitespace-nowrap px-4"
                  >
-                    Gợi ý (Hint) 💡
+                    Gợi ý thêm từ (More words) 💡
                  </Button>
               </div>
             )}
 
             {hintCount > 0 && !showFeedback && (
               <div className="bg-yellow-50/80 border border-yellow-200 p-4 rounded-xl animate-fade-in shadow-sm">
-                <p className="text-yellow-800 font-bold mb-1 text-xs uppercase tracking-wider">Từ tiếp theo gợi ý:</p>
+                <p className="text-yellow-800 font-bold mb-1 text-xs uppercase tracking-wider">Chuỗi từ tiếp theo:</p>
                 <p className="text-gray-700 text-lg italic font-medium">{getHintText()}</p>
               </div>
             )}
