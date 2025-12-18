@@ -89,6 +89,8 @@ const responseSchema = {
           phonetic: { type: Type.STRING },
           meaning: { type: Type.STRING },
           exampleSentence: { type: Type.STRING },
+          wordType: { type: Type.STRING, description: "E.g. Noun, Verb, Adjective, Adverb" },
+          countability: { type: Type.STRING, description: "For Nouns: Countable or Uncountable. For others: leave empty." },
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -122,7 +124,7 @@ export const generateGameContent = async (
       specificInstruction = `5 short speaking tasks.`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `12 items for Flappy Bird. 'questionText': 1-2 words target. 'explanation': Vietnamese meaning.`;
+      specificInstruction = `12 vocabulary items. 'questionText' is the English word. 'explanation' is the Vietnamese meaning. 'wordType' is the part of speech (Noun/Verb/etc). 'countability' is for nouns only.`;
       break;
     default:
       specificInstruction = `10 items. Level ${diffLevel}.`;

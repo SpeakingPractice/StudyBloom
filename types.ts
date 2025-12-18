@@ -43,6 +43,8 @@ export interface QuestionData {
   phonetic?: string; 
   meaning?: string;  
   exampleSentence?: string;
+  wordType?: string; // New field for TypeToFly
+  countability?: string; // New field for TypeToFly
 }
 
 export interface GameSession {
