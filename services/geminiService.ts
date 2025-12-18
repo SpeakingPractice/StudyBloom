@@ -83,6 +83,7 @@ const responseSchema = {
           speakingTarget: { type: Type.STRING },
           phonetic: { type: Type.STRING },
           meaning: { type: Type.STRING },
+          exampleSentence: { type: Type.STRING }, // Field for context
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -117,35 +118,32 @@ export const generateGameContent = async (
       specificInstruction = `FOR FLAPPY BIRD TYPING GAME:
       1. Generate 20 English items.
       2. MANDATORY: The 'questionText' MUST be exactly ONE word or at most TWO words (e.g., "apple", "run fast").
-      3. PROHIBITED: Do NOT include instructions like "Choose the meaning...", "What is...", or any full sentences in 'questionText'.
-      4. DIFFICULTY: Start with VERY EASY items (id 1-5) and progress to harder items (id 16-20). 
-      5. Grade Level: ${grade}. Textbook: ${specificTextbook || 'General'}.
-      6. Provide a short Vietnamese meaning in 'explanation'.`;
+      3. PROHIBITED: Do NOT include instructions like "Choose the meaning..." in 'questionText'.
+      4. DIFFICULTY: Start with VERY EASY items (id 1-5) and progress to harder items (id 16-20).`;
       break;
     case GameType.SayItRight:
-      // STRICT PROGRESSION LOGIC FOR PRONUNCIATION
       specificInstruction = `FOR PRONUNCIATION GAME (SAY IT RIGHT):
-      1. Generate exactly 10 items for the student to speak.
-      2. PROGRESSION RULES:
-         - Items (id 1-4): MUST be exactly ONE English word.
-         - Items (id 5-7): MUST be exactly TWO English words (short phrase).
-         - Items (id 8-10): MUST be a very short, simple English sentence (max 5 words).
-      3. CRITICAL: The 'questionText' field MUST contain ONLY the target text to be pronounced.
-      4. DO NOT generate quiz questions like "Which word has a different sound?" or "Choose the correct word".
-      5. Provide IPA in 'phonetic' and Vietnamese translation in 'meaning'.
-      6. Grade Level: ${grade}. All vocabulary must be age-appropriate.`;
+      1. Generate 10 items.
+      2. PROGRESSION:
+         - Items (1-4): EXACTLY ONE English word.
+         - Items (5-7): EXACTLY TWO English words (short phrase).
+         - Items (8-10): Short simple English sentence (max 5-6 words).
+      3. MANDATORY: Provide an 'exampleSentence' for EVERY item showing its use in a real context.
+      4. MANDATORY: 'questionText' must be ONLY the target text.
+      5. Provide phonetic IPA in 'phonetic' and Vietnamese in 'meaning'.
+      6. Grade Level: ${grade}.`;
       break;
     default:
       specificInstruction = `10 MCQs. Level ${diffLevel}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Output: JSON format only. All 'questionText' for SayItRight must be the spoken target ONLY. SPEED: Fast response.`;
+  const prompt = `Task: ${specificInstruction}. Output: JSON. All 'questionText' for SayItRight must be the target ONLY. SPEED: Fast.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.2, // Low temperature to ensure strict adherence to structure
+      temperature: 0.2,
       thinkingConfig: { thinkingBudget: 0 }
     });
     

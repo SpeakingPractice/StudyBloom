@@ -1,3 +1,4 @@
+
 export enum GradeLevel {
   Grade6 = 'Grade 6',
   Grade7 = 'Grade 7',
@@ -31,18 +32,18 @@ export enum GrammarSubSkill {
 
 export interface QuestionData {
   id: number;
-  questionText: string; // The prompt, question, or sentence to fill
-  options?: string[]; // Used for Quiz/FillBlank/Listening
-  correctAnswer?: string; // Used for auto-checking
+  questionText: string; 
+  options?: string[]; 
+  correctAnswer?: string; 
   explanation: string; 
   topic: string;
-  hint?: string; // Guidance for what to write next
-  // Specific fields for new modes
-  listeningScript?: string; // For Listening: The text to be read aloud
-  speakingTarget?: string; // For Speaking: The target sentence to say
-  writingPrompt?: string; // For Writing: The topic instruction
-  phonetic?: string; // For Say It Right: Phonetic transcription
-  meaning?: string;  // For Say It Right: Short Vietnamese meaning
+  hint?: string; 
+  listeningScript?: string; 
+  speakingTarget?: string; 
+  writingPrompt?: string; 
+  phonetic?: string; 
+  meaning?: string;  
+  exampleSentence?: string; // New field for contextual usage
 }
 
 export interface GameSession {

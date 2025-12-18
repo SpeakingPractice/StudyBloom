@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { QuestionData } from '../types';
 import { Button } from './Button';
 import { generateSpeech, evaluatePronunciation } from '../services/geminiService';
@@ -32,7 +33,6 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
     return audioCtxRef.current;
   };
 
-  // Prefetch audio whenever the word changes to ensure "instantly with no delay" playback
   useEffect(() => {
     setPrefetchedAudio(null);
     if (current) {
@@ -71,7 +71,6 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
       alert("Microphone not supported in this browser.");
       return;
     }
-    // We don't reset feedback immediately so they can alternate listen/speak smoothly
     setIsListening(true);
     const recognition = new Recognition();
     recognition.lang = 'en-US';
@@ -115,39 +114,49 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
   if (!current) return null;
 
   return (
-    <div className="max-w-2xl mx-auto w-full bg-[#fdfaf3]/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/50 text-center animate-fade-in relative overflow-hidden">
+    <div className="max-w-2xl mx-auto w-full bg-[#fdfaf3]/95 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-2xl border border-white/50 text-center animate-fade-in relative overflow-hidden">
       {/* Header Info */}
-      <div className="flex justify-between items-center mb-12">
-        <div className="bg-[#fff1cc] text-[#9a6a12] px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <div className="bg-[#fff1cc] text-[#9a6a12] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
           Streak: {streak} 🔥
         </div>
-        <div className="text-gray-400 font-bold text-xs uppercase tracking-tighter">Round {index + 1}/{questions.length}</div>
+        <div className="text-gray-400 font-bold text-[10px] uppercase tracking-tighter">Round {index + 1}/{questions.length}</div>
       </div>
 
-      {/* Target Word */}
-      <h2 className="text-6xl md:text-7xl font-black text-[#2d3436] mb-8 tracking-tight drop-shadow-sm">
+      {/* Target Word - Smaller for mobile, break-words for long words */}
+      <h2 className="text-4xl md:text-5xl font-black text-[#2d3436] mb-4 tracking-tight drop-shadow-sm break-words leading-tight px-2">
         {current.questionText}
       </h2>
       
-      {/* Simplified Layout for Phonics and Meaning */}
-      <div className="space-y-1 mb-12 text-[#2d98da] font-bold">
-        <p className="text-lg md:text-xl">
+      {/* Pronunciation & Meaning - Single Line Style */}
+      <div className="space-y-1 mb-6 text-[#2d98da] font-bold">
+        <p className="text-sm md:text-base">
           Phát âm: <span className="font-mono text-[#45aaf2]">/{current.phonetic || '...'}/</span>
         </p>
-        <p className="text-lg md:text-xl">
+        <p className="text-sm md:text-base">
           Ý nghĩa: <span className="text-[#4b7bec]">{current.meaning || '...'}</span>
         </p>
       </div>
 
+      {/* Example Context Section */}
+      {current.exampleSentence && (
+        <div className="mb-8 px-4 py-3 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+          <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-1">Ví dụ (Context):</p>
+          <p className="text-sm md:text-base text-gray-700 italic font-medium leading-relaxed">
+            "{current.exampleSentence}"
+          </p>
+        </div>
+      )}
+
       {/* Interaction Buttons - Speaking First Design */}
-      <div className="flex flex-col items-center gap-6 mb-12">
-        <div className="flex justify-center gap-8">
+      <div className="flex flex-col items-center gap-4 mb-8">
+        <div className="flex justify-center gap-6">
           {/* Listening Button (On demand) */}
           <Button 
             onClick={playModel} 
             variant="outline" 
-            className={`w-24 h-24 rounded-3xl flex items-center justify-center text-4xl shadow-lg border-4 border-white transition-all bg-white hover:bg-blue-50 active:scale-95 ${isModelPlaying ? 'animate-pulse ring-4 ring-blue-100' : ''}`}
-            title="Listen to pronunciation"
+            className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-lg border-4 border-white transition-all bg-white hover:bg-blue-50 active:scale-95 ${isModelPlaying ? 'animate-pulse ring-4 ring-blue-100' : ''}`}
+            title="Listen"
           >
             {isModelPlaying ? '🔊' : '🔈'}
           </Button>
@@ -157,63 +166,62 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
             onClick={startListening}
             variant={isListening ? 'danger' : 'primary'}
             disabled={isEvaluating}
-            className={`w-24 h-24 rounded-3xl flex items-center justify-center text-4xl shadow-xl border-4 border-white transition-all ${isListening ? 'animate-ping' : 'hover:scale-110 active:scale-95'}`}
-            title="Speak now!"
+            className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-xl border-4 border-white transition-all ${isListening ? 'animate-ping' : 'hover:scale-110 active:scale-95'}`}
+            title="Speak"
           >
             {isEvaluating ? '⏳' : isListening ? '⏹️' : '🎙️'}
           </Button>
         </div>
         
-        <p className="text-[11px] text-gray-400 font-black uppercase tracking-[0.2em] animate-pulse">
+        <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] animate-pulse">
            {isListening ? "Listening..." : isEvaluating ? "Evaluating..." : "LISTEN THEN SPEAK!"}
         </p>
       </div>
 
       {/* Feedback Card */}
       {feedback && (
-        <div className={`p-6 rounded-2xl border-2 mb-8 animate-fade-in-up shadow-lg transition-all ${feedback.isCorrect ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <span className="text-3xl">{feedback.isCorrect ? "🌟" : "💡"}</span>
-            <h4 className={`text-xl font-black uppercase tracking-tight ${feedback.isCorrect ? 'text-green-600' : 'text-amber-600'}`}>
+        <div className={`p-4 md:p-6 rounded-2xl border-2 mb-6 animate-fade-in-up shadow-lg transition-all ${feedback.isCorrect ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-2xl">{feedback.isCorrect ? "🌟" : "💡"}</span>
+            <h4 className={`text-base font-black uppercase tracking-tight ${feedback.isCorrect ? 'text-green-600' : 'text-amber-600'}`}>
               {feedback.message}
             </h4>
           </div>
-          <p className="text-gray-600 text-sm italic font-medium leading-relaxed px-4">"{feedback.advice}"</p>
+          <p className="text-gray-600 text-xs md:text-sm italic font-medium leading-relaxed px-2">"{feedback.advice}"</p>
         </div>
       )}
 
-      {/* Navigation and Effort Note */}
-      <div className="flex flex-col items-center gap-8">
+      {/* Navigation */}
+      <div className="flex flex-col items-center gap-6">
         {feedback?.isCorrect ? (
-          <Button onClick={next} variant="secondary" size="lg" className="w-full md:w-auto px-16 text-lg py-5 shadow-xl">
+          <Button onClick={next} variant="secondary" size="lg" className="w-full md:w-auto px-12 text-base py-4 shadow-xl">
             Tiếp tục (Next) →
           </Button>
         ) : feedback ? (
-          <div className="flex gap-4 w-full justify-center">
-            <Button onClick={() => setFeedback(null)} variant="outline" size="lg" className="px-8 bg-white border-gray-200">
+          <div className="flex gap-3 w-full justify-center">
+            <Button onClick={() => setFeedback(null)} variant="outline" size="md" className="px-6 bg-white border-gray-200">
               Thử lại 🔄
             </Button>
-            <Button onClick={next} variant="secondary" size="lg" className="px-8">
+            <Button onClick={next} variant="secondary" size="md" className="px-6">
               Bỏ qua ⏭️
             </Button>
           </div>
         ) : (
           <button 
             onClick={next} 
-            className="text-[11px] font-black text-gray-400 hover:text-blue-500 transition-colors uppercase tracking-[0.2em] border-b-2 border-transparent hover:border-blue-200 pb-1"
+            className="text-[9px] font-black text-gray-400 hover:text-blue-500 transition-colors uppercase tracking-[0.2em] border-b-2 border-transparent hover:border-blue-200 pb-1"
           >
             SKIP ROUND
           </button>
         )}
 
-        {/* Anxiety Reduction Note */}
-        <p className="text-[10px] text-gray-300 font-bold uppercase italic max-w-xs mx-auto leading-relaxed">
-          Reward effort and improvement more than accuracy. <br/> Confidence comes before perfection.
+        <p className="text-[9px] text-gray-300 font-bold uppercase italic max-w-xs mx-auto leading-relaxed">
+          Confidence comes before perfection.
         </p>
       </div>
 
       {/* Progress Bar */}
-      <div className="mt-12 bg-gray-100 rounded-full h-2.5 overflow-hidden w-full shadow-inner">
+      <div className="mt-8 bg-gray-100 rounded-full h-2 overflow-hidden w-full shadow-inner">
         <div 
           className="bg-blue-400 h-full transition-all duration-700 ease-out"
           style={{ width: `${((index + (feedback?.isCorrect ? 1 : 0)) / questions.length) * 100}%` }}
