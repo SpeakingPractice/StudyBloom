@@ -84,6 +84,8 @@ const responseSchema = {
           hint: { type: Type.STRING },
           listeningScript: { type: Type.STRING },
           speakingTarget: { type: Type.STRING },
+          phonetic: { type: Type.STRING },
+          meaning: { type: Type.STRING },
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -130,28 +132,44 @@ export const generateGameContent = async (
       ${gradeLevelInstruction}`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `Create 20 vocabulary words related to current curriculum for ${grade}. For each word:
-      - questionText: The word to type.
+      specificInstruction = `Create 20 UNIQUE vocabulary words related to current curriculum for ${grade}. Ensure words are strictly from MOET syllabus but different from previous runs. 
+      For each word:
+      - questionText: The word to type (strictly letters only, no extra spaces).
       - explanation: Vietnamese translation and a simple English definition.
       - topic: The vocabulary category.`;
       break;
     case GameType.SayItRight:
-      specificInstruction = `Create 10 pronunciation targets (words or short phrases) for ${grade}. 
+      specificInstruction = `Create 10 UNIQUE pronunciation targets (words or short phrases) for ${grade}. 
       - questionText: The target text to pronounce.
-      - explanation: Phonetic transcription (IPA) and a short Vietnamese meaning.
+      - phonetic: Phonetic transcription (IPA).
+      - meaning: Short Vietnamese meaning.
+      - explanation: Advice for Vietnamese students on how to pronounce it correctly.
       - topic: The phonics focus (e.g. "Ending Sounds", "Vowels").`;
       break;
   }
 
-  const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Output: JSON only. Explanations in Vietnamese.`;
+  // Adding a timestamp to force model variety
+  const randomnessSeed = Date.now().toString(36);
+  const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Variety: Ensure this set is different from previous ones (Seed: ${randomnessSeed}). Output: JSON only. Explanations in Vietnamese. All questionText strings MUST be trimmed and free of hidden control characters.`;
 
   try {
     const result = await callGeminiProxy(modelId, prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.7,
+      temperature: 0.8, // Slightly higher temperature for more variety
     });
-    return JSON.parse(cleanJsonResponse(result.text));
+    const parsed = JSON.parse(cleanJsonResponse(result.text));
+    
+    // Clean strings manually just to be safe
+    if (parsed.questions) {
+      parsed.questions = parsed.questions.map((q: QuestionData) => ({
+        ...q,
+        questionText: q.questionText.trim(),
+        correctAnswer: q.correctAnswer?.trim()
+      }));
+    }
+    
+    return parsed;
   } catch (error: any) {
     throw error;
   }

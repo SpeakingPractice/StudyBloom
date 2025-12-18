@@ -41,6 +41,8 @@ export interface QuestionData {
   listeningScript?: string; // For Listening: The text to be read aloud
   speakingTarget?: string; // For Speaking: The target sentence to say
   writingPrompt?: string; // For Writing: The topic instruction
+  phonetic?: string; // For Say It Right: Phonetic transcription
+  meaning?: string;  // For Say It Right: Short Vietnamese meaning
 }
 
 export interface GameSession {
