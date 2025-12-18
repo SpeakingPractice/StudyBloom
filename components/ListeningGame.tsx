@@ -14,6 +14,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   const [isPlaying, setIsPlaying] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [readingCountdown, setReadingCountdown] = useState(15);
+  const [audioError, setAudioError] = useState(false);
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -22,7 +23,6 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
 
   const current = questions[index];
 
-  // Initialize AudioContext
   const getAudioCtx = () => {
     if (!audioCtxRef.current) {
       audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -31,32 +31,24 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   };
 
   useEffect(() => {
-    return () => {
-      stopAudio();
-    };
+    return () => stopAudio();
   }, []);
 
-  // Handle prefetching when index changes
   useEffect(() => {
     stopAudio();
     setReadingCountdown(15);
+    setAudioError(false);
     
-    // If we already have the buffer from a previous next-prefetch, use it
     if (nextPrefetchedBufferRef.current) {
       prefetchedBufferRef.current = nextPrefetchedBufferRef.current;
       nextPrefetchedBufferRef.current = null;
     } else {
       prefetchedBufferRef.current = null;
-      if (current?.listeningScript) {
-        prefetchAudio(current.listeningScript, true);
-      }
+      if (current?.listeningScript) prefetchAudio(current.listeningScript, true);
     }
 
-    // Prefetch the next question in the background for zero-latency transition
     const nextQ = questions[index + 1];
-    if (nextQ?.listeningScript) {
-      prefetchAudio(nextQ.listeningScript, false);
-    }
+    if (nextQ?.listeningScript) prefetchAudio(nextQ.listeningScript, false);
   }, [index]);
 
   useEffect(() => {
@@ -69,14 +61,13 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   const decodeBase64 = (base64: string) => {
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
     return bytes;
   };
 
   const decodeAudioDataToBuffer = async (data: Uint8Array, ctx: AudioContext): Promise<AudioBuffer> => {
-    const dataInt16 = new Int16Array(data.buffer);
+    // PCM 16-bit requires 2 bytes per sample alignment
+    const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.length / 2);
     const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
     const channelData = buffer.getChannelData(0);
     for (let i = 0; i < dataInt16.length; i++) {
@@ -102,9 +93,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
 
   const stopAudio = () => {
     if (currentSourceRef.current) {
-      try {
-        currentSourceRef.current.stop();
-      } catch (e) {}
+      try { currentSourceRef.current.stop(); } catch (e) {}
       currentSourceRef.current = null;
     }
     setIsPlaying(false);
@@ -112,21 +101,22 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
 
   const playAudio = async () => {
     if (!current?.listeningScript || isPlaying) return;
+    setAudioError(false);
     
-    // Attempt immediate playback from prefetched buffer
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') await ctx.resume();
+
     if (prefetchedBufferRef.current) {
       startPlayback(prefetchedBufferRef.current);
     } else {
-      // Fallback only if prefetch failed or didn't finish
       setIsPlaying(true);
       const audioData = await generateSpeech(current.listeningScript);
       if (audioData) {
-        const ctx = getAudioCtx();
         const bytes = decodeBase64(audioData);
         const buffer = await decodeAudioDataToBuffer(bytes, ctx);
         startPlayback(buffer);
       } else {
-        alert("Lỗi âm thanh. Hãy thử lại.");
+        setAudioError(true);
         setIsPlaying(false);
       }
     }
@@ -181,6 +171,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 5.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 </svg>
               </button>
+              {audioError && <p className="text-red-500 text-[10px] mt-2 font-bold uppercase">Lỗi âm thanh. Hãy nhấn lại.</p>}
               <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
                 {isPlaying ? "Đang phát âm thanh tự nhiên..." : "Bấm để nghe giọng nói ấm áp"}
               </p>

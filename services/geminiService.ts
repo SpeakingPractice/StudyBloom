@@ -1,65 +1,87 @@
+import { Type } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
-const Type = {
-  STRING: 'STRING',
-  NUMBER: 'NUMBER',
-  INTEGER: 'INTEGER',
-  BOOLEAN: 'BOOLEAN',
-  ARRAY: 'ARRAY',
-  OBJECT: 'OBJECT'
-};
-
-const getApiKey = () => localStorage.getItem('GEMINI_API_KEY') || '';
+// Priority list for fallback models
+const FALLBACK_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-3-pro-preview",
+  "gemini-2.5-flash-lite-latest"
+];
 
 function cleanJsonResponse(text: string): string {
   return text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
 }
 
+/**
+ * Standard proxy call to the backend.
+ */
 async function callGeminiProxy(model: string, contents: any, config: any) {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error("API Key missing.");
-
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey
     },
     body: JSON.stringify({ model, contents, config }),
   });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) throw new Error("INVALID_KEY");
+    // Detect quota exceeded via status code or error message
+    if (response.status === 429) {
+      throw new Error("QUOTA_EXCEEDED");
+    }
+    const errorMsg = (data.error || "").toLowerCase();
+    if (errorMsg.includes("quota") || errorMsg.includes("rate limit")) {
+      throw new Error("QUOTA_EXCEEDED");
+    }
     throw new Error(data.error || `API Error: ${response.status}`);
   }
   return data;
+}
+
+/**
+ * Executes a Gemini request with automatic fallback logic for quota issues.
+ */
+async function callGeminiWithFallback(defaultModel: string, contents: any, config: any) {
+  let lastError = null;
+  
+  // Try models in priority order
+  for (const model of FALLBACK_MODELS) {
+    try {
+      return await callGeminiProxy(model, contents, config);
+    } catch (error: any) {
+      lastError = error;
+      if (error.message === "QUOTA_EXCEEDED") {
+        console.warn(`Quota exceeded for ${model}. Rerouting to fallback model...`);
+        continue; // Silent retry with next model
+      }
+      throw error; // Immediate exit for other errors
+    }
+  }
+  
+  throw lastError || new Error("Dịch vụ AI đang tạm thời gián đoạn do giới hạn lưu lượng.");
 }
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
     const systemInstruction = `
       Act as a voice actor with a natural, human-like, and inspiring voice.
-      Rules for delivery:
-      - Use a moderate pace — not too fast, not flat or mechanical.
-      - Add natural pauses at commas, full stops, and after important ideas.
-      - Gently emphasize key words and phrases that convey emotion, motivation, and hope.
-      - Use dynamic intonation with clear rises and falls in pitch.
-      - The delivery should feel like a warm, encouraging conversation, not a scripted reading.
-      - Keep the voice clear, friendly, and positive, creating a sense of trust and connection.
-      - Avoid an advertising tone, avoid exaggerated drama, and avoid robotic delivery.
-      - Goal: Help the listener feel motivated, focused, and emotionally engaged.
+      Rules: Clear delivery, natural pauses, moderate pace.
     `;
 
-    const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", 
-      `${systemInstruction}\n\nRead the following text: "${text}"`,
-      {
-        responseModalities: ["AUDIO"],
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
-        }
+    // Multimodal models require structured contents
+    const contents = [{
+      parts: [{ text: `${systemInstruction}\n\nRead the following text clearly: "${text}"` }]
+    }];
+
+    // TTS specific model
+    const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", contents, {
+      responseModalities: ["AUDIO"],
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
       }
-    );
+    });
+    
     return result.audio || null;
   } catch (error) {
     console.error("TTS Error:", error);
@@ -101,7 +123,6 @@ export const generateGameContent = async (
   specificTextbook?: string,
   subSkill?: GrammarSubSkill
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
-  const modelId = "gemini-3-flash-preview"; 
   let specificInstruction = "";
   const gradeLevelInstruction = parseInt(grade.replace('Grade ', '')) <= 9 
     ? "Difficulty: Secondary School (A1-A2/B1). Simple vocabulary."
@@ -111,56 +132,36 @@ export const generateGameContent = async (
     case GameType.Grammar:
       specificInstruction = `Create 10 mixed grammar Multiple Choice Questions. Topic must be in format "English Topic (Vietnamese Topic)".`;
       if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `Create 10 Sentence Transformation Questions. 
-        - Topic MUST be in format "English Name (Vietnamese Name)" (e.g. "Passive Voice (Bị động)", "Reported Speech (Câu gián tiếp)", "Inversion (Đảo ngữ)"). 
-        - The 'hint' field MUST contain the first 2-3 words of the 'correctAnswer' to guide the student.
-        - 'questionText' should be the original sentence only.`;
+        specificInstruction = `Create 10 Sentence Transformation Questions. The 'hint' field MUST contain the first 2-3 words of the 'correctAnswer'.`;
       }
       break;
     case GameType.Listening:
-      specificInstruction = `Create 5 listening challenges. 'listeningScript' MUST be inspiring and warm. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 5 listening challenges. 'listeningScript' MUST be inspiring. ${gradeLevelInstruction}`;
       break;
     case GameType.Speaking:
-      specificInstruction = `Create 5 speaking challenges. 'speakingTarget' MUST be NATURAL SPOKEN ENGLISH with contractions. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 5 speaking challenges. ${gradeLevelInstruction}`;
       break;
     case GameType.Writing:
-      specificInstruction = `Create 1 writing challenge. 
-      FORMAT for 'questionText':
-      Line 1: Main task (e.g., "Write a paragraph about...").
-      Subsequent lines: Each suggestion starts with '-' on a NEW LINE.
-      Vocabulary: Use VERY SIMPLE English (Level A1 to B2) for all suggestions. No complex jargon.
-      ${gradeLevelInstruction}`;
+      specificInstruction = `Create 1 writing challenge paragraph topic. ${gradeLevelInstruction}`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `Create 20 UNIQUE vocabulary words related to current curriculum for ${grade}. Ensure words are strictly from MOET syllabus but different from previous runs. 
-      For each word:
-      - questionText: The word to type (strictly letters only, no extra spaces).
-      - explanation: Vietnamese translation and a simple English definition.
-      - topic: The vocabulary category.`;
+      specificInstruction = `Create 20 UNIQUE vocabulary words for ${grade}. questionText must be strictly the word only.`;
       break;
     case GameType.SayItRight:
-      specificInstruction = `Create 10 UNIQUE pronunciation targets (words or short phrases) for ${grade}. 
-      - questionText: The target text to pronounce.
-      - phonetic: Phonetic transcription (IPA).
-      - meaning: Short Vietnamese meaning.
-      - explanation: Advice for Vietnamese students on how to pronounce it correctly.
-      - topic: The phonics focus (e.g. "Ending Sounds", "Vowels").`;
+      specificInstruction = `Create 10 UNIQUE pronunciation words for ${grade}.`;
       break;
   }
 
-  // Adding a timestamp to force model variety
-  const randomnessSeed = Date.now().toString(36);
-  const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Variety: Ensure this set is different from previous ones (Seed: ${randomnessSeed}). Output: JSON only. Explanations in Vietnamese. All questionText strings MUST be trimmed and free of hidden control characters.`;
+  const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Output: JSON only. Explanations in Vietnamese. Ensure all questionText strings are clean and trimmed.`;
 
   try {
-    const result = await callGeminiProxy(modelId, prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.8, // Slightly higher temperature for more variety
+      temperature: 0.8,
     });
     const parsed = JSON.parse(cleanJsonResponse(result.text));
     
-    // Clean strings manually just to be safe
     if (parsed.questions) {
       parsed.questions = parsed.questions.map((q: QuestionData) => ({
         ...q,
@@ -186,21 +187,9 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     },
     required: ["isCorrect", "feedback", "score", "advice"]
   };
-  const prompt = `
-    Act as a friendly English Phonics coach.
-    Target: "${target}"
-    Student Spoke: "${transcript}"
-    
-    Rules:
-    - Compare transcription to target.
-    - Be low-pressure and encouraging. 
-    - If it's mostly correct, mark isCorrect: true.
-    - Provide a short, fun Vietnamese feedback (e.g. "Tuyệt vời!", "Gần đúng rồi!").
-    - Point out one tiny thing to improve in 'advice'.
-    - Score is 0-100. Confidence and effort more than perfect accuracy.
-  `;
+  const prompt = `Evaluate pronunciation: Target "${target}", Student "${transcript}". Be encouraging.`;
   try {
-    const result = await callGeminiProxy("gemini-3-flash-preview", prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: schema
     });
@@ -220,7 +209,7 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     }
   };
   try {
-    const result = await callGeminiProxy("gemini-3-flash-preview", `Grade this English writing for a ${grade} Vietnamese student. Prompt: ${prompt}. Student Answer: "${studentText}". Provide score (0-20), Vietnamese feedback, and corrections. Use A1-B2 level feedback.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing for ${grade} student. Prompt: ${prompt}. Answer: "${studentText}".`, {
       responseMimeType: "application/json",
       responseSchema: gradingSchema
     });
@@ -241,12 +230,7 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     required: ["score", "feedback", "correctnessLevel"]
   };
   try {
-    const result = await callGeminiProxy("gemini-3-flash-preview", `Act as a faithful transcription evaluator. 
-      The student's transcript contains exact speech features including hesitations and repeats. 
-      Evaluate the clarity and correctness of the spoken attempt against the target sentence.
-      Target: "${target}"
-      Student Spoke: "${transcript}"
-      Point out specific errors in Vietnamese. Be encouraging.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Evaluate speech. Target: "${target}". Transcript: "${transcript}".`, {
       responseMimeType: "application/json",
       responseSchema: speakingGradingSchema
     });
@@ -269,28 +253,15 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
     required: ["status", "feedback", "isGrammaticallyCorrect", "meaningMaintained", "explanation"]
   };
 
-  const prompt = `
-    Act as an English teacher evaluating a sentence transformation exercise.
-    Original Sentence: "${original}"
-    Intended Practice Pattern/Target: "${targetPattern}"
-    Student's Answer: "${studentAnswer}"
-
-    Rules:
-    - If the meaning is unchanged, grammar is perfect, and it sounds natural, mark as CORRECT or CORRECT_DIFFERENT_STRUCTURE.
-    - If it's correct but DOES NOT use the intended pattern (e.g. they used passive voice instead of inversion), mark as "CORRECT_DIFFERENT_STRUCTURE".
-    - Mark as "INCORRECT" ONLY if there's a real grammar error, meaning change, or it sounds very unnatural.
-    - Provide a brief feedback in Vietnamese explaining the difference between their answer and the intended pattern.
-    - Goal is to be encouraging but educational.
-  `;
+  const prompt = `Evaluate transformation. Original: "${original}". Target Pattern: "${targetPattern}". Student: "${studentAnswer}".`;
 
   try {
-    const result = await callGeminiProxy("gemini-3-flash-preview", prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: schema
     });
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error) {
-    console.error("Sentence Eval Error:", error);
     return null;
   }
 };

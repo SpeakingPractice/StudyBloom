@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-api-key'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
   if (req.method === 'OPTIONS') {
@@ -14,9 +14,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const apiKey = req.headers['x-api-key'];
+  const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    return res.status(401).json({ error: "Missing API Key." });
+    return res.status(500).json({ error: "Server configuration error: Missing API Key." });
   }
 
   if (req.method !== 'POST') {
@@ -33,7 +33,6 @@ export default async function handler(req, res) {
       config
     });
 
-    // Check if the response contains audio data
     const audioPart = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
     if (audioPart) {
       return res.status(200).json({ audio: audioPart.inlineData.data });
@@ -42,8 +41,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: result.text });
   } catch (error) {
     console.error("Gemini Proxy Error:", error);
+    // Explicitly handle 429/Quota errors to trigger client fallback
+    const message = error.message || "";
+    if (message.includes("429") || message.toLowerCase().includes("quota") || message.toLowerCase().includes("too many requests")) {
+      return res.status(429).json({ error: "Quota Exceeded", details: message });
+    }
     const status = error.status || 500;
-    const message = error.message || "Internal Server Error";
     return res.status(status).json({ error: message });
   }
 }
