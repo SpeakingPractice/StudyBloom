@@ -13,6 +13,7 @@ export enum GameType {
   Listening = 'Luyện Nghe (Listening)',
   Speaking = 'Luyện Nói (Speaking)',
   Writing = 'Luyện Viết (Writing)',
+  TypeToFly = 'Gõ Phím Bay Cao (Type to Fly)',
 }
 
 export enum GrammarSubSkill {

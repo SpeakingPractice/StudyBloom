@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QuestionData, GrammarSubSkill } from '../types';
 import { Button } from './Button';
+import { evaluateSentenceTransformation } from '../services/geminiService';
 
 interface QuizGameProps {
   questions: QuestionData[];
@@ -17,7 +18,9 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   // Input mode state
   const [userInput, setUserInput] = useState("");
   const [isInputCorrect, setIsInputCorrect] = useState<boolean | null>(null);
-  const [hintCount, setHintCount] = useState(0); // Tracks how many words of hint to show
+  const [hintCount, setHintCount] = useState(0); 
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [aiResult, setAiResult] = useState<{status: string, feedback: string, explanation: string} | null>(null);
 
   const currentQuestion = questions[currentIndex];
   const isInputMode = subSkill === GrammarSubSkill.SentenceTrans;
@@ -29,6 +32,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     setUserInput("");
     setIsInputCorrect(null);
     setHintCount(0);
+    setAiResult(null);
   }, [currentIndex]);
 
   if (!currentQuestion) return null;
@@ -44,19 +48,35 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     }
   };
 
-  const handleInputCheck = () => {
-    if (showFeedback) return;
+  const handleInputCheck = async () => {
+    if (showFeedback || isEvaluating) return;
 
-    const normalize = (s: string) => s.toLowerCase().replace(/[.,!?;:]/g, '').trim().replace(/\s+/g, ' ');
-    const user = normalize(userInput);
-    const correct = normalize(currentQuestion.correctAnswer || "");
-    
-    const isCorrect = user === correct;
-    setIsInputCorrect(isCorrect);
-    setShowFeedback(true);
+    setIsEvaluating(true);
+    const result = await evaluateSentenceTransformation(
+      currentQuestion.questionText, 
+      currentQuestion.correctAnswer || "", 
+      userInput
+    );
+    setIsEvaluating(false);
 
-    if (isCorrect) {
-      setScore(prev => prev + 2);
+    if (result) {
+      setAiResult(result);
+      const correct = result.status === "CORRECT" || result.status === "CORRECT_DIFFERENT_STRUCTURE";
+      setIsInputCorrect(correct);
+      setShowFeedback(true);
+
+      if (correct) {
+        setScore(prev => prev + 2);
+      }
+    } else {
+      // Fallback to strict check if AI fails
+      const normalize = (s: string) => s.toLowerCase().replace(/[.,!?;:]/g, '').trim().replace(/\s+/g, ' ');
+      const user = normalize(userInput);
+      const target = normalize(currentQuestion.correctAnswer || "");
+      const isMatch = user === target;
+      setIsInputCorrect(isMatch);
+      setShowFeedback(true);
+      if (isMatch) setScore(prev => prev + 2);
     }
   };
 
@@ -84,11 +104,9 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   const getHintText = () => {
     if (!currentQuestion.correctAnswer) return "";
     const words = currentQuestion.correctAnswer.split(' ');
-    // Default hint (starting words)
     let initialHint = currentQuestion.hint || "";
     if (hintCount === 0) return initialHint;
 
-    // Incremental hint
     return words.slice(0, Math.min(words.length, hintCount + 2)).join(' ') + "...";
   };
 
@@ -100,16 +118,16 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   return (
     <div className="max-w-2xl mx-auto w-full">
       {/* Progress Bar */}
-      <div className="mb-6 bg-gray-200 rounded-full h-4 overflow-hidden">
+      <div className="mb-6 bg-gray-200/50 backdrop-blur-sm rounded-full h-4 overflow-hidden border border-white/30">
         <div 
-          className="bg-blue-500 h-full transition-all duration-500 ease-out"
+          className="bg-blue-500 h-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
           style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
         />
       </div>
 
-      <div className="bg-white rounded-3xl shadow-xl p-6 md:p-8 border-b-8 border-gray-100">
+      <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 border border-white/50 relative overflow-hidden">
         <div className="flex justify-between items-center mb-4">
-          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase">
+          <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest">
             Question {currentIndex + 1}/{questions.length}
           </span>
           <span className="text-gray-400 font-bold text-sm tracking-tight">{currentQuestion.topic}</span>
@@ -120,7 +138,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             {currentQuestion.questionText}
           </h3>
           {isInputMode && currentQuestion.hint && (
-            <p className="mt-4 text-blue-500 font-bold text-lg animate-fade-in">
+            <p className="mt-4 text-blue-500 font-bold text-lg animate-fade-in bg-blue-50/50 inline-block px-4 py-2 rounded-xl border border-blue-100">
               Rewrite starting with: <span className="underline decoration-2 underline-offset-4">{currentQuestion.hint}</span>
             </p>
           )}
@@ -132,23 +150,29 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             <textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              disabled={showFeedback}
+              disabled={showFeedback || isEvaluating}
               placeholder="Type your rewritten sentence here..."
-              className={`w-full p-4 text-lg border-2 rounded-xl focus:ring-0 focus:border-blue-500 transition-colors resize-none h-32 ${
-                isInputCorrect === true ? 'border-green-500 bg-green-50' : 
-                isInputCorrect === false ? 'border-red-500 bg-red-50' : 
-                'border-gray-300'
+              className={`w-full p-4 text-lg border-2 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all resize-none h-32 ${
+                isInputCorrect === true ? 'border-green-500 bg-green-50/50' : 
+                isInputCorrect === false ? 'border-red-500 bg-red-50/50' : 
+                'border-gray-100 bg-white/50'
               }`}
             />
             
             {!showFeedback && (
               <div className="flex gap-3">
-                 <Button onClick={handleInputCheck} disabled={!userInput.trim()} variant="primary" fullWidth>
-                    Kiểm tra (Check)
+                 <Button onClick={handleInputCheck} disabled={!userInput.trim() || isEvaluating} variant="primary" fullWidth className="relative">
+                    {isEvaluating ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Đang chấm...
+                      </span>
+                    ) : 'Kiểm tra (Check)'}
                  </Button>
                  <Button 
                    onClick={handleShowHint} 
                    variant="secondary" 
+                   disabled={isEvaluating}
                    className="bg-yellow-500 hover:bg-yellow-600 border-yellow-700 whitespace-nowrap"
                  >
                     Gợi ý (Suggest) 💡
@@ -157,21 +181,41 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             )}
 
             {hintCount > 0 && !showFeedback && (
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl animate-fade-in shadow-sm">
+              <div className="bg-yellow-50/80 border border-yellow-200 p-4 rounded-xl animate-fade-in shadow-sm">
                 <p className="text-yellow-800 font-bold mb-1 text-xs uppercase tracking-wider">Từ tiếp theo (Next words):</p>
                 <p className="text-gray-700 text-lg italic font-medium">{getHintText()}</p>
-                <p className="text-[10px] text-yellow-600 mt-2 italic">Bấm "Gợi ý" lần nữa để xem thêm từ.</p>
               </div>
             )}
             
-            {showFeedback && (
-              <div className={`p-5 rounded-2xl border-2 ${isInputCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                 <p className={`font-black uppercase text-xs tracking-widest mb-2 ${isInputCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                    {isInputCorrect ? 'Tuyệt vời!' : 'Đáp án đúng (Correct Answer):'}
-                 </p>
-                 <p className={`text-lg font-bold ${isInputCorrect ? 'text-green-800' : 'text-gray-800'}`}>
-                    {currentQuestion.correctAnswer}
-                 </p>
+            {showFeedback && aiResult && (
+              <div className={`p-5 rounded-2xl border-2 animate-fade-in-up shadow-lg ${
+                aiResult.status === "CORRECT" ? 'bg-green-50 border-green-200' : 
+                aiResult.status === "CORRECT_DIFFERENT_STRUCTURE" ? 'bg-blue-50 border-blue-200' : 
+                'bg-red-50 border-red-200'
+              }`}>
+                 <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">
+                      {aiResult.status === "CORRECT" ? "✅" : aiResult.status === "CORRECT_DIFFERENT_STRUCTURE" ? "🤔" : "❌"}
+                    </span>
+                    <p className={`font-black uppercase text-xs tracking-widest ${
+                      aiResult.status === "CORRECT" ? 'text-green-600' : 
+                      aiResult.status === "CORRECT_DIFFERENT_STRUCTURE" ? 'text-blue-600' : 
+                      'text-red-600'
+                    }`}>
+                      {aiResult.status === "CORRECT" ? 'Chính xác!' : 
+                       aiResult.status === "CORRECT_DIFFERENT_STRUCTURE" ? 'Đúng nghĩa, cấu trúc khác' : 
+                       'Chưa chính xác'}
+                    </p>
+                 </div>
+                 
+                 <p className="text-gray-700 text-sm leading-relaxed italic mb-3">"{aiResult.feedback}"</p>
+                 
+                 {(aiResult.status !== "CORRECT") && (
+                   <div className="mt-3 pt-3 border-t border-gray-100">
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Cấu trúc đề bài yêu cầu:</p>
+                     <p className="text-gray-800 font-bold text-base">{currentQuestion.correctAnswer}</p>
+                   </div>
+                 )}
               </div>
             )}
           </div>
@@ -193,21 +237,18 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
         )}
 
         {showFeedback && (
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 animate-fade-in">
-            <p className="font-bold text-blue-800 mb-1">Giải thích (Explanation):</p>
-            <p className="text-blue-700 text-sm leading-relaxed">{currentQuestion.explanation}</p>
+          <div className="bg-white/50 border border-gray-100 rounded-xl p-4 mb-6 animate-fade-in shadow-inner">
+            <p className="font-black text-xs text-gray-400 uppercase tracking-widest mb-1">Giải thích (Explanation):</p>
+            <p className="text-gray-700 text-sm leading-relaxed">{aiResult?.explanation || currentQuestion.explanation}</p>
           </div>
         )}
 
-        <div className="flex justify-end">
-          <Button 
-            disabled={!showFeedback} 
-            onClick={handleNext}
-            size="lg"
-            variant="secondary"
-          >
-            {currentIndex === questions.length - 1 ? 'Kết thúc (Finish)' : 'Câu tiếp theo (Next) →'}
-          </Button>
+        <div className="flex justify-end gap-3">
+          {showFeedback && (
+             <Button onClick={handleNext} size="lg" variant="secondary" className="shadow-xl">
+               {currentIndex === questions.length - 1 ? 'Kết thúc (Finish)' : 'Tiếp theo (Next) →'}
+             </Button>
+          )}
         </div>
       </div>
     </div>

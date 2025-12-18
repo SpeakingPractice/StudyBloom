@@ -8,6 +8,7 @@ import { ResultCard } from './components/ResultCard';
 import { ListeningGame } from './components/ListeningGame';
 import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
+import { TypeToFlyGame } from './components/TypeToFlyGame';
 import { ApiKeyModal } from './components/ApiKeyModal';
 
 // Helper icons
@@ -125,6 +126,8 @@ const App: React.FC = () => {
         return <WritingGame {...commonProps} grade={gameData.grade} />;
       case GameType.Grammar:
         return <QuizGame {...commonProps} subSkill={gameData.subSkill} />;
+      case GameType.TypeToFly:
+        return <TypeToFlyGame {...commonProps} />;
       default:
         return <QuizGame {...commonProps} />;
     }
@@ -291,9 +294,12 @@ const App: React.FC = () => {
                         if (type !== GameType.Grammar) setSelectedSubSkill(null);
                         else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz);
                     }}
-                    className="text-sm py-4 h-full"
+                    className={`text-sm py-4 h-full ${type === GameType.TypeToFly ? 'bg-amber-500 hover:bg-amber-600 border-amber-700 text-white shadow-amber-500/30' : ''}`}
                   >
-                    {type}
+                    <div className="flex flex-col items-center">
+                       {type === GameType.TypeToFly && <span className="text-lg mb-1">🚀</span>}
+                       {type}
+                    </div>
                   </Button>
                 ))}
               </div>

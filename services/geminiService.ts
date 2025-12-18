@@ -129,6 +129,12 @@ export const generateGameContent = async (
       Vocabulary: Use VERY SIMPLE English (Level A1 to B2) for all suggestions. No complex jargon.
       ${gradeLevelInstruction}`;
       break;
+    case GameType.TypeToFly:
+      specificInstruction = `Create 20 vocabulary words related to current curriculum for ${grade}. For each word:
+      - questionText: The word to type.
+      - explanation: Vietnamese translation and a simple English definition.
+      - topic: The vocabulary category.`;
+      break;
   }
 
   const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Output: JSON only. Explanations in Vietnamese.`;
@@ -187,6 +193,45 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     });
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
+    return null;
+  }
+};
+
+export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      status: { type: Type.STRING, enum: ["CORRECT", "CORRECT_DIFFERENT_STRUCTURE", "INCORRECT"] },
+      feedback: { type: Type.STRING },
+      isGrammaticallyCorrect: { type: Type.BOOLEAN },
+      meaningMaintained: { type: Type.BOOLEAN },
+      explanation: { type: Type.STRING }
+    },
+    required: ["status", "feedback", "isGrammaticallyCorrect", "meaningMaintained", "explanation"]
+  };
+
+  const prompt = `
+    Act as an English teacher evaluating a sentence transformation exercise.
+    Original Sentence: "${original}"
+    Intended Practice Pattern/Target: "${targetPattern}"
+    Student's Answer: "${studentAnswer}"
+
+    Rules:
+    - If the meaning is unchanged, grammar is perfect, and it sounds natural, mark as CORRECT or CORRECT_DIFFERENT_STRUCTURE.
+    - If it's correct but DOES NOT use the intended pattern (e.g. they used passive voice instead of inversion), mark as "CORRECT_DIFFERENT_STRUCTURE".
+    - Mark as "INCORRECT" ONLY if there's a real grammar error, meaning change, or it sounds very unnatural.
+    - Provide a brief feedback in Vietnamese explaining the difference between their answer and the intended pattern.
+    - Goal is to be encouraging but educational.
+  `;
+
+  try {
+    const result = await callGeminiProxy("gemini-3-flash-preview", prompt, {
+      responseMimeType: "application/json",
+      responseSchema: schema
+    });
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch (error) {
+    console.error("Sentence Eval Error:", error);
     return null;
   }
 };
