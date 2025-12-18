@@ -310,7 +310,7 @@ const App: React.FC = () => {
                       className={`py-4 h-full ${type === GameType.TypeToFly || type === GameType.SayItRight ? 'bg-amber-500 hover:bg-amber-600 border-amber-700 text-white shadow-amber-500/30' : ''}`}
                     >
                       <div className="flex flex-col items-center text-center">
-                         {type === GameType.TypeToFly && <span className="text-lg mb-1">🐦</span>}
+                         {type === GameType.TypeToFly && <span className="text-lg mb-1">🐤</span>}
                          {type === GameType.SayItRight && <span className="text-lg mb-1">🎙️</span>}
                          <span className="text-base font-black leading-tight">{title}</span>
                          {sub && <span className="text-[10px] font-bold opacity-75 mt-0.5 tracking-tight">{sub}</span>}
@@ -386,7 +386,7 @@ const App: React.FC = () => {
         </header>
 
         {error && (
-          <div className="bg-red-100/90 backdrop-blur-sm border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 max-w-2xl mx-auto shadow-sm animate-bounce">
+          <div className="bg-red-100/90 backdrop-blur-sm border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 max-w-2xl mx-auto shadow-sm animate-fade-in-up">
              <p className="font-bold">Lỗi (Error)</p>
              <p className="text-sm break-words">{error}</p>
              <button onClick={() => setError(null)} className="underline mt-2 text-xs font-bold">Đóng (Close)</button>
@@ -408,7 +408,7 @@ const App: React.FC = () => {
             <div className="flex items-center justify-center min-h-[60vh]">
               <ResultCard 
                 score={finalScore} 
-                total={gameData.gameType === GameType.SayItRight ? gameData.questions.length : gameData.questions.length * 2} 
+                total={(gameData.gameType === GameType.SayItRight || gameData.gameType === GameType.TypeToFly) ? gameData.questions.length : gameData.questions.length * 2} 
                 onRetry={() => { setFinalScore(null); }} 
                 onHome={handleReset}
               />
