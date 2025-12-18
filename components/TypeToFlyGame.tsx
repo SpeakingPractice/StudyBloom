@@ -151,7 +151,7 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         </div>
       </div>
 
-      {/* Typing Board - Adjusted to handle phrases */}
+      {/* Typing Board */}
       <div className="bg-white/95 rounded-[2rem] px-6 py-4 shadow-2xl text-center border-b-8 border-sky-100 max-w-lg mx-auto">
         <div className="flex flex-col items-center gap-1">
           <p className="text-[9px] font-black text-sky-300 uppercase tracking-widest">Target Words</p>
@@ -172,9 +172,13 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
               )
             })}
           </div>
-          <div className="px-3 py-1 bg-sky-50 rounded-xl text-sky-700/70 font-bold text-[10px] border border-sky-100 mt-2">
+          
+          {/* Vietnamese Meaning Display */}
+          <div className="px-4 py-2 bg-sky-50 rounded-xl text-sky-700 font-bold text-sm border border-sky-100 mt-3 animate-fade-in">
+            <span className="text-[10px] uppercase text-sky-400 block mb-0.5 tracking-tighter">Nghĩa (Definition)</span>
             {questions[currentIndex]?.explanation || "Bay cao nào!"}
           </div>
+
           <input 
             autoFocus 
             type="text" 

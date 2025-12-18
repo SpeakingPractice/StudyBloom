@@ -5,6 +5,7 @@ import { Button } from './Button';
 import { generateSpeech, evaluatePronunciation } from '../services/geminiService';
 
 interface SayItRightGameProps {
+  // Changed 'questions[]' to 'QuestionData[]' to fix reference error
   questions: QuestionData[];
   onComplete: (score: number) => void;
 }
@@ -37,17 +38,21 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
     setPrefetchedAudio(null);
     if (current) {
       const loadAudio = async () => {
-        const audioData = await generateSpeech(current.questionText);
-        if (audioData) {
-          const ctx = getAudioCtx();
-          const binaryString = window.atob(audioData);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-          const dataInt16 = new Int16Array(bytes.buffer);
-          const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
-          const channelData = buffer.getChannelData(0);
-          for (let i = 0; i < dataInt16.length; i++) channelData[i] = dataInt16[i] / 32768.0;
-          setPrefetchedAudio(buffer);
+        try {
+          const audioData = await generateSpeech(current.questionText);
+          if (audioData) {
+            const ctx = getAudioCtx();
+            const binaryString = window.atob(audioData);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+            const dataInt16 = new Int16Array(bytes.buffer);
+            const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
+            const channelData = buffer.getChannelData(0);
+            for (let i = 0; i < dataInt16.length; i++) channelData[i] = dataInt16[i] / 32768.0;
+            setPrefetchedAudio(buffer);
+          }
+        } catch (err) {
+          console.error("Audio prefetch failed:", err);
         }
       };
       loadAudio();
@@ -68,38 +73,73 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
 
   const startListening = () => {
     if (!Recognition) {
-      alert("Microphone not supported in this browser.");
+      alert("Trình duyệt này không hỗ trợ nhận diện giọng nói.");
       return;
     }
+
+    // If already listening, stop it manually
+    if (isListening) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      return;
+    }
+
+    // Clear old feedback and prepare for new session
+    setFeedback(null);
     setIsListening(true);
+    
+    // Clean up existing instance if any
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch(e) {}
+    }
+
     const recognition = new Recognition();
     recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
     recognition.onresult = async (event: any) => {
       const transcript = event.results[0][0].transcript;
       setIsListening(false);
       setIsEvaluating(true);
       
-      const result = await evaluatePronunciation(current.questionText, transcript);
-      setIsEvaluating(false);
-      
-      if (result) {
-        setFeedback({
-          isCorrect: result.isCorrect,
-          message: result.feedback,
-          advice: result.advice
-        });
-        if (result.isCorrect) {
-          setScore(s => s + 1);
-          setStreak(s => s + 1);
-        } else {
-          setStreak(0);
+      try {
+        const result = await evaluatePronunciation(current.questionText, transcript);
+        if (result) {
+          setFeedback({
+            isCorrect: result.isCorrect,
+            message: result.feedback,
+            advice: result.advice
+          });
+          if (result.isCorrect) {
+            setScore(s => s + 1);
+            setStreak(s => s + 1);
+          } else {
+            setStreak(0);
+          }
         }
+      } catch (err) {
+        console.error("Pronunciation evaluation failed:", err);
+      } finally {
+        setIsEvaluating(false);
       }
     };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognition.start();
-    recognitionRef.current = recognition;
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech Recognition Error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (err) {
+      console.error("Failed to start recognition:", err);
+      setIsListening(false);
+    }
   };
 
   const next = () => {
@@ -123,12 +163,12 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
         <div className="text-gray-400 font-bold text-[10px] uppercase tracking-tighter">Round {index + 1}/{questions.length}</div>
       </div>
 
-      {/* Target Word - Smaller for mobile, break-words for long words */}
+      {/* Target Word */}
       <h2 className="text-4xl md:text-5xl font-black text-[#2d3436] mb-4 tracking-tight drop-shadow-sm break-words leading-tight px-2">
         {current.questionText}
       </h2>
       
-      {/* Pronunciation & Meaning - Single Line Style */}
+      {/* Phonetic & Meaning */}
       <div className="space-y-1 mb-6 text-[#2d98da] font-bold">
         <p className="text-sm md:text-base">
           Phát âm: <span className="font-mono text-[#45aaf2]">/{current.phonetic || '...'}/</span>
@@ -138,7 +178,7 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
         </p>
       </div>
 
-      {/* Example Context Section */}
+      {/* Context Example */}
       {current.exampleSentence && (
         <div className="mb-8 px-4 py-3 bg-blue-50/50 rounded-2xl border border-blue-100/50">
           <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-1">Ví dụ (Context):</p>
@@ -148,34 +188,38 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
         </div>
       )}
 
-      {/* Interaction Buttons - Speaking First Design */}
-      <div className="flex flex-col items-center gap-4 mb-8">
-        <div className="flex justify-center gap-6">
-          {/* Listening Button (On demand) */}
-          <Button 
-            onClick={playModel} 
-            variant="outline" 
-            className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-lg border-4 border-white transition-all bg-white hover:bg-blue-50 active:scale-95 ${isModelPlaying ? 'animate-pulse ring-4 ring-blue-100' : ''}`}
-            title="Listen"
-          >
-            {isModelPlaying ? '🔊' : '🔈'}
-          </Button>
+      {/* Main Interaction Area */}
+      <div className="flex flex-col items-center gap-6 mb-8">
+        <div className="flex justify-center gap-8 md:gap-12">
+          {/* Audio Playback (Listen) */}
+          <div className="flex flex-col items-center gap-2">
+            <Button 
+              onClick={playModel} 
+              variant="outline" 
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-lg border-4 border-white transition-all bg-white hover:bg-blue-50 active:scale-95 ${isModelPlaying ? 'animate-pulse ring-4 ring-blue-100' : ''}`}
+              title="Nghe mẫu"
+            >
+              {isModelPlaying ? '🔊' : '🔈'}
+            </Button>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Nghe mẫu</span>
+          </div>
 
-          {/* Speaking Button (Active/Primary) */}
-          <Button 
-            onClick={startListening}
-            variant={isListening ? 'danger' : 'primary'}
-            disabled={isEvaluating}
-            className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-xl border-4 border-white transition-all ${isListening ? 'animate-ping' : 'hover:scale-110 active:scale-95'}`}
-            title="Speak"
-          >
-            {isEvaluating ? '⏳' : isListening ? '⏹️' : '🎙️'}
-          </Button>
+          {/* User Recording (Speak) */}
+          <div className="flex flex-col items-center gap-2">
+            <Button 
+              onClick={startListening}
+              variant={isListening ? 'danger' : 'primary'}
+              disabled={isEvaluating}
+              className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-xl border-4 border-white transition-all ${isListening ? 'animate-pulse scale-110 shadow-red-200' : 'hover:scale-105 active:scale-95'}`}
+              title="Nói ngay"
+            >
+              {isEvaluating ? '⏳' : isListening ? '⏹️' : '🎙️'}
+            </Button>
+            <span className={`text-[10px] font-black uppercase tracking-tighter ${isListening ? 'text-red-500 animate-pulse' : 'text-blue-500'}`}>
+              {isListening ? 'Đang nghe...' : 'Bắt đầu nói'}
+            </span>
+          </div>
         </div>
-        
-        <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] animate-pulse">
-           {isListening ? "Listening..." : isEvaluating ? "Evaluating..." : "LISTEN THEN SPEAK!"}
-        </p>
       </div>
 
       {/* Feedback Card */}
@@ -191,7 +235,7 @@ export const SayItRightGame: React.FC<SayItRightGameProps> = ({ questions, onCom
         </div>
       )}
 
-      {/* Navigation */}
+      {/* Navigation Controls */}
       <div className="flex flex-col items-center gap-6">
         {feedback?.isCorrect ? (
           <Button onClick={next} variant="secondary" size="lg" className="w-full md:w-auto px-12 text-base py-4 shadow-xl">

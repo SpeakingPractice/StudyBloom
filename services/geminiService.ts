@@ -83,7 +83,7 @@ const responseSchema = {
           speakingTarget: { type: Type.STRING },
           phonetic: { type: Type.STRING },
           meaning: { type: Type.STRING },
-          exampleSentence: { type: Type.STRING }, // Field for context
+          exampleSentence: { type: Type.STRING },
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -106,7 +106,11 @@ export const generateGameContent = async (
   switch (gameType) {
     case GameType.Grammar:
       specificInstruction = `10 grammar MCQs. Level ${diffLevel}. Use simple vocabulary for secondary.`;
-      if (subSkill === GrammarSubSkill.SentenceTrans) specificInstruction = `10 Sentence Transformation.`;
+      if (subSkill === GrammarSubSkill.SentenceTrans) {
+        specificInstruction = `10 Sentence Transformation tasks.
+        MANDATORY: For each task, provide 'questionText' (the original sentence), 'correctAnswer' (the target rewrite), and 'hint' (the first 2-3 words the student should start with).
+        MANDATORY: 'explanation' must be in Vietnamese and explain the grammar rule simply.`;
+      }
       break;
     case GameType.Listening:
       specificInstruction = `5 listening tasks. Level ${diffLevel}. Simple words for secondary.`;
@@ -117,27 +121,20 @@ export const generateGameContent = async (
     case GameType.TypeToFly:
       specificInstruction = `FOR FLAPPY BIRD TYPING GAME:
       1. Generate 20 English items.
-      2. MANDATORY: The 'questionText' MUST be exactly ONE word or at most TWO words (e.g., "apple", "run fast").
-      3. PROHIBITED: Do NOT include instructions like "Choose the meaning..." in 'questionText'.
-      4. DIFFICULTY: Start with VERY EASY items (id 1-5) and progress to harder items (id 16-20).`;
+      2. MANDATORY: The 'questionText' MUST be exactly ONE word or at most TWO words.
+      3. MANDATORY: The 'explanation' field MUST contain the Vietnamese meaning.`;
       break;
     case GameType.SayItRight:
       specificInstruction = `FOR PRONUNCIATION GAME (SAY IT RIGHT):
       1. Generate 10 items.
-      2. PROGRESSION:
-         - Items (1-4): EXACTLY ONE English word.
-         - Items (5-7): EXACTLY TWO English words (short phrase).
-         - Items (8-10): Short simple English sentence (max 5-6 words).
-      3. MANDATORY: Provide an 'exampleSentence' for EVERY item showing its use in a real context.
-      4. MANDATORY: 'questionText' must be ONLY the target text.
-      5. Provide phonetic IPA in 'phonetic' and Vietnamese in 'meaning'.
-      6. Grade Level: ${grade}.`;
+      2. MANDATORY: 'exampleSentence' for EVERY item showing its use.
+      3. Provide phonetic IPA in 'phonetic' and Vietnamese in 'meaning'.`;
       break;
     default:
       specificInstruction = `10 MCQs. Level ${diffLevel}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Output: JSON. All 'questionText' for SayItRight must be the target ONLY. SPEED: Fast.`;
+  const prompt = `Task: ${specificInstruction}. Output: JSON. All explanations and meanings MUST be in Vietnamese.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
@@ -152,6 +149,41 @@ export const generateGameContent = async (
   } catch (error: any) { throw error; }
 };
 
+export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      status: { type: Type.STRING, description: "Must be 'CORRECT', 'INCORRECT', or 'PARTIAL'" },
+      feedback: { type: Type.STRING, description: "Detailed feedback in Vietnamese" },
+      explanation: { type: Type.STRING, description: "Simple grammar explanation in Vietnamese" }
+    },
+    required: ["status", "feedback", "explanation"]
+  };
+  
+  const prompt = `
+  Analyze this English Sentence Transformation task.
+  Original: "${original}"
+  Expected Target: "${targetPattern}"
+  Student's Answer: "${studentAnswer}"
+
+  Instructions:
+  1. Compare the student's answer to the expected target. 
+  2. If it is grammatically correct and conveys the same meaning (even if capitalization/punctuation differs slightly), set status to "CORRECT".
+  3. MANDATORY: 'feedback' and 'explanation' MUST be in Vietnamese.
+  4. Be encouraging but precise. If the answer is correct, 'feedback' should confirm it.
+  5. If incorrect, explain why in simple Vietnamese.
+  `;
+
+  try {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 }
+    });
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch { return null; }
+};
+
 export const evaluatePronunciation = async (target: string, transcript: string) => {
   const schema = {
     type: Type.OBJECT,
@@ -163,7 +195,7 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     required: ["isCorrect", "feedback", "advice"]
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score pronunciation. Target: "${target}", Student: "${transcript}".`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score pronunciation. Target: "${target}", Student: "${transcript}". Advice in Vietnamese.`, {
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
@@ -182,7 +214,7 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing. Prompt: ${prompt}. Student: "${studentText}". Grade: ${grade}.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing in Vietnamese. Prompt: ${prompt}. Student: "${studentText}". Grade: ${grade}.`, {
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
@@ -201,26 +233,7 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score speech. Target: "${target}". Student: "${transcript}".`, {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 }
-    });
-    return JSON.parse(cleanJsonResponse(result.text));
-  } catch { return null; }
-};
-
-export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      status: { type: Type.STRING },
-      feedback: { type: Type.STRING },
-      explanation: { type: Type.STRING }
-    }
-  };
-  try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score sentence rewrite. Original: "${original}". Target: "${targetPattern}". Answer: "${studentAnswer}".`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score speech in Vietnamese. Target: "${target}". Student: "${transcript}".`, {
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
