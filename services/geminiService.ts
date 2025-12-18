@@ -114,7 +114,6 @@ export const generateGameContent = async (
       specificInstruction = `5 speaking tasks. Level ${diffLevel}. Simple words for secondary.`;
       break;
     case GameType.TypeToFly:
-      // UPDATED LOGIC: Strong negative constraints to prevent sentences.
       specificInstruction = `FOR FLAPPY BIRD TYPING GAME:
       1. Generate 20 English items.
       2. MANDATORY: The 'questionText' MUST be exactly ONE word or at most TWO words (e.g., "apple", "run fast").
@@ -124,19 +123,29 @@ export const generateGameContent = async (
       6. Provide a short Vietnamese meaning in 'explanation'.`;
       break;
     case GameType.SayItRight:
-      specificInstruction = `10 pronunciation words. Level ${diffLevel}.`;
+      // STRICT PROGRESSION LOGIC FOR PRONUNCIATION
+      specificInstruction = `FOR PRONUNCIATION GAME (SAY IT RIGHT):
+      1. Generate exactly 10 items for the student to speak.
+      2. PROGRESSION RULES:
+         - Items (id 1-4): MUST be exactly ONE English word.
+         - Items (id 5-7): MUST be exactly TWO English words (short phrase).
+         - Items (id 8-10): MUST be a very short, simple English sentence (max 5 words).
+      3. CRITICAL: The 'questionText' field MUST contain ONLY the target text to be pronounced.
+      4. DO NOT generate quiz questions like "Which word has a different sound?" or "Choose the correct word".
+      5. Provide IPA in 'phonetic' and Vietnamese translation in 'meaning'.
+      6. Grade Level: ${grade}. All vocabulary must be age-appropriate.`;
       break;
     default:
       specificInstruction = `10 MCQs. Level ${diffLevel}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Output: JSON format only. All 'questionText' for TypeToFly must be 1-2 words only. SPEED: Fast response.`;
+  const prompt = `Task: ${specificInstruction}. Output: JSON format only. All 'questionText' for SayItRight must be the spoken target ONLY. SPEED: Fast response.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.3, // Lower temperature for more deterministic/strict adherence
+      temperature: 0.2, // Low temperature to ensure strict adherence to structure
       thinkingConfig: { thinkingBudget: 0 }
     });
     
