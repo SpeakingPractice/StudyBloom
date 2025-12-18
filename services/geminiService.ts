@@ -114,10 +114,14 @@ export const generateGameContent = async (
       specificInstruction = `5 speaking tasks. Level ${diffLevel}. Simple words for secondary.`;
       break;
     case GameType.TypeToFly:
-      // UPDATED STRICT LOGIC: 1-2 words only, sorted by difficulty.
-      specificInstruction = isSecondary 
-        ? `Generate 20 English items. Each item MUST be exactly ONE word or at most TWO words (phrase). NO full sentences. Difficulty: EASY (A1-A2). Order the 20 items from easiest to slightly more complex.`
-        : `Generate 20 English items. Each item MUST be exactly ONE word or at most TWO words (phrase). NO full sentences. Difficulty: PROGRESSIVE (A1 at start to B2 at end). The items MUST get noticeably harder as the list goes on.`;
+      // UPDATED LOGIC: Strong negative constraints to prevent sentences.
+      specificInstruction = `FOR FLAPPY BIRD TYPING GAME:
+      1. Generate 20 English items.
+      2. MANDATORY: The 'questionText' MUST be exactly ONE word or at most TWO words (e.g., "apple", "run fast").
+      3. PROHIBITED: Do NOT include instructions like "Choose the meaning...", "What is...", or any full sentences in 'questionText'.
+      4. DIFFICULTY: Start with VERY EASY items (id 1-5) and progress to harder items (id 16-20). 
+      5. Grade Level: ${grade}. Textbook: ${specificTextbook || 'General'}.
+      6. Provide a short Vietnamese meaning in 'explanation'.`;
       break;
     case GameType.SayItRight:
       specificInstruction = `10 pronunciation words. Level ${diffLevel}.`;
@@ -126,13 +130,13 @@ export const generateGameContent = async (
       specificInstruction = `10 MCQs. Level ${diffLevel}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output: JSON. Lang: Vietnamese explanation. SPEED: Fast response needed.`;
+  const prompt = `Task: ${specificInstruction}. Output: JSON format only. All 'questionText' for TypeToFly must be 1-2 words only. SPEED: Fast response.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.5,
+      temperature: 0.3, // Lower temperature for more deterministic/strict adherence
       thinkingConfig: { thinkingBudget: 0 }
     });
     
