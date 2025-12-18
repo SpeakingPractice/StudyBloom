@@ -17,7 +17,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   // Input mode state
   const [userInput, setUserInput] = useState("");
   const [isInputCorrect, setIsInputCorrect] = useState<boolean | null>(null);
-  const [showSuggestion, setShowSuggestion] = useState(false);
+  const [hintCount, setHintCount] = useState(0); // Tracks how many words of hint to show
 
   const currentQuestion = questions[currentIndex];
   const isInputMode = subSkill === GrammarSubSkill.SentenceTrans;
@@ -28,7 +28,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     setShowFeedback(false);
     setUserInput("");
     setIsInputCorrect(null);
-    setShowSuggestion(false);
+    setHintCount(0);
   }, [currentIndex]);
 
   if (!currentQuestion) return null;
@@ -81,6 +81,22 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     return "";
   };
 
+  const getHintText = () => {
+    if (!currentQuestion.correctAnswer) return "";
+    const words = currentQuestion.correctAnswer.split(' ');
+    // Default hint (starting words)
+    let initialHint = currentQuestion.hint || "";
+    if (hintCount === 0) return initialHint;
+
+    // Incremental hint
+    return words.slice(0, Math.min(words.length, hintCount + 2)).join(' ') + "...";
+  };
+
+  const handleShowHint = () => {
+    if (hintCount === 0) setHintCount(2);
+    else setHintCount(prev => prev + 1);
+  };
+
   return (
     <div className="max-w-2xl mx-auto w-full">
       {/* Progress Bar */}
@@ -96,12 +112,19 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
           <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase">
             Question {currentIndex + 1}/{questions.length}
           </span>
-          <span className="text-gray-400 font-bold text-sm">{currentQuestion.topic}</span>
+          <span className="text-gray-400 font-bold text-sm tracking-tight">{currentQuestion.topic}</span>
         </div>
 
-        <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-8 leading-relaxed text-center">
-          {currentQuestion.questionText}
-        </h3>
+        <div className="text-center mb-8">
+           <h3 className="text-xl md:text-2xl font-black text-gray-800 leading-relaxed">
+            {currentQuestion.questionText}
+          </h3>
+          {isInputMode && currentQuestion.hint && (
+            <p className="mt-4 text-blue-500 font-bold text-lg animate-fade-in">
+              Rewrite starting with: <span className="underline decoration-2 underline-offset-4">{currentQuestion.hint}</span>
+            </p>
+          )}
+        </div>
 
         {/* RENDER FOR INPUT MODE (Sentence Transformation) */}
         {isInputMode ? (
@@ -124,27 +147,31 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
                     Kiểm tra (Check)
                  </Button>
                  <Button 
-                   onClick={() => setShowSuggestion(true)} 
+                   onClick={handleShowHint} 
                    variant="secondary" 
-                   className="bg-yellow-500 hover:bg-yellow-600 border-yellow-700"
+                   className="bg-yellow-500 hover:bg-yellow-600 border-yellow-700 whitespace-nowrap"
                  >
                     Gợi ý (Suggest) 💡
                  </Button>
               </div>
             )}
 
-            {showSuggestion && !showFeedback && (
-              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl animate-fade-in">
-                <p className="text-yellow-800 font-bold mb-1">Gợi ý đáp án (Suggested Answer):</p>
-                <p className="text-gray-700 italic select-all">{currentQuestion.correctAnswer}</p>
-                <p className="text-xs text-yellow-600 mt-2">* Bạn có thể sao chép đáp án này nếu quá khó (You can copy this answer).</p>
+            {hintCount > 0 && !showFeedback && (
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl animate-fade-in shadow-sm">
+                <p className="text-yellow-800 font-bold mb-1 text-xs uppercase tracking-wider">Từ tiếp theo (Next words):</p>
+                <p className="text-gray-700 text-lg italic font-medium">{getHintText()}</p>
+                <p className="text-[10px] text-yellow-600 mt-2 italic">Bấm "Gợi ý" lần nữa để xem thêm từ.</p>
               </div>
             )}
             
-            {showFeedback && isInputCorrect === false && (
-              <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
-                 <p className="text-red-700 font-bold">Đáp án đúng (Correct Answer):</p>
-                 <p className="text-gray-800 text-lg">{currentQuestion.correctAnswer}</p>
+            {showFeedback && (
+              <div className={`p-5 rounded-2xl border-2 ${isInputCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                 <p className={`font-black uppercase text-xs tracking-widest mb-2 ${isInputCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                    {isInputCorrect ? 'Tuyệt vời!' : 'Đáp án đúng (Correct Answer):'}
+                 </p>
+                 <p className={`text-lg font-bold ${isInputCorrect ? 'text-green-800' : 'text-gray-800'}`}>
+                    {currentQuestion.correctAnswer}
+                 </p>
               </div>
             )}
           </div>
@@ -168,7 +195,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
         {showFeedback && (
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 animate-fade-in">
             <p className="font-bold text-blue-800 mb-1">Giải thích (Explanation):</p>
-            <p className="text-blue-700">{currentQuestion.explanation}</p>
+            <p className="text-blue-700 text-sm leading-relaxed">{currentQuestion.explanation}</p>
           </div>
         )}
 

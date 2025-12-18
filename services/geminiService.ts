@@ -81,6 +81,7 @@ const responseSchema = {
           correctAnswer: { type: Type.STRING },
           explanation: { type: Type.STRING },
           topic: { type: Type.STRING },
+          hint: { type: Type.STRING },
           listeningScript: { type: Type.STRING },
           speakingTarget: { type: Type.STRING },
         },
@@ -106,9 +107,12 @@ export const generateGameContent = async (
 
   switch (gameType) {
     case GameType.Grammar:
-      specificInstruction = `Create 10 mixed grammar Multiple Choice Questions.`;
+      specificInstruction = `Create 10 mixed grammar Multiple Choice Questions. Topic must be in format "English Topic (Vietnamese Topic)".`;
       if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `Create 10 Sentence Transformation Questions. Provide original and starting words.`;
+        specificInstruction = `Create 10 Sentence Transformation Questions. 
+        - Topic MUST be in format "English Name (Vietnamese Name)" (e.g. "Passive Voice (Bị động)", "Reported Speech (Câu gián tiếp)", "Inversion (Đảo ngữ)"). 
+        - The 'hint' field MUST contain the first 2-3 words of the 'correctAnswer' to guide the student.
+        - 'questionText' should be the original sentence only.`;
       }
       break;
     case GameType.Listening:

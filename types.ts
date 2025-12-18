@@ -34,6 +34,7 @@ export interface QuestionData {
   correctAnswer?: string; // Used for auto-checking
   explanation: string; 
   topic: string;
+  hint?: string; // Guidance for what to write next
   // Specific fields for new modes
   listeningScript?: string; // For Listening: The text to be read aloud
   speakingTarget?: string; // For Speaking: The target sentence to say
