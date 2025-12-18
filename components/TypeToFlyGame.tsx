@@ -22,8 +22,9 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
   
   /**
    * PHYSICS
+   * Gravity increased by 70%: 0.00065 * 1.7 = 0.001105
    */
-  const gravity = 0.00065;
+  const gravity = 0.001105; 
   const liftPerChar = -0.15; // Small lift for each correct character
   const liftPerWord = -0.3; // Extra lift for completing the word
   const maxUpwardVelocity = -1.1;
