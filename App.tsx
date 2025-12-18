@@ -395,9 +395,6 @@ const App: React.FC = () => {
             <div className="animate-fade-in">
                <div className="flex items-center justify-between mb-6 max-w-3xl mx-auto">
                  <Button onClick={handleReset} variant="outline" size="sm" className="bg-white/80 border-white shadow-sm">Home</Button>
-                 <span className="text-xs bg-white/80 px-3 py-1 rounded-full border border-white/50 shadow-sm text-gray-600 truncate max-w-[200px] backdrop-blur-sm">
-                    {gameData.textbookContext} {gameData.subSkill ? `- ${gameData.subSkill}` : ''}
-                 </span>
                </div>
                {renderGameComponent()}
             </div>

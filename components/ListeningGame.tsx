@@ -14,11 +14,21 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   const [isPlaying, setIsPlaying] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [readingCountdown, setReadingCountdown] = useState(15);
+  const [isPrefetching, setIsPrefetching] = useState(false);
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const prefetchedBufferRef = useRef<AudioBuffer | null>(null);
 
   const current = questions[index];
+
+  // Initialize AudioContext
+  const getAudioCtx = () => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioCtxRef.current;
+  };
 
   useEffect(() => {
     return () => {
@@ -26,10 +36,16 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
     };
   }, []);
 
+  // Prefetch audio whenever current question changes
   useEffect(() => {
     stopAudio();
     setReadingCountdown(15);
-  }, [index]);
+    prefetchedBufferRef.current = null;
+    
+    if (current?.listeningScript) {
+      prefetchAudio(current.listeningScript);
+    }
+  }, [index, current?.id]);
 
   useEffect(() => {
     if (readingCountdown > 0) {
@@ -47,7 +63,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
     return bytes;
   };
 
-  const decodeAudioData = async (data: Uint8Array, ctx: AudioContext): Promise<AudioBuffer> => {
+  const decodeAudioDataToBuffer = async (data: Uint8Array, ctx: AudioContext): Promise<AudioBuffer> => {
     const dataInt16 = new Int16Array(data.buffer);
     const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
     const channelData = buffer.getChannelData(0);
@@ -57,9 +73,28 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
     return buffer;
   };
 
+  const prefetchAudio = async (script: string) => {
+    setIsPrefetching(true);
+    try {
+      const audioData = await generateSpeech(script);
+      if (audioData) {
+        const ctx = getAudioCtx();
+        const bytes = decodeBase64(audioData);
+        const buffer = await decodeAudioDataToBuffer(bytes, ctx);
+        prefetchedBufferRef.current = buffer;
+      }
+    } catch (e) {
+      console.error("Prefetch Error:", e);
+    } finally {
+      setIsPrefetching(false);
+    }
+  };
+
   const stopAudio = () => {
     if (currentSourceRef.current) {
-      currentSourceRef.current.stop();
+      try {
+        currentSourceRef.current.stop();
+      } catch (e) {}
       currentSourceRef.current = null;
     }
     setIsPlaying(false);
@@ -68,32 +103,35 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   const playAudio = async () => {
     if (!current.listeningScript || isPlaying) return;
     
+    // Check if audio is already prefetched
+    if (prefetchedBufferRef.current) {
+      startPlayback(prefetchedBufferRef.current);
+    } else {
+      // Fallback: Fetch now if not ready (high latency)
+      setIsPlaying(true);
+      const audioData = await generateSpeech(current.listeningScript);
+      if (audioData) {
+        const ctx = getAudioCtx();
+        const bytes = decodeBase64(audioData);
+        const buffer = await decodeAudioDataToBuffer(bytes, ctx);
+        prefetchedBufferRef.current = buffer;
+        startPlayback(buffer);
+      } else {
+        alert("Lỗi tạo âm thanh (TTS Error).");
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const startPlayback = (buffer: AudioBuffer) => {
+    const ctx = getAudioCtx();
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.onended = () => setIsPlaying(false);
+    currentSourceRef.current = source;
     setIsPlaying(true);
-    const audioData = await generateSpeech(current.listeningScript);
-    
-    if (!audioData) {
-      alert("Lỗi tạo âm thanh (TTS Error).");
-      setIsPlaying(false);
-      return;
-    }
-
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-
-    try {
-      const bytes = decodeBase64(audioData);
-      const buffer = await decodeAudioData(bytes, audioCtxRef.current);
-      const source = audioCtxRef.current.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtxRef.current.destination);
-      source.onended = () => setIsPlaying(false);
-      currentSourceRef.current = source;
-      source.start();
-    } catch (e) {
-      console.error(e);
-      setIsPlaying(false);
-    }
+    source.start(0);
   };
 
   const handleAnswer = (option: string) => {
@@ -131,7 +169,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
                 className={`rounded-full p-8 transition-all shadow-xl ${isPlaying ? 'bg-indigo-100 text-indigo-400 animate-pulse' : 'bg-blue-600 text-white hover:scale-110 active:scale-95'}`}
               >
                 <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 5.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 </svg>
               </button>
               <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
