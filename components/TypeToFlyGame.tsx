@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { QuestionData } from '../types';
 import { Button } from './Button';
@@ -31,13 +32,14 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
 
   /**
    * Robust normalization for match verification.
-   * Strips case, spaces, and non-alphanumeric junk.
+   * Strips non-alphanumeric junk but KEEPS SPACES.
    */
   const normalizeForMatch = (str: string) => {
     return str
       .normalize('NFC')
       .toLowerCase()
-      .replace(/[^a-z0-9]/gi, '')
+      .replace(/[^a-z0-9 ]/gi, '') // Keep spaces
+      .replace(/\s+/g, ' ') // Collapse multiple spaces
       .trim();
   };
 
@@ -149,27 +151,40 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         </div>
       </div>
 
-      {/* Typing Board - Reduced by 30% */}
-      <div className="bg-white/95 rounded-[2rem] px-6 py-4 shadow-2xl text-center border-b-8 border-sky-100 max-w-sm mx-auto">
+      {/* Typing Board - Adjusted to handle phrases */}
+      <div className="bg-white/95 rounded-[2rem] px-6 py-4 shadow-2xl text-center border-b-8 border-sky-100 max-w-lg mx-auto">
         <div className="flex flex-col items-center gap-1">
-          <p className="text-[9px] font-black text-sky-300 uppercase tracking-widest">Target Word</p>
-          <div className="flex justify-center items-center text-3xl font-black tracking-tight text-slate-800">
+          <p className="text-[9px] font-black text-sky-300 uppercase tracking-widest">Target Words</p>
+          <div className="flex flex-wrap justify-center items-center text-3xl font-black tracking-tight text-slate-800 gap-x-1">
             {currentWord.split('').map((char, i) => {
               const userChar = userInput[i];
               const isTyped = i < userInput.length;
               const isCorrect = isTyped && char.toLowerCase() === userChar.toLowerCase();
+              
+              if (char === ' ') {
+                return <span key={i} className="mx-2 bg-slate-100 h-6 w-4 rounded-md"></span>;
+              }
+
               return (
-                <span key={i} className={`inline-block ${isTyped ? (isCorrect ? 'text-sky-500' : 'text-rose-500 scale-110') : 'text-slate-200'}`}>
+                <span key={i} className={`inline-block transition-all ${isTyped ? (isCorrect ? 'text-sky-500' : 'text-rose-500 scale-110') : 'text-slate-200'}`}>
                   {char}
                 </span>
               )
             })}
           </div>
-          <div className="px-3 py-1 bg-sky-50 rounded-xl text-sky-700/70 font-bold text-[10px] border border-sky-100 mt-1">
+          <div className="px-3 py-1 bg-sky-50 rounded-xl text-sky-700/70 font-bold text-[10px] border border-sky-100 mt-2">
             {questions[currentIndex]?.explanation || "Bay cao nào!"}
           </div>
-          <input autoFocus type="text" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false" value={userInput} onChange={handleInputChange}
-            className="w-full text-center p-2.5 rounded-xl border-2 border-slate-50 focus:border-sky-300 transition-all text-xl font-black text-sky-600 uppercase mt-2"
+          <input 
+            autoFocus 
+            type="text" 
+            autoComplete="off" 
+            autoCorrect="off" 
+            autoCapitalize="off" 
+            spellCheck="false" 
+            value={userInput} 
+            onChange={handleInputChange}
+            className="w-full text-center p-2.5 rounded-xl border-2 border-slate-50 focus:border-sky-300 transition-all text-xl font-black text-sky-600 uppercase mt-4"
             placeholder="..." />
           <div className="mt-2 w-40 h-1 bg-slate-100 rounded-full overflow-hidden">
              <div className="h-full bg-sky-400" style={{ width: `${((currentIndex) / questions.length) * 100}%` }} />
