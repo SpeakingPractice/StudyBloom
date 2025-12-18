@@ -14,11 +14,11 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   const [isPlaying, setIsPlaying] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [readingCountdown, setReadingCountdown] = useState(15);
-  const [isPrefetching, setIsPrefetching] = useState(false);
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const prefetchedBufferRef = useRef<AudioBuffer | null>(null);
+  const nextPrefetchedBufferRef = useRef<AudioBuffer | null>(null);
 
   const current = questions[index];
 
@@ -36,16 +36,28 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
     };
   }, []);
 
-  // Prefetch audio whenever current question changes
+  // Handle prefetching when index changes
   useEffect(() => {
     stopAudio();
     setReadingCountdown(15);
-    prefetchedBufferRef.current = null;
     
-    if (current?.listeningScript) {
-      prefetchAudio(current.listeningScript);
+    // If we already have the buffer from a previous next-prefetch, use it
+    if (nextPrefetchedBufferRef.current) {
+      prefetchedBufferRef.current = nextPrefetchedBufferRef.current;
+      nextPrefetchedBufferRef.current = null;
+    } else {
+      prefetchedBufferRef.current = null;
+      if (current?.listeningScript) {
+        prefetchAudio(current.listeningScript, true);
+      }
     }
-  }, [index, current?.id]);
+
+    // Prefetch the next question in the background for zero-latency transition
+    const nextQ = questions[index + 1];
+    if (nextQ?.listeningScript) {
+      prefetchAudio(nextQ.listeningScript, false);
+    }
+  }, [index]);
 
   useEffect(() => {
     if (readingCountdown > 0) {
@@ -73,20 +85,18 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
     return buffer;
   };
 
-  const prefetchAudio = async (script: string) => {
-    setIsPrefetching(true);
+  const prefetchAudio = async (script: string, isCurrent: boolean) => {
     try {
       const audioData = await generateSpeech(script);
       if (audioData) {
         const ctx = getAudioCtx();
         const bytes = decodeBase64(audioData);
         const buffer = await decodeAudioDataToBuffer(bytes, ctx);
-        prefetchedBufferRef.current = buffer;
+        if (isCurrent) prefetchedBufferRef.current = buffer;
+        else nextPrefetchedBufferRef.current = buffer;
       }
     } catch (e) {
       console.error("Prefetch Error:", e);
-    } finally {
-      setIsPrefetching(false);
     }
   };
 
@@ -101,23 +111,22 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   };
 
   const playAudio = async () => {
-    if (!current.listeningScript || isPlaying) return;
+    if (!current?.listeningScript || isPlaying) return;
     
-    // Check if audio is already prefetched
+    // Attempt immediate playback from prefetched buffer
     if (prefetchedBufferRef.current) {
       startPlayback(prefetchedBufferRef.current);
     } else {
-      // Fallback: Fetch now if not ready (high latency)
+      // Fallback only if prefetch failed or didn't finish
       setIsPlaying(true);
       const audioData = await generateSpeech(current.listeningScript);
       if (audioData) {
         const ctx = getAudioCtx();
         const bytes = decodeBase64(audioData);
         const buffer = await decodeAudioDataToBuffer(bytes, ctx);
-        prefetchedBufferRef.current = buffer;
         startPlayback(buffer);
       } else {
-        alert("Lỗi tạo âm thanh (TTS Error).");
+        alert("Lỗi âm thanh. Hãy thử lại.");
         setIsPlaying(false);
       }
     }

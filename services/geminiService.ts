@@ -38,7 +38,6 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
-    // Highly specific prompt to ensure the voice characteristics requested by the user
     const systemInstruction = `
       Act as a voice actor with a natural, human-like, and inspiring voice.
       Rules for delivery:
@@ -107,16 +106,16 @@ export const generateGameContent = async (
 
   switch (gameType) {
     case GameType.Grammar:
-      specificInstruction = `Create 5 mixed grammar Multiple Choice Questions.`;
+      specificInstruction = `Create 10 mixed grammar Multiple Choice Questions.`;
       if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `Create 5 Sentence Transformation Questions. Provide original and starting words.`;
+        specificInstruction = `Create 10 Sentence Transformation Questions. Provide original and starting words.`;
       }
       break;
     case GameType.Listening:
-      specificInstruction = `Create 2 listening challenges. 'listeningScript' MUST be inspiring and warm. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 5 listening challenges. 'listeningScript' MUST be inspiring and warm. ${gradeLevelInstruction}`;
       break;
     case GameType.Speaking:
-      specificInstruction = `Create 4 speaking challenges. 'speakingTarget' MUST be NATURAL SPOKEN ENGLISH with contractions. ${gradeLevelInstruction}`;
+      specificInstruction = `Create 5 speaking challenges. 'speakingTarget' MUST be NATURAL SPOKEN ENGLISH with contractions. ${gradeLevelInstruction}`;
       break;
     case GameType.Writing:
       specificInstruction = `Create 1 writing challenge. 
