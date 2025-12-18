@@ -1,9 +1,11 @@
+
 import { GradeLevel } from './types';
 
 // Map grades to likely textbooks based on MOET curriculum trends
 export const TEXTBOOKS_BY_GRADE: Record<string, string[]> = {
   'Secondary': [
     'Global Success (6-9)',
+    'Achiever (Smart Achiever)',
     'Friends Plus',
     'i-Learn Smart World',
     'Right On!',

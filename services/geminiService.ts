@@ -1,3 +1,4 @@
+
 import { Type } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
@@ -26,7 +27,6 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    // Detect quota exceeded via status code or error message
     if (response.status === 429) {
       throw new Error("QUOTA_EXCEEDED");
     }
@@ -44,47 +44,33 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
  */
 async function callGeminiWithFallback(defaultModel: string, contents: any, config: any) {
   let lastError = null;
-  
-  // Try models in priority order
   for (const model of FALLBACK_MODELS) {
     try {
       return await callGeminiProxy(model, contents, config);
     } catch (error: any) {
       lastError = error;
       if (error.message === "QUOTA_EXCEEDED") {
-        console.warn(`Quota exceeded for ${model}. Rerouting to fallback model...`);
-        continue; // Silent retry with next model
+        continue;
       }
-      throw error; // Immediate exit for other errors
+      throw error;
     }
   }
-  
-  throw lastError || new Error("Dịch vụ AI đang tạm thời gián đoạn do giới hạn lưu lượng.");
+  throw lastError || new Error("Dịch vụ AI đang tạm thời gián đoạn.");
 }
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
-    const systemInstruction = `
-      Act as a voice actor with a natural, human-like, and inspiring voice.
-      Rules: Clear delivery, natural pauses, moderate pace.
-    `;
-
-    // Multimodal models require structured contents
     const contents = [{
-      parts: [{ text: `${systemInstruction}\n\nRead the following text clearly: "${text}"` }]
+      parts: [{ text: `Read clearly: "${text}"` }]
     }];
-
-    // TTS specific model
     const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", contents, {
       responseModalities: ["AUDIO"],
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } }
       }
     });
-    
     return result.audio || null;
   } catch (error) {
-    console.error("TTS Error:", error);
     return null;
   }
 };
@@ -125,43 +111,44 @@ export const generateGameContent = async (
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
   let specificInstruction = "";
   const gradeLevelInstruction = parseInt(grade.replace('Grade ', '')) <= 9 
-    ? "Difficulty: Secondary School (A1-A2/B1). Simple vocabulary."
-    : "Difficulty: High School (B1+/B2). Natural B2 vocabulary.";
+    ? "Difficulty: Secondary School (A1-A2 level). ONLY simple, high-frequency vocabulary. No complex idioms."
+    : "Difficulty: High School (B1-B2 level). Natural vocabulary.";
 
   switch (gameType) {
     case GameType.Grammar:
-      specificInstruction = `Create 10 mixed grammar Multiple Choice Questions. Topic must be in format "English Topic (Vietnamese Topic)".`;
+      specificInstruction = `10 grammar MCQs.`;
       if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `Create 10 Sentence Transformation Questions. The 'hint' field MUST contain the first 2-3 words of the 'correctAnswer'.`;
+        specificInstruction = `10 Sentence Transformation Questions. Hint must be first 2 words.`;
       }
       break;
     case GameType.Listening:
-      specificInstruction = `Create 5 listening challenges. 'listeningScript' MUST be inspiring. ${gradeLevelInstruction}`;
+      specificInstruction = `5 listening tasks. ${gradeLevelInstruction}`;
       break;
     case GameType.Speaking:
-      specificInstruction = `Create 5 speaking challenges. ${gradeLevelInstruction}`;
+      specificInstruction = `5 speaking tasks. ${gradeLevelInstruction}`;
       break;
     case GameType.Writing:
-      specificInstruction = `Create 1 writing challenge paragraph topic. ${gradeLevelInstruction}`;
+      specificInstruction = `1 simple paragraph topic. ${gradeLevelInstruction}`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `Create 20 UNIQUE vocabulary words for ${grade}. questionText must be strictly the word only.`;
+      specificInstruction = `20 simple words for typing practice.`;
       break;
     case GameType.SayItRight:
-      specificInstruction = `Create 10 UNIQUE pronunciation words for ${grade}.`;
+      specificInstruction = `10 common words for pronunciation.`;
       break;
   }
 
-  const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Output: JSON only. Explanations in Vietnamese. Ensure all questionText strings are clean and trimmed.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'MOET Standard'}. Language: Vietnamese explanations. Format: JSON.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.8,
+      temperature: 0.7,
+      thinkingConfig: { thinkingBudget: 0 } // SPEED OPTIMIZATION: Disable thinking
     });
-    const parsed = JSON.parse(cleanJsonResponse(result.text));
     
+    const parsed = JSON.parse(cleanJsonResponse(result.text));
     if (parsed.questions) {
       parsed.questions = parsed.questions.map((q: QuestionData) => ({
         ...q,
@@ -169,7 +156,6 @@ export const generateGameContent = async (
         correctAnswer: q.correctAnswer?.trim()
       }));
     }
-    
     return parsed;
   } catch (error: any) {
     throw error;
@@ -182,16 +168,15 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     properties: {
       isCorrect: { type: Type.BOOLEAN },
       feedback: { type: Type.STRING },
-      score: { type: Type.INTEGER },
       advice: { type: Type.STRING }
     },
-    required: ["isCorrect", "feedback", "score", "advice"]
+    required: ["isCorrect", "feedback", "advice"]
   };
-  const prompt = `Evaluate pronunciation: Target "${target}", Student "${transcript}". Be encouraging.`;
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score pronunciation. Target: "${target}", Student: "${transcript}".`, {
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 }
     });
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error) {
@@ -200,7 +185,7 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
 };
 
 export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
-  const gradingSchema = {
+  const schema = {
     type: Type.OBJECT,
     properties: {
       score: { type: Type.INTEGER },
@@ -209,9 +194,10 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing for ${grade} student. Prompt: ${prompt}. Answer: "${studentText}".`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing for ${grade}. Prompt: ${prompt}. Answer: "${studentText}".`, {
       responseMimeType: "application/json",
-      responseSchema: gradingSchema
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 }
     });
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
@@ -220,19 +206,19 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
 };
 
 export const evaluateSpeaking = async (target: string, transcript: string, grade: string) => {
-  const speakingGradingSchema = {
+  const schema = {
     type: Type.OBJECT,
     properties: {
       score: { type: Type.INTEGER },
       feedback: { type: Type.STRING },
-      correctnessLevel: { type: Type.STRING, enum: ["EXCELLENT", "GOOD", "NEEDS_IMPROVEMENT"] }
-    },
-    required: ["score", "feedback", "correctnessLevel"]
+      correctnessLevel: { type: Type.STRING }
+    }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Evaluate speech. Target: "${target}". Transcript: "${transcript}".`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score speech. Target: "${target}". Student: "${transcript}".`, {
       responseMimeType: "application/json",
-      responseSchema: speakingGradingSchema
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 }
     });
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
@@ -244,21 +230,16 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
   const schema = {
     type: Type.OBJECT,
     properties: {
-      status: { type: Type.STRING, enum: ["CORRECT", "CORRECT_DIFFERENT_STRUCTURE", "INCORRECT"] },
+      status: { type: Type.STRING },
       feedback: { type: Type.STRING },
-      isGrammaticallyCorrect: { type: Type.BOOLEAN },
-      meaningMaintained: { type: Type.BOOLEAN },
       explanation: { type: Type.STRING }
-    },
-    required: ["status", "feedback", "isGrammaticallyCorrect", "meaningMaintained", "explanation"]
+    }
   };
-
-  const prompt = `Evaluate transformation. Original: "${original}". Target Pattern: "${targetPattern}". Student: "${studentAnswer}".`;
-
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score transformation. Original: "${original}". Target: "${targetPattern}". Student: "${studentAnswer}".`, {
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 }
     });
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error) {
