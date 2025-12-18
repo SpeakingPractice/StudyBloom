@@ -135,6 +135,12 @@ export const generateGameContent = async (
       - explanation: Vietnamese translation and a simple English definition.
       - topic: The vocabulary category.`;
       break;
+    case GameType.SayItRight:
+      specificInstruction = `Create 10 pronunciation targets (words or short phrases) for ${grade}. 
+      - questionText: The target text to pronounce.
+      - explanation: Phonetic transcription (IPA) and a short Vietnamese meaning.
+      - topic: The phonics focus (e.g. "Ending Sounds", "Vowels").`;
+      break;
   }
 
   const prompt = `Expert English Teacher for Vietnam MOET. Grade: ${grade}. Task: ${specificInstruction}. Output: JSON only. Explanations in Vietnamese.`;
@@ -148,6 +154,41 @@ export const generateGameContent = async (
     return JSON.parse(cleanJsonResponse(result.text));
   } catch (error: any) {
     throw error;
+  }
+};
+
+export const evaluatePronunciation = async (target: string, transcript: string) => {
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      isCorrect: { type: Type.BOOLEAN },
+      feedback: { type: Type.STRING },
+      score: { type: Type.INTEGER },
+      advice: { type: Type.STRING }
+    },
+    required: ["isCorrect", "feedback", "score", "advice"]
+  };
+  const prompt = `
+    Act as a friendly English Phonics coach.
+    Target: "${target}"
+    Student Spoke: "${transcript}"
+    
+    Rules:
+    - Compare transcription to target.
+    - Be low-pressure and encouraging. 
+    - If it's mostly correct, mark isCorrect: true.
+    - Provide a short, fun Vietnamese feedback (e.g. "Tuyệt vời!", "Gần đúng rồi!").
+    - Point out one tiny thing to improve in 'advice'.
+    - Score is 0-100. Confidence and effort more than perfect accuracy.
+  `;
+  try {
+    const result = await callGeminiProxy("gemini-3-flash-preview", prompt, {
+      responseMimeType: "application/json",
+      responseSchema: schema
+    });
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch (error) {
+    return null;
   }
 };
 

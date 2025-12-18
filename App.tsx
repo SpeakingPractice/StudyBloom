@@ -9,6 +9,7 @@ import { ListeningGame } from './components/ListeningGame';
 import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
+import { SayItRightGame } from './components/SayItRightGame';
 import { ApiKeyModal } from './components/ApiKeyModal';
 
 // Helper icons
@@ -109,6 +110,14 @@ const App: React.FC = () => {
     setError(null);
   };
 
+  const splitGameLabel = (label: string) => {
+    const parts = label.split(' (');
+    if (parts.length > 1) {
+      return { title: parts[0], sub: `(${parts[1]}` };
+    }
+    return { title: label, sub: '' };
+  };
+
   const renderGameComponent = () => {
     if (!gameData) return null;
     
@@ -128,6 +137,8 @@ const App: React.FC = () => {
         return <QuizGame {...commonProps} subSkill={gameData.subSkill} />;
       case GameType.TypeToFly:
         return <TypeToFlyGame {...commonProps} />;
+      case GameType.SayItRight:
+        return <SayItRightGame {...commonProps} />;
       default:
         return <QuizGame {...commonProps} />;
     }
@@ -285,23 +296,28 @@ const App: React.FC = () => {
             <div>
               <label className="block text-gray-700 font-bold mb-3 uppercase text-xs tracking-wider">Kỹ năng (Skill)</label>
               <div className="grid grid-cols-2 gap-3 mb-6">
-                {Object.values(GameType).map((type) => (
-                  <Button 
-                    key={type}
-                    variant={selectedGameType === type ? 'primary' : 'outline'} 
-                    onClick={() => {
-                        setSelectedGameType(type);
-                        if (type !== GameType.Grammar) setSelectedSubSkill(null);
-                        else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz);
-                    }}
-                    className={`text-sm py-4 h-full ${type === GameType.TypeToFly ? 'bg-amber-500 hover:bg-amber-600 border-amber-700 text-white shadow-amber-500/30' : ''}`}
-                  >
-                    <div className="flex flex-col items-center">
-                       {type === GameType.TypeToFly && <span className="text-lg mb-1">🚀</span>}
-                       {type}
-                    </div>
-                  </Button>
-                ))}
+                {Object.values(GameType).map((type) => {
+                  const { title, sub } = splitGameLabel(type);
+                  return (
+                    <Button 
+                      key={type}
+                      variant={selectedGameType === type ? 'primary' : 'outline'} 
+                      onClick={() => {
+                          setSelectedGameType(type);
+                          if (type !== GameType.Grammar) setSelectedSubSkill(null);
+                          else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz);
+                      }}
+                      className={`py-4 h-full ${type === GameType.TypeToFly || type === GameType.SayItRight ? 'bg-amber-500 hover:bg-amber-600 border-amber-700 text-white shadow-amber-500/30' : ''}`}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                         {type === GameType.TypeToFly && <span className="text-lg mb-1">🐦</span>}
+                         {type === GameType.SayItRight && <span className="text-lg mb-1">🎙️</span>}
+                         <span className="text-base font-black leading-tight">{title}</span>
+                         {sub && <span className="text-[10px] font-bold opacity-75 mt-0.5 tracking-tight">{sub}</span>}
+                      </div>
+                    </Button>
+                  );
+                })}
               </div>
 
               {selectedGameType === GameType.Grammar && (
@@ -392,7 +408,7 @@ const App: React.FC = () => {
             <div className="flex items-center justify-center min-h-[60vh]">
               <ResultCard 
                 score={finalScore} 
-                total={gameData.questions.length * 2} 
+                total={gameData.gameType === GameType.SayItRight ? gameData.questions.length : gameData.questions.length * 2} 
                 onRetry={() => { setFinalScore(null); }} 
                 onHome={handleReset}
               />
