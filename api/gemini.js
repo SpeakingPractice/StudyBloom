@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
@@ -14,17 +15,20 @@ export default async function handler(req, res) {
     return;
   }
 
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: "Server configuration error: Missing API Key." });
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { model, contents, config } = req.body;
+    const { model, contents, config, userApiKey } = req.body;
+    
+    // Prioritize the API key provided by the user in the UI
+    const apiKey = userApiKey || process.env.API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing API Key. Vui lòng nhập API Key ở góc trên bên trái." });
+    }
+
     const ai = new GoogleGenAI({ apiKey });
     
     const result = await ai.models.generateContent({
@@ -41,7 +45,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ text: result.text });
   } catch (error) {
     console.error("Gemini Proxy Error:", error);
-    // Explicitly handle 429/Quota errors to trigger client fallback
     const message = error.message || "";
     if (message.includes("429") || message.toLowerCase().includes("quota") || message.toLowerCase().includes("too many requests")) {
       return res.status(429).json({ error: "Quota Exceeded", details: message });
