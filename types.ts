@@ -15,7 +15,6 @@ export enum GameType {
   Speaking = 'Luyện Nói (Speaking)',
   Writing = 'Luyện Viết (Writing)',
   TypeToFly = 'Flappy Bird (Typing)',
-  SayItRight = 'Say It Right! (Phát Âm)',
 }
 
 export enum GrammarSubSkill {
@@ -43,7 +42,7 @@ export interface QuestionData {
   writingPrompt?: string; 
   phonetic?: string; 
   meaning?: string;  
-  exampleSentence?: string; // New field for contextual usage
+  exampleSentence?: string;
 }
 
 export interface GameSession {

@@ -1,5 +1,6 @@
 
-import { Type } from "@google/genai";
+// @google/genai guidelines: Use Type and Modality from @google/genai
+import { Type, Modality } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
 const FALLBACK_MODELS = [
@@ -25,13 +26,13 @@ function parseErrorMessage(error: any): string {
   }
 }
 
+// @google/genai guidelines: API key selection is handled via process.env.API_KEY injected automatically.
+// Removed local userApiKey management as per "must not ask the user for it" rule.
 async function callGeminiProxy(model: string, contents: any, config: any) {
-  const userApiKey = localStorage.getItem('user_api_key');
-  
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, contents, config, userApiKey }),
+    body: JSON.stringify({ model, contents, config }),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -59,8 +60,9 @@ async function callGeminiWithFallback(defaultModel: string, contents: any, confi
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
     const contents = [{ parts: [{ text: `Read: "${text}"` }] }];
+    // @google/genai guidelines: Use Modality.AUDIO
     const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", contents, {
-      responseModalities: ["AUDIO"],
+      responseModalities: [Modality.AUDIO],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } }
     });
     return result.audio || null;
@@ -122,9 +124,6 @@ export const generateGameContent = async (
     case GameType.TypeToFly:
       specificInstruction = `12 items for Flappy Bird. 'questionText': 1-2 words target. 'explanation': Vietnamese meaning.`;
       break;
-    case GameType.SayItRight:
-      specificInstruction = `8 pronunciation items. 'phonetic': IPA. 'meaning': Vietnamese. 'exampleSentence': Short sentence.`;
-      break;
     default:
       specificInstruction = `10 items. Level ${diffLevel}.`;
   }
@@ -173,26 +172,6 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
   } catch { return null; }
 };
 
-export const evaluatePronunciation = async (target: string, transcript: string) => {
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      isCorrect: { type: Type.BOOLEAN },
-      feedback: { type: Type.STRING },
-      advice: { type: Type.STRING }
-    },
-    required: ["isCorrect", "feedback", "advice"]
-  };
-  try {
-    const result = await callGeminiWithFallback("gemini-3-pro-preview", `Pronunciation check: Target "${target}", User "${transcript}". Advice in Vietnamese.`, {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 }
-    });
-    return JSON.parse(cleanJsonResponse(result.text));
-  } catch { return null; }
-};
-
 export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
   const schema = {
     type: Type.OBJECT,
@@ -223,6 +202,30 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
   };
   try {
     const result = await callGeminiWithFallback("gemini-3-pro-preview", `Score speech: Target "${target}", User transcript "${transcript}". Vietnamese feedback.`, {
+      responseMimeType: "application/json",
+      responseSchema: schema,
+      thinkingConfig: { thinkingBudget: 0 }
+    });
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch { return null; }
+};
+
+// @google/genai guidelines: Added missing evaluatePronunciation function
+export const evaluatePronunciation = async (target: string, transcript: string) => {
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      isCorrect: { type: Type.BOOLEAN },
+      feedback: { type: Type.STRING },
+      advice: { type: Type.STRING }
+    },
+    required: ["isCorrect", "feedback", "advice"]
+  };
+
+  const prompt = `Evaluate if the pronunciation of "${transcript}" is a correct or acceptable attempt at saying "${target}". Respond in Vietnamese.`;
+
+  try {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
