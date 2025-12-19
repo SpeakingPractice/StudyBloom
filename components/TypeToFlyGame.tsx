@@ -22,11 +22,11 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
   
   /**
    * PHYSICS
-   * Increased gravity for more drama: 0.00165 (approx 50% more than previous 0.001105)
+   * Gravity increased by 20% from previous 0.00165: 0.00165 * 1.2 = 0.00198
    */
-  const gravity = 0.00165; 
-  const liftPerWord = -0.85; // Stronger lift since it only happens once per word
-  const maxUpwardVelocity = -1.5;
+  const gravity = 0.00198; 
+  const liftPerWord = -0.45; // Gentle lift as requested (reduced from -0.85)
+  const maxUpwardVelocity = -1.2;
 
   const currentQuestion = questions[currentIndex];
   const rawTarget = currentQuestion?.questionText || "Ready";
@@ -98,7 +98,7 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
 
     // Check for Full Word Match
     if (cleanUser === cleanTarget && cleanTarget.length > 0) {
-      // BIRD JUMPS ONLY ON FULL WORD COMPLETION
+      // BIRD JUMPS GENTLY ONLY ON FULL WORD COMPLETION
       velocityRef.current = Math.max(maxUpwardVelocity, liftPerWord);
       
       setScore(s => s + 1);

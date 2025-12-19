@@ -114,15 +114,15 @@ export const generateGameContent = async (
   switch (gameType) {
     case GameType.Grammar:
       if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `8 Sentence Transformation tasks. 'topic' in Vietnamese. 'hint' has the grammar structure.`;
+        specificInstruction = `5 Sentence Transformation tasks. 'topic' in Vietnamese. 'hint' has the grammar structure.`;
       } else if (subSkill === GrammarSubSkill.Synonym || subSkill === GrammarSubSkill.Antonym) {
         const typeStr = subSkill === GrammarSubSkill.Synonym ? "Synonym (Từ đồng nghĩa)" : "Antonym (Từ trái nghĩa)";
-        specificInstruction = `10 ${typeStr} tasks. Level: ${diffLevel}. 
+        specificInstruction = `6 ${typeStr} tasks. Level: ${diffLevel}. 
         Format: Provide a full sentence in 'questionText'. Wrap the target word in <u></u> tags (e.g. "He is very <u>modest</u> about his wins."). 
         Options must be 4 single words. 
         IMPORTANT: For Grade 6-8, use simple words like 'big', 'happy', 'scared', 'finish'. For Grade 9-12, use more academic words.`;
       } else {
-        specificInstruction = `10 grammar MCQs. Level ${diffLevel}.`;
+        specificInstruction = `6 grammar MCQs. Level ${diffLevel}.`;
       }
       break;
     case GameType.Listening:
@@ -132,10 +132,13 @@ export const generateGameContent = async (
       specificInstruction = `5 short speaking tasks.`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `12 vocabulary items. English word in 'questionText', VN meaning in 'explanation'.`;
+      specificInstruction = `8 vocabulary items. English word in 'questionText', VN meaning in 'explanation'.`;
+      break;
+    case GameType.Writing:
+      specificInstruction = `2 short writing prompts. Max 50 words per prompt.`;
       break;
     default:
-      specificInstruction = `10 items. Level ${diffLevel}.`;
+      specificInstruction = `6 items. Level ${diffLevel}.`;
   }
 
   const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output valid JSON. All 'explanation', 'topic', and 'meaning' MUST be Vietnamese.`;
