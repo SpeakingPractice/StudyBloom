@@ -11,15 +11,15 @@ import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
 
-// Fix: Use the globally expected AIStudio type to avoid declaration conflicts.
-// This ensures identical modifiers and type consistency across property declarations.
+// Khai báo kiểu dữ liệu cho AI Studio API Key Selection
 declare global {
   interface AIStudio {
     hasSelectedApiKey: () => Promise<boolean>;
     openSelectKey: () => Promise<void>;
   }
   interface Window {
-    aistudio: AIStudio;
+    // Added optional modifier to ensure compatibility with other declarations of 'aistudio'
+    aistudio?: AIStudio;
   }
 }
 
@@ -60,7 +60,7 @@ const App: React.FC = () => {
       await window.aistudio.openSelectKey();
       setIsQuotaError(false);
       setError(null);
-      // Proceed to try starting the game again if we have selections
+      // Nếu đã chọn lớp và môn, tự động thử lại sau khi chọn key
       if (selectedGrade && selectedGameType) {
         handleStartGame();
       }
@@ -85,8 +85,8 @@ const App: React.FC = () => {
     } catch (err: any) {
       const msg = err.message || "Unknown error";
       setError(msg);
-      // Check for quota or project errors
-      if (msg.includes("Quota Exceeded") || msg.includes("Requested entity was not found")) {
+      // Nhận diện lỗi quota từ API proxy (QUOTA_EXCEEDED hoặc 429)
+      if (msg.toUpperCase().includes("QUOTA_EXCEEDED") || msg.includes("Requested entity was not found")) {
         setIsQuotaError(true);
       }
     } finally {
@@ -164,21 +164,20 @@ const App: React.FC = () => {
           <div className="bg-red-100/95 backdrop-blur-sm border-l-8 border-red-500 text-red-700 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-xl animate-fade-in-up">
              <div className="flex items-start gap-4">
                <span className="text-3xl">⚠️</span>
-               <div>
-                 <p className="font-black text-lg uppercase tracking-tight mb-1">Dịch vụ đang bận (Service Error)</p>
+               <div className="flex-1">
+                 <p className="font-black text-lg uppercase tracking-tight mb-1 text-red-600">
+                   {isQuotaError ? "API key hiện tại hết lượt sử dụng, hãy nhập API key mới" : "Dịch vụ đang bận (Service Error)"}
+                 </p>
                  <p className="text-sm font-medium opacity-90 mb-4">{error}</p>
                  
                  {isQuotaError ? (
                    <div className="space-y-4">
                      <p className="text-xs bg-red-200/50 p-3 rounded-lg border border-red-200 font-bold italic">
-                       Hệ thống AI đã hết lượt sử dụng miễn phí (Quota Exceeded). Vui lòng cập nhật API Key của riêng bạn để tiếp tục học tập.
+                       Hệ thống AI đã chạm ngưỡng giới hạn. Vui lòng bấm vào nút bên dưới để chọn một API Key từ dự án có trả phí (Paid Project) để tiếp tục học tập nhé!
                      </p>
-                     <Button onClick={handleUpdateApiKey} variant="danger" fullWidth>
-                       Cập nhật API Key mới
+                     <Button onClick={handleUpdateApiKey} variant="danger" fullWidth className="py-4 text-base shadow-red-300">
+                       Nhập API Key mới
                      </Button>
-                     <p className="text-[10px] text-center opacity-60">
-                       Lưu ý: Bạn cần chọn một dự án Google Cloud đã kích hoạt thanh toán (Paid project).
-                     </p>
                    </div>
                  ) : (
                    <button onClick={() => setError(null)} className="underline text-xs font-black uppercase tracking-widest hover:text-red-900">Đóng thông báo</button>
