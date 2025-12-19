@@ -140,21 +140,20 @@ const App: React.FC = () => {
     }
   };
 
-  // Logic tính tổng điểm hiển thị ở màn hình kết quả
   const calculateTotalPossibleScore = () => {
     if (!gameData) return 0;
     const count = gameData.questions.length || 0;
     
     switch (gameData.gameType) {
       case GameType.Writing:
-        return count * 10; // Mỗi bài viết tối đa 10đ (1 câu hỏi duy nhất)
+        return count * 10;
       case GameType.TypeToFly:
-        return count; // 1 điểm mỗi từ
+        return count;
       case GameType.Listening:
       case GameType.Speaking:
       case GameType.Grammar:
       default:
-        return count * 2; // 2 điểm mỗi câu
+        return count * 2;
     }
   };
 
@@ -202,7 +201,7 @@ const App: React.FC = () => {
 
       <div className="relative p-2 md:p-8 max-w-7xl mx-auto z-10">
         <header className="flex flex-col md:flex-row items-stretch md:items-center mb-8 gap-4 glass-panel p-4 rounded-[2rem] md:rounded-3xl transition-all duration-500 md:justify-between">
-           {/* Logo Section (Left on Desktop) */}
+           {/* Logo Section */}
            <div className="flex items-center justify-between w-full md:w-auto gap-4 shrink-0">
               <div 
                 className="font-black text-2xl md:text-3xl text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] cursor-pointer whitespace-nowrap hover:scale-105 transition-transform flex items-center gap-2" 
@@ -211,53 +210,55 @@ const App: React.FC = () => {
                 StudyBloom <span className="text-red-500">🎅</span>
               </div>
               
-              {/* Badge Button - Mobile Only (Hidden on Desktop) */}
+              {/* Badge Button - Mobile Only (No white box, with Glow) */}
               <div className="flex md:hidden shrink-0">
-                <button onClick={() => setShowBadges(true)} className="glass-panel px-3 py-1.5 rounded-xl shadow-xl flex items-center gap-2 border-b-2 border-amber-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0">
-                  <span className="text-xl">{currentBadge?.icon || "🧭"}</span>
-                  <span className="font-black text-white text-[10px]">{totalPoints} pts</span>
+                <button onClick={() => setShowBadges(true)} className="flex items-center gap-2 transition-all active:scale-90 px-2 py-1">
+                  <span className="text-2xl drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse-subtle">
+                    {currentBadge?.icon || "🧭"}
+                  </span>
+                  <span className="font-black text-white text-[10px] tracking-tighter drop-shadow-md">{totalPoints} pts</span>
                 </button>
               </div>
            </div>
 
-           {/* API Key Input Section (Middle on Desktop) */}
-           <div className="w-full md:flex-1 md:max-w-md order-3 md:order-2 flex flex-col items-center">
-              <div className="relative flex items-center group w-full">
-                <div className="absolute left-3 flex items-center pointer-events-none text-white/50 group-focus-within:text-amber-400 transition-colors">
-                  <Icons.Key />
+           {/* API Key Input Section - Hidden if verification is success */}
+           {keyVerificationStatus !== 'success' && (
+             <div className="w-full md:flex-1 md:max-w-md order-3 md:order-2 flex flex-col items-center animate-fade-in">
+                <div className="relative flex items-center group w-full">
+                  <div className="absolute left-3 flex items-center pointer-events-none text-white/30 group-focus-within:text-amber-400 transition-colors">
+                    <Icons.Key />
+                  </div>
+                  <input
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={handleApiKeyChange}
+                    placeholder="Dán Google API Key..."
+                    className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-28 md:pr-24 py-3 rounded-2xl text-emerald-400 text-sm font-black placeholder:text-white/30 cursor-text outline-none ${
+                      keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'
+                    }`}
+                  />
+                  <button 
+                    onClick={handleVerifyKey} 
+                    disabled={isVerifyingKey || !apiKeyInput}
+                    className={`absolute right-1 px-4 py-2 rounded-xl font-black text-[11px] uppercase tracking-tighter transition-all flex items-center justify-center min-w-[80px] ${
+                      keyVerificationStatus === 'fail' ? 'bg-red-500 text-white' : 
+                      'bg-amber-500 hover:bg-amber-600 text-white'
+                    } disabled:opacity-50 active:scale-95`}
+                  >
+                    {isVerifyingKey ? (
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : keyVerificationStatus === 'success' ? (
+                      <Icons.Check />
+                    ) : 'Xác nhận'}
+                  </button>
                 </div>
-                <input
-                  type="password"
-                  value={apiKeyInput}
-                  onChange={handleApiKeyChange}
-                  placeholder="Dán Google API Key..."
-                  className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-28 md:pr-24 py-3 rounded-2xl text-emerald-400 text-sm font-black placeholder:text-white/30 cursor-text outline-none ${
-                    keyVerificationStatus === 'success' ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
-                    keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'
-                  }`}
-                />
-                <button 
-                  onClick={handleVerifyKey} 
-                  disabled={isVerifyingKey || !apiKeyInput}
-                  className={`absolute right-1 px-4 py-2 rounded-xl font-black text-[11px] uppercase tracking-tighter transition-all flex items-center justify-center min-w-[80px] ${
-                    keyVerificationStatus === 'success' ? 'bg-emerald-500 text-white' : 
-                    keyVerificationStatus === 'fail' ? 'bg-red-500 text-white' : 
-                    'bg-amber-500 hover:bg-amber-600 text-white'
-                  } disabled:opacity-50 active:scale-95`}
-                >
-                  {isVerifyingKey ? (
-                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : keyVerificationStatus === 'success' ? (
-                    <Icons.Check />
-                  ) : 'Xác nhận'}
-                </button>
-              </div>
-              <div className="mt-1 flex justify-start pl-1 w-full">
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[9px] md:text-[10px] text-amber-400/60 hover:text-amber-400 font-bold underline decoration-amber-400/30 transition-all">Lấy API key ở đây 🎁</a>
-              </div>
-           </div>
+                <div className="mt-1 flex justify-start pl-1 w-full">
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[9px] md:text-[10px] text-amber-400/60 hover:text-amber-400 font-bold underline decoration-amber-400/30 transition-all">Lấy API key ở đây 🎁</a>
+                </div>
+             </div>
+           )}
 
-           {/* Badge Section (Right on Desktop) */}
+           {/* Badge Section (Desktop stays as requested) */}
            <div className="hidden md:flex shrink-0 order-3">
               <button onClick={() => setShowBadges(true)} className="glass-panel px-5 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(245,158,11,0.2)] flex items-center gap-3 border-b-4 border-amber-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0 group">
                 {currentBadge ? (
