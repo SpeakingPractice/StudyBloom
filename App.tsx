@@ -213,13 +213,13 @@ const App: React.FC = () => {
                   value={apiKeyInput}
                   onChange={handleApiKeyChange}
                   placeholder="Dán Google API Key..."
-                  className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-28 md:pr-24 py-3 rounded-2xl text-white text-sm font-bold placeholder:text-white/30 cursor-text outline-none ${
+                  className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-28 md:pr-24 py-3 rounded-2xl text-emerald-400 text-sm font-black placeholder:text-white/30 cursor-text outline-none ${
                     keyVerificationStatus === 'success' ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
                     keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'
                   }`}
                 />
                 <button 
-                  onClick={handleVerifyKey}
+                  onClick={handleVerifyKey} 
                   disabled={isVerifyingKey || !apiKeyInput}
                   className={`absolute right-1 px-4 py-2 rounded-xl font-black text-[11px] uppercase tracking-tighter transition-all flex items-center justify-center min-w-[80px] ${
                     keyVerificationStatus === 'success' ? 'bg-emerald-500 text-white' : 
@@ -373,9 +373,11 @@ const App: React.FC = () => {
                           key={type} 
                           variant={selectedGameType === type ? 'secondary' : 'outline'} 
                           onClick={() => { setSelectedGameType(type); if (type === GameType.Grammar) setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); else setSelectedSubSkill(null); }} 
-                          className={`py-6 md:py-8 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5'}`}
+                          className={`py-6 md:py-8 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5 hover:bg-white/10 transition-colors'}`}
                         >
-                          <span className="text-[10px] md:text-[11px] font-black text-center leading-tight uppercase tracking-tighter">{type.split(' (')[0]}</span>
+                          <span className="text-[10px] md:text-[11px] font-black text-center leading-tight uppercase tracking-tighter text-white">
+                            {type.split(' (')[0]}
+                          </span>
                         </Button>
                       ))}
                     </div>
@@ -391,9 +393,9 @@ const App: React.FC = () => {
                           variant={selectedSubSkill === sub ? 'primary' : 'outline'} 
                           size="sm" 
                           onClick={() => setSelectedSubSkill(sub)}
-                          className={`rounded-xl md:rounded-2xl ${selectedSubSkill === sub ? 'bg-emerald-600 border-emerald-800' : 'bg-black/20 border-white/5'}`}
+                          className={`rounded-xl md:rounded-2xl ${selectedSubSkill === sub ? 'bg-emerald-600 border-emerald-800' : 'bg-black/20 border-white/5 hover:bg-white/10 transition-colors'}`}
                         >
-                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter text-center">{sub}</span>
+                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter text-center text-white">{sub}</span>
                         </Button>
                       ))}
                     </div>
