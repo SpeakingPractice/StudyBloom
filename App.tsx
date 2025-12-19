@@ -11,7 +11,18 @@ import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
 
-// Helper icons
+// Fix: Use the globally expected AIStudio type to avoid declaration conflicts.
+// This ensures identical modifiers and type consistency across property declarations.
+declare global {
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+  interface Window {
+    aistudio: AIStudio;
+  }
+}
+
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
   Badge: () => <svg className="w-6 h-6 mr-1 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>,
@@ -34,6 +45,7 @@ const App: React.FC = () => {
   const [gameData, setGameData] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isQuotaError, setIsQuotaError] = useState(false);
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [totalPoints, setTotalPoints] = useState(0);
   const [showBadges, setShowBadges] = useState(false);
@@ -43,11 +55,24 @@ const App: React.FC = () => {
     if (pts) setTotalPoints(parseInt(pts));
   }, [finalScore, showBadges]);
 
+  const handleUpdateApiKey = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setIsQuotaError(false);
+      setError(null);
+      // Proceed to try starting the game again if we have selections
+      if (selectedGrade && selectedGameType) {
+        handleStartGame();
+      }
+    }
+  };
+
   const handleStartGame = async () => {
     if (!selectedGrade || !selectedGameType) return;
     
     setLoading(true);
     setError(null);
+    setIsQuotaError(false);
     try {
       const data = await generateGameContent(selectedGrade, selectedGameType, selectedTextbook, selectedSubSkill || undefined);
       setGameData({
@@ -60,6 +85,10 @@ const App: React.FC = () => {
     } catch (err: any) {
       const msg = err.message || "Unknown error";
       setError(msg);
+      // Check for quota or project errors
+      if (msg.includes("Quota Exceeded") || msg.includes("Requested entity was not found")) {
+        setIsQuotaError(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +102,7 @@ const App: React.FC = () => {
     setFinalScore(null);
     setSelectedTextbook('');
     setError(null);
+    setIsQuotaError(false);
   };
 
   const renderGameComponent = () => {
@@ -97,7 +127,6 @@ const App: React.FC = () => {
       
       <div className="relative p-2 md:p-8 max-w-7xl mx-auto z-10">
         <header className="flex items-center justify-between mb-8 gap-2 bg-black/10 backdrop-blur-md p-3 rounded-2xl md:bg-transparent md:p-0 md:rounded-none transition-all duration-500">
-           {/* LOGO - LEFT SIDE */}
            <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
               <div 
                 className="font-black text-lg md:text-xl text-white tracking-tight drop-shadow-md cursor-pointer whitespace-nowrap shrink-0 hover:scale-105 transition-transform" 
@@ -112,7 +141,6 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* BADGE / POINTS - RIGHT SIDE */}
            <div className="flex shrink-0">
               <button onClick={() => setShowBadges(true)} className="bg-white/95 backdrop-blur-sm px-3 py-1.5 md:px-4 md:py-2 rounded-full shadow-lg flex items-center gap-1.5 md:gap-2 border border-white/50 hover:bg-white transition-colors">
                 {currentBadge ? (
@@ -133,10 +161,30 @@ const App: React.FC = () => {
         </header>
 
         {error && (
-          <div className="bg-red-100/90 backdrop-blur-sm border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6 max-w-2xl mx-auto shadow-sm animate-fade-in-up">
-             <p className="font-bold">Lỗi (Error)</p>
-             <p className="text-sm break-words">{error}</p>
-             <button onClick={() => setError(null)} className="underline mt-2 text-xs font-bold">Đóng (Close)</button>
+          <div className="bg-red-100/95 backdrop-blur-sm border-l-8 border-red-500 text-red-700 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-xl animate-fade-in-up">
+             <div className="flex items-start gap-4">
+               <span className="text-3xl">⚠️</span>
+               <div>
+                 <p className="font-black text-lg uppercase tracking-tight mb-1">Dịch vụ đang bận (Service Error)</p>
+                 <p className="text-sm font-medium opacity-90 mb-4">{error}</p>
+                 
+                 {isQuotaError ? (
+                   <div className="space-y-4">
+                     <p className="text-xs bg-red-200/50 p-3 rounded-lg border border-red-200 font-bold italic">
+                       Hệ thống AI đã hết lượt sử dụng miễn phí (Quota Exceeded). Vui lòng cập nhật API Key của riêng bạn để tiếp tục học tập.
+                     </p>
+                     <Button onClick={handleUpdateApiKey} variant="danger" fullWidth>
+                       Cập nhật API Key mới
+                     </Button>
+                     <p className="text-[10px] text-center opacity-60">
+                       Lưu ý: Bạn cần chọn một dự án Google Cloud đã kích hoạt thanh toán (Paid project).
+                     </p>
+                   </div>
+                 ) : (
+                   <button onClick={() => setError(null)} className="underline text-xs font-black uppercase tracking-widest hover:text-red-900">Đóng thông báo</button>
+                 )}
+               </div>
+             </div>
           </div>
         )}
 

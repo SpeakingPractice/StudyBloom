@@ -22,25 +22,23 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
   
   /**
    * PHYSICS
-   * Gravity increased by 20% from previous 0.00165: 0.00165 * 1.2 = 0.00198
+   * Gravity: 0.00198 (Maintained high)
+   * Lift: Reduced by 30% from -0.45 to -0.315 for higher difficulty
    */
   const gravity = 0.00198; 
-  const liftPerWord = -0.45; // Gentle lift as requested (reduced from -0.85)
+  const liftPerWord = -0.315; 
   const maxUpwardVelocity = -1.2;
 
   const currentQuestion = questions[currentIndex];
   const rawTarget = currentQuestion?.questionText || "Ready";
   const currentWord = rawTarget.trim().normalize('NFC');
 
-  /**
-   * Robust normalization for match verification.
-   */
   const normalizeForMatch = (str: string) => {
     return str
       .normalize('NFC')
       .toLowerCase()
-      .replace(/[^a-z0-9 ]/gi, '') // Keep spaces
-      .replace(/\s+/g, ' ') // Collapse multiple spaces
+      .replace(/[^a-z0-9 ]/gi, '') 
+      .replace(/\s+/g, ' ') 
       .trim();
   };
 
@@ -52,15 +50,13 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
     setBirdY(prev => {
       const nextY = prev + velocityRef.current;
       
-      // Hit ground
       if (nextY >= 90) {
         setIsGameOver(true);
         return 90;
       }
       
-      // Hit ceiling (Safe limit)
       if (nextY <= 3) {
-        velocityRef.current = Math.max(0.1, velocityRef.current); // Stop upward momentum
+        velocityRef.current = Math.max(0.1, velocityRef.current); 
         return 3;
       }
       
@@ -89,14 +85,12 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
     const cleanUser = normalizeForMatch(val);
     const cleanTarget = normalizeForMatch(currentWord);
 
-    // Track prefix for UI coloring only (no lift here anymore)
     if (cleanTarget.startsWith(cleanUser)) {
       setLastValidPrefixLen(cleanUser.length);
     } else if (cleanUser.length < lastValidPrefixLen) {
       setLastValidPrefixLen(cleanUser.length);
     }
 
-    // Check for Full Word Match
     if (cleanUser === cleanTarget && cleanTarget.length > 0) {
       // BIRD JUMPS GENTLY ONLY ON FULL WORD COMPLETION
       velocityRef.current = Math.max(maxUpwardVelocity, liftPerWord);
@@ -136,7 +130,6 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         .layer-near { animation-duration: 10s; z-index: 10; }
       `}</style>
 
-      {/* Game Area - Keep it relatively large for visibility */}
       <div className="relative bg-gradient-to-b from-sky-400 to-sky-100 backdrop-blur-md rounded-3xl h-[300px] md:h-[400px] mb-4 overflow-hidden border-4 border-white shadow-2xl">
         <div className={`scenery-layer layer-far ${hasStarted ? 'scenery-animate' : ''}`}>
            <div className="flex-1 flex items-end justify-around text-8xl pb-8"><span>⛰️</span><span>🏔️</span><span>⛰️</span><span>🏔️</span></div>
@@ -152,7 +145,7 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         </div>
 
         <div className="absolute left-[30%] transition-transform duration-200 ease-out z-20"
-          style={{ top: `${birdY}%`, transform: `translateY(-50%) rotate(${velocityRef.current * 15}deg)` }}>
+          style={{ top: `${birdY}%`, transform: `translateY(-50%) rotate(${velocityRef.current * 20}deg)` }}>
           <div className="text-4xl md:text-5xl filter drop-shadow-lg select-none scale-x-[-1]">🐤</div>
         </div>
 
@@ -169,12 +162,10 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         </div>
       </div>
 
-      {/* Typing Board - COMPACTED FOR MOBILE */}
       <div className="bg-white/95 rounded-[1.5rem] px-4 py-3 shadow-2xl text-center border-b-4 border-sky-100 max-w-lg mx-auto">
         <div className="flex flex-col items-center gap-1">
           <p className="text-[8px] font-black text-sky-300 uppercase tracking-widest">Target Word</p>
           
-          {/* Smaller Target Word Text */}
           <div className="flex flex-wrap justify-center items-center text-xl md:text-3xl font-black tracking-tight text-slate-800 gap-x-1 mb-1">
             {currentWord.split('').map((char, i) => {
               const userChar = userInput[i];
@@ -193,7 +184,6 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
             })}
           </div>
           
-          {/* Compact Info Display */}
           <div className="w-full mt-1">
             <div className="px-3 py-1.5 bg-sky-50 rounded-xl border border-sky-100 animate-fade-in relative overflow-hidden">
                <div className="flex justify-between items-center mb-0.5">
@@ -229,7 +219,6 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
             className="w-full text-center p-2 rounded-lg border-2 border-slate-50 focus:border-sky-300 transition-all text-lg font-black text-sky-600 uppercase mt-2 shadow-inner"
             placeholder="..." />
           
-          {/* Progress Bar */}
           <div className="mt-2 w-32 h-1 bg-slate-100 rounded-full overflow-hidden">
              <div className="h-full bg-sky-400 transition-all duration-300" style={{ width: `${((currentIndex) / questions.length) * 100}%` }} />
           </div>
