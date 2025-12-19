@@ -16,6 +16,7 @@ const Icons = {
   Badge: () => <svg className="w-6 h-6 mr-1 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>,
   Key: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
   Close: () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
+  Check: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
 };
 
 const BackgroundDecor = () => (
@@ -39,21 +40,45 @@ const App: React.FC = () => {
   const [totalPoints, setTotalPoints] = useState(0);
   const [showBadges, setShowBadges] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
+  const [isVerifyingKey, setIsVerifyingKey] = useState(false);
+  const [keyVerificationStatus, setKeyVerificationStatus] = useState<'none' | 'success' | 'fail'>('none');
 
   useEffect(() => {
     const pts = localStorage.getItem('vieteng_points');
     if (pts) setTotalPoints(parseInt(pts));
 
     const savedKey = localStorage.getItem('user_gemini_api_key');
-    if (savedKey) setApiKeyInput(savedKey);
+    if (savedKey) {
+      setApiKeyInput(savedKey);
+      setKeyVerificationStatus('success');
+    }
   }, [finalScore]);
 
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setApiKeyInput(val);
+    setKeyVerificationStatus('none');
     localStorage.setItem('user_gemini_api_key', val);
     setIsQuotaError(false);
     setError(null);
+  };
+
+  const handleVerifyKey = async () => {
+    if (!apiKeyInput.trim()) return;
+    setIsVerifyingKey(true);
+    setKeyVerificationStatus('none');
+    
+    try {
+      // Thử gọi một yêu cầu cực nhỏ để kiểm tra Key
+      await generateGameContent(GradeLevel.Grade6, GameType.Grammar, "", GrammarSubSkill.GrammarQuiz, apiKeyInput);
+      setKeyVerificationStatus('success');
+      setIsQuotaError(false);
+    } catch (err: any) {
+      setKeyVerificationStatus('fail');
+      setIsQuotaError(true);
+    } finally {
+      setIsVerifyingKey(false);
+    }
   };
 
   const handleStartGame = async () => {
@@ -76,11 +101,13 @@ const App: React.FC = () => {
         questions: data.questions,
         textbookContext: data.textbookContext
       });
+      setKeyVerificationStatus('success');
     } catch (err: any) {
       const msg = err.message || "Unknown error";
       if (msg.includes("QUOTA_EXCEEDED") || msg.includes("429") || msg.includes("entity was not found") || msg.includes("API_KEY_INVALID")) {
         setIsQuotaError(true);
         setError(null);
+        setKeyVerificationStatus('fail');
       } else {
         setError(msg);
       }
@@ -167,8 +194,8 @@ const App: React.FC = () => {
               </div>
               
               <div className="flex-1 max-w-sm">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/50 group-focus-within:text-white transition-colors">
+                <div className="relative flex items-center">
+                  <div className="absolute left-3 flex items-center pointer-events-none text-white/50 transition-colors">
                     <Icons.Key />
                   </div>
                   <input
@@ -176,8 +203,26 @@ const App: React.FC = () => {
                     value={apiKeyInput}
                     onChange={handleApiKeyChange}
                     placeholder="Dán Google API Key..."
-                    className="w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 border-white/10 focus:border-amber-400 transition-all pl-11 pr-4 py-2.5 rounded-2xl text-white text-sm font-bold placeholder:text-white/30 cursor-text outline-none"
+                    className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-24 py-2.5 rounded-2xl text-white text-sm font-bold placeholder:text-white/30 cursor-text outline-none ${
+                      keyVerificationStatus === 'success' ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
+                      keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'
+                    }`}
                   />
+                  <button 
+                    onClick={handleVerifyKey}
+                    disabled={isVerifyingKey || !apiKeyInput}
+                    className={`absolute right-1 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tighter transition-all flex items-center gap-1 ${
+                      keyVerificationStatus === 'success' ? 'bg-emerald-500 text-white' : 
+                      keyVerificationStatus === 'fail' ? 'bg-red-500 text-white' : 
+                      'bg-amber-500 hover:bg-amber-600 text-white'
+                    } disabled:opacity-50`}
+                  >
+                    {isVerifyingKey ? (
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    ) : keyVerificationStatus === 'success' ? (
+                      <Icons.Check />
+                    ) : 'Xác nhận'}
+                  </button>
                 </div>
                 <div className="mt-1 flex justify-start pl-1">
                   <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[10px] text-amber-400/60 hover:text-amber-400 font-bold underline decoration-amber-400/30 transition-all">Lấy API key ở đây 🎁</a>
@@ -214,7 +259,7 @@ const App: React.FC = () => {
              </h2>
              <p className="text-white/60 font-bold mb-10 text-lg max-w-md mx-auto leading-relaxed">
                 {apiKeyInput 
-                  ? "Mã API Key này dường như đã hết lượt sử dụng. Hãy thay một túi quà (API Key) mới để tiếp tục bài học nhé!"
+                  ? "Mã API Key này dường như không hợp lệ hoặc đã hết lượt. Hãy thử lại với một Key chính chủ mới nhé!"
                   : "Để khởi động cỗ xe tuần lộc AI, bạn cần dán mã API Key cá nhân từ Google AI Studio vào ô bên dưới."}
              </p>
              
@@ -236,8 +281,8 @@ const App: React.FC = () => {
                   <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-sm font-bold text-amber-400 underline hover:text-amber-300 transition-colors">Lấy túi quà (API Key) ở đây</a>
                 </div>
 
-                <Button onClick={handleStartGame} variant="primary" fullWidth size="lg" className="py-6 text-xl shadow-2xl rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700">
-                   Thắp sáng bài học! 🌟
+                <Button onClick={handleVerifyKey} variant="primary" fullWidth size="lg" className="py-6 text-xl shadow-2xl rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700">
+                   {isVerifyingKey ? "Đang kiểm tra..." : "Xác nhận & Thắp sáng! 🌟"}
                 </Button>
                 
                 <button onClick={() => setIsQuotaError(false)} className="text-sm font-black text-white/30 uppercase tracking-widest hover:text-white/60 transition-colors">Để sau</button>
