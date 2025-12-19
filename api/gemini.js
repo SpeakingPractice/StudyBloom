@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-api-key'
   );
 
   if (req.method === 'OPTIONS') {
@@ -23,11 +23,12 @@ export default async function handler(req, res) {
   try {
     const { model, contents, config } = req.body;
     
-    // @google/genai guidelines: The API key must be obtained exclusively from process.env.API_KEY.
-    const apiKey = process.env.API_KEY;
+    // Ưu tiên lấy Key từ Header x-api-key, nếu không có mới dùng env
+    const userApiKey = req.headers['x-api-key'];
+    const apiKey = userApiKey || process.env.API_KEY;
     
     if (!apiKey) {
-      return res.status(500).json({ error: "Configuration Error: Missing Server API Key." });
+      return res.status(500).json({ error: "Configuration Error: Missing API Key. Please provide one in the header or server env." });
     }
 
     // @google/genai guidelines: Initialize with named parameter

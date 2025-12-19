@@ -26,27 +26,32 @@ function parseErrorMessage(error: any): string {
   }
 }
 
-// @google/genai guidelines: Use process.env.API_KEY exclusively on the server proxy.
-async function callGeminiProxy(model: string, contents: any, config: any) {
+// Cập nhật Proxy để nhận và truyền API Key tùy chỉnh
+async function callGeminiProxy(model: string, contents: any, config: any, userKey?: string) {
   const response = await fetch('/api/gemini', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      // Truyền Key qua header
+      'x-api-key': userKey || ""
+    },
     body: JSON.stringify({ model, contents, config }),
   });
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 429) throw new Error("QUOTA_EXCEEDED");
+    if (response.status === 401 || response.status === 403) throw new Error("API_KEY_INVALID");
     throw new Error(typeof data.error === 'object' ? JSON.stringify(data.error) : data.error || `Error: ${response.status}`);
   }
   return data;
 }
 
-async function callGeminiWithFallback(defaultModel: string, contents: any, config: any) {
+async function callGeminiWithFallback(defaultModel: string, contents: any, config: any, userKey?: string) {
   let lastError = null;
   for (const model of FALLBACK_MODELS) {
     try {
-      return await callGeminiProxy(model, contents, config);
+      return await callGeminiProxy(model, contents, config, userKey);
     } catch (error: any) {
       lastError = error;
       if (error.message === "QUOTA_EXCEEDED" || error.message.includes("404")) continue;
@@ -58,11 +63,12 @@ async function callGeminiWithFallback(defaultModel: string, contents: any, confi
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
+    const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
     const contents = [{ parts: [{ text: `Read: "${text}"` }] }];
     const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", contents, {
       responseModalities: [Modality.AUDIO],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } }
-    });
+    }, userKey);
     return result.audio || null;
   } catch { return null; }
 };
@@ -102,7 +108,8 @@ export const generateGameContent = async (
   grade: GradeLevel,
   gameType: GameType,
   specificTextbook?: string,
-  subSkill?: GrammarSubSkill
+  subSkill?: GrammarSubSkill,
+  userKey?: string
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
   let specificInstruction = "";
   const gradeInt = parseInt(grade.replace('Grade ', ''));
@@ -149,7 +156,7 @@ export const generateGameContent = async (
       responseSchema: responseSchema,
       temperature: 0.1,
       thinkingConfig: { thinkingBudget: 0 }
-    });
+    }, userKey);
     
     const cleaned = cleanJsonResponse(result.text);
     const parsed = JSON.parse(cleaned);
@@ -163,6 +170,7 @@ export const generateGameContent = async (
 };
 
 export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -180,12 +188,13 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
-    });
+    }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
 };
 
 export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -199,12 +208,13 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
-    });
+    }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return {}; }
 };
 
 export const evaluateSpeaking = async (target: string, transcript: string, grade: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -218,12 +228,13 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
-    });
+    }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
 };
 
 export const evaluatePronunciation = async (target: string, transcript: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
   const schema = {
     type: Type.OBJECT,
     properties: {
@@ -241,7 +252,7 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }
-    });
+    }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
 };
