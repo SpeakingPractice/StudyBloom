@@ -142,7 +142,15 @@ export const generateGameContent = async (
       specificInstruction = `8 vocabulary items. English word in 'questionText', VN meaning in 'explanation'.`;
       break;
     case GameType.Writing:
-      specificInstruction = `2 short writing prompts. Max 50 words per prompt.`;
+      let wordCountRange = "100-300 words";
+      if (gradeInt === 6) wordCountRange = "50-80 words";
+      else if (gradeInt === 7) wordCountRange = "60-150 words";
+      else if (gradeInt === 8) wordCountRange = "70-150 words";
+      else if (gradeInt === 9) wordCountRange = "80-150 words";
+
+      specificInstruction = `Generate EXACTLY 1 writing prompt. The topic must relate to the curriculum of ${grade}. 
+      Specify the required word count for the student as ${wordCountRange}. 
+      'topic' in Vietnamese. Prompt in English.`;
       break;
     default:
       specificInstruction = `6 items. Level ${diffLevel}.`;
@@ -198,13 +206,13 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
   const schema = {
     type: Type.OBJECT,
     properties: {
-      score: { type: Type.INTEGER },
+      score: { type: Type.INTEGER, description: "Score from 0 to 10" },
       feedback: { type: Type.STRING },
       corrections: { type: Type.STRING }
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-pro-preview", `Grade writing: Prompt "${prompt}". Student text: "${studentText}". Level: ${grade}. Response in Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-pro-preview", `Grade writing task: Prompt "${prompt}". Student text: "${studentText}". Level: ${grade}. Evaluate based on grammatical accuracy, vocabulary usage, and task fulfillment. SCORE ON A SCALE OF 0 TO 10. Response in Vietnamese.`, {
       responseMimeType: "application/json",
       responseSchema: schema,
       thinkingConfig: { thinkingBudget: 0 }

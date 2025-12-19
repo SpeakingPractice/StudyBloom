@@ -140,6 +140,24 @@ const App: React.FC = () => {
     }
   };
 
+  // Logic tính tổng điểm hiển thị ở màn hình kết quả
+  const calculateTotalPossibleScore = () => {
+    if (!gameData) return 0;
+    const count = gameData.questions.length || 0;
+    
+    switch (gameData.gameType) {
+      case GameType.Writing:
+        return count * 10; // Mỗi bài viết tối đa 10đ (1 câu hỏi duy nhất)
+      case GameType.TypeToFly:
+        return count; // 1 điểm mỗi từ
+      case GameType.Listening:
+      case GameType.Speaking:
+      case GameType.Grammar:
+      default:
+        return count * 2; // 2 điểm mỗi câu
+    }
+  };
+
   const currentBadge = BADGE_LEVELS.slice().reverse().find(b => totalPoints >= b.score);
 
   return (
@@ -416,7 +434,7 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : (!isQuotaError && finalScore !== null) ? (
-            <ResultCard score={finalScore} total={gameData?.gameType === GameType.TypeToFly ? gameData.questions.length : (gameData?.questions.length || 0) * 2} onRetry={() => { setFinalScore(null); }} onHome={handleReset} />
+            <ResultCard score={finalScore} total={calculateTotalPossibleScore()} onRetry={() => { setFinalScore(null); }} onHome={handleReset} />
           ) : (
             !isQuotaError && renderGameComponent()
           )}
