@@ -3,10 +3,10 @@
 import { Type, Modality } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
+// @google/genai guidelines: MUST NOT use gemini-1.5-flash-latest or gemini-pro.
 const FALLBACK_MODELS = [
   "gemini-3-pro-preview",
-  "gemini-3-flash-preview",
-  "gemini-flash-latest"
+  "gemini-3-flash-preview"
 ];
 
 function cleanJsonResponse(text: string): string {
@@ -26,14 +26,12 @@ function parseErrorMessage(error: any): string {
   }
 }
 
-// User can provide their own API Key which we send to our proxy
+// @google/genai guidelines: Use process.env.API_KEY exclusively on the server proxy.
 async function callGeminiProxy(model: string, contents: any, config: any) {
-  const userApiKey = localStorage.getItem('user_api_key');
-  
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, contents, config, userApiKey }),
+    body: JSON.stringify({ model, contents, config }),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -107,14 +105,24 @@ export const generateGameContent = async (
   subSkill?: GrammarSubSkill
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
   let specificInstruction = "";
-  const isSecondary = parseInt(grade.replace('Grade ', '')) <= 9;
-  const diffLevel = isSecondary ? "A1-A2" : "A1-B2";
+  const gradeInt = parseInt(grade.replace('Grade ', ''));
+  const isLowerSecondary = gradeInt <= 8;
+  const isHighSchool = gradeInt >= 10;
+  
+  const diffLevel = isLowerSecondary ? "Basic (Lớp 6-8)" : isHighSchool ? "Advanced (Lớp 10-12)" : "Intermediate (Lớp 9)";
 
   switch (gameType) {
     case GameType.Grammar:
-      specificInstruction = `10 grammar MCQs. Level ${diffLevel}.`;
       if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `8 Sentence Transformation tasks. 'topic' field MUST be in Vietnamese (e.g., "Câu Bị Động", "Câu Tường Thuật", "Câu Điều Kiện"). 'hint' field MUST contain the grammatical structure of the answer.`;
+        specificInstruction = `8 Sentence Transformation tasks. 'topic' in Vietnamese. 'hint' has the grammar structure.`;
+      } else if (subSkill === GrammarSubSkill.Synonym || subSkill === GrammarSubSkill.Antonym) {
+        const typeStr = subSkill === GrammarSubSkill.Synonym ? "Synonym (Từ đồng nghĩa)" : "Antonym (Từ trái nghĩa)";
+        specificInstruction = `10 ${typeStr} tasks. Level: ${diffLevel}. 
+        Format: Provide a full sentence in 'questionText'. Wrap the target word in <u></u> tags (e.g. "He is very <u>modest</u> about his wins."). 
+        Options must be 4 single words. 
+        IMPORTANT: For Grade 6-8, use simple words like 'big', 'happy', 'scared', 'finish'. For Grade 9-12, use more academic words.`;
+      } else {
+        specificInstruction = `10 grammar MCQs. Level ${diffLevel}.`;
       }
       break;
     case GameType.Listening:
@@ -124,13 +132,13 @@ export const generateGameContent = async (
       specificInstruction = `5 short speaking tasks.`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `12 vocabulary items. 'questionText' is the English word. 'explanation' is the Vietnamese meaning. 'wordType' is the part of speech (Noun/Verb/etc). 'countability' is for nouns only.`;
+      specificInstruction = `12 vocabulary items. English word in 'questionText', VN meaning in 'explanation'.`;
       break;
     default:
       specificInstruction = `10 items. Level ${diffLevel}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output valid JSON only. All 'explanation', 'topic', and 'meaning' MUST be Vietnamese.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output valid JSON. All 'explanation', 'topic', and 'meaning' MUST be Vietnamese.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-pro-preview", prompt, {
@@ -145,7 +153,7 @@ export const generateGameContent = async (
     return parsed;
   } catch (error: any) { 
     if (error.message.includes("Requested entity was not found")) {
-      throw new Error("Requested entity was not found: Vui lòng kiểm tra lại API Key hoặc Billing của bạn.");
+      throw new Error("Dịch vụ tạm thời gián đoạn. Vui lòng thử lại sau.");
     }
     throw error; 
   }

@@ -25,6 +25,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
 
   const currentQuestion = questions[currentIndex];
   const isInputMode = subSkill === GrammarSubSkill.SentenceTrans;
+  const isSynonymAntonym = subSkill === GrammarSubSkill.Synonym || subSkill === GrammarSubSkill.Antonym;
 
   // Reset state on question change
   useEffect(() => {
@@ -105,7 +106,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   const getHintText = () => {
     if (!currentQuestion.correctAnswer) return "";
     const words = currentQuestion.correctAnswer.split(' ');
-    // Reveal more words if requested
     const reveal = Math.max(3, hintCount);
     return words.slice(0, Math.min(words.length, reveal)).join(' ') + "...";
   };
@@ -113,6 +113,13 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   const handleShowHint = () => {
     if (hintCount === 0) setHintCount(3);
     else setHintCount(prev => prev + 2);
+  };
+
+  // Label for specific skills
+  const getTaskLabel = () => {
+    if (subSkill === GrammarSubSkill.Synonym) return "Tìm từ ĐỒNG NGHĨA với từ gạch chân (CLOSEST in meaning)";
+    if (subSkill === GrammarSubSkill.Antonym) return "Tìm từ TRÁI NGHĨA với từ gạch chân (OPPOSITE in meaning)";
+    return null;
   };
 
   return (
@@ -127,18 +134,29 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
 
       <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 border border-white/50 relative overflow-hidden">
         <div className="flex justify-between items-center mb-4">
-          <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest">
-            Câu hỏi {currentIndex + 1}/{questions.length}
+          <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+            Câu {currentIndex + 1}/{questions.length}
           </span>
-          <span className="text-blue-500 font-black text-xs uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full">
+          <span className="text-blue-500 font-black text-[10px] uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full">
             {currentQuestion.topic}
           </span>
         </div>
 
+        {/* Task Header for Synonyms/Antonyms */}
+        {getTaskLabel() && (
+          <div className="mb-6 p-3 bg-amber-50 rounded-xl border border-amber-100 text-center">
+             <p className="text-[10px] md:text-xs font-black text-amber-600 uppercase tracking-tighter">
+               {getTaskLabel()}
+             </p>
+          </div>
+        )}
+
         <div className="text-center mb-8">
-           <h3 className="text-xl md:text-2xl font-black text-gray-800 leading-relaxed">
-            {currentQuestion.questionText}
-          </h3>
+           <h3 
+            className="text-xl md:text-2xl font-black text-gray-800 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: currentQuestion.questionText }}
+           />
+          
           {isInputMode && (
             <div className="mt-4 p-5 bg-blue-50 rounded-2xl border-2 border-dashed border-blue-200 shadow-inner">
               <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Bắt đầu bằng (Start with):</p>
@@ -186,7 +204,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
                    disabled={isEvaluating}
                    className="bg-yellow-50 border-yellow-200 text-yellow-700 whitespace-nowrap px-4"
                  >
-                    Gợi ý thêm từ (More words) 💡
+                    Gợi ý (Hint) 💡
                  </Button>
               </div>
             )}
@@ -223,7 +241,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
                    </div>
                    
                    <div className="pt-2">
-                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Giải thích (Simple Explanation):</p>
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Giải thích:</p>
                      <p className="text-gray-700 text-sm leading-relaxed">{aiResult.explanation}</p>
                    </div>
                  </div>
@@ -231,16 +249,17 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             )}
           </div>
         ) : (
-        /* RENDER FOR MULTIPLE CHOICE */
-          <div className="grid grid-cols-1 gap-4 mb-6">
+        /* RENDER FOR MULTIPLE CHOICE (Includes Synonyms/Antonyms) */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {currentQuestion.options?.map((option, idx) => (
               <Button
                 key={idx}
                 variant={getButtonVariant(option)}
-                className={`text-left justify-start h-auto py-4 px-6 text-lg ${getButtonStyle(option)}`}
+                className={`text-left justify-start h-auto py-4 px-6 text-sm md:text-lg ${getButtonStyle(option)}`}
                 onClick={() => handleOptionClick(option)}
                 fullWidth
               >
+                <span className="mr-3 font-black text-blue-400 opacity-50">{String.fromCharCode(65 + idx)}.</span>
                 {option}
               </Button>
             ))}
@@ -249,7 +268,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
 
         {(showFeedback && !isInputMode) && (
           <div className="bg-white/50 border border-gray-100 rounded-xl p-4 mb-6 animate-fade-in shadow-inner">
-            <p className="font-black text-xs text-gray-400 uppercase tracking-widest mb-1">Giải thích (Explanation):</p>
+            <p className="font-black text-[10px] text-gray-400 uppercase tracking-widest mb-1">Giải thích (Explanation):</p>
             <p className="text-gray-700 text-sm leading-relaxed italic">{currentQuestion.explanation}</p>
           </div>
         )}

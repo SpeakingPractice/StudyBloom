@@ -1,4 +1,5 @@
 
+// @google/genai guidelines: Use GoogleGenAI from @google/genai
 import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
@@ -20,17 +21,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { model, contents, config, userApiKey } = req.body;
+    const { model, contents, config } = req.body;
     
-    // Prioritize key from user UI, else fallback to server environment
-    const apiKey = userApiKey || process.env.API_KEY;
+    // @google/genai guidelines: The API key must be obtained exclusively from process.env.API_KEY.
+    const apiKey = process.env.API_KEY;
     
     if (!apiKey) {
-      return res.status(500).json({ error: "Missing API Key. Vui lòng dán API Key vào ô trống phía trên nhé!" });
+      return res.status(500).json({ error: "Configuration Error: Missing Server API Key." });
     }
 
+    // @google/genai guidelines: Initialize with named parameter
     const ai = new GoogleGenAI({ apiKey });
     
+    // @google/genai guidelines: Use ai.models.generateContent directly
     const result = await ai.models.generateContent({
       model: model || 'gemini-3-flash-preview',
       contents,
@@ -43,6 +46,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ audio: audioPart.inlineData.data });
     }
 
+    // @google/genai guidelines: Use result.text property directly
     return res.status(200).json({ text: result.text });
   } catch (error) {
     console.error("Gemini Proxy Error:", error);

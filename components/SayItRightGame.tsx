@@ -1,5 +1,6 @@
 
-import { useState, useEffect, useRef } from 'react';
+// @google/genai guidelines: Import React to use React.FC and JSX
+import React, { useState, useEffect, useRef } from 'react';
 import { QuestionData } from '../types';
 import { Button } from './Button';
 import { generateSpeech, evaluatePronunciation } from '../services/geminiService';
