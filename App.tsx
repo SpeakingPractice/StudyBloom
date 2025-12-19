@@ -69,7 +69,6 @@ const App: React.FC = () => {
     setKeyVerificationStatus('none');
     
     try {
-      // Thử gọi một yêu cầu cực nhỏ để kiểm tra Key
       await generateGameContent(GradeLevel.Grade6, GameType.Grammar, "", GrammarSubSkill.GrammarQuiz, apiKeyInput);
       setKeyVerificationStatus('success');
       setIsQuotaError(false);
@@ -184,58 +183,69 @@ const App: React.FC = () => {
       )}
 
       <div className="relative p-2 md:p-8 max-w-7xl mx-auto z-10">
-        <header className="flex items-center justify-between mb-8 gap-4 glass-panel p-4 rounded-3xl transition-all duration-500">
-           <div className="flex items-center gap-4 flex-1 min-w-0">
+        <header className="flex flex-col md:flex-row items-stretch md:items-center mb-8 gap-4 glass-panel p-4 rounded-[2rem] md:rounded-3xl transition-all duration-500 md:justify-between">
+           {/* Logo Section (Left on Desktop) */}
+           <div className="flex items-center justify-between w-full md:w-auto gap-4 shrink-0">
               <div 
-                className="font-black text-2xl md:text-3xl text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] cursor-pointer whitespace-nowrap shrink-0 hover:scale-105 transition-transform flex items-center gap-2" 
+                className="font-black text-2xl md:text-3xl text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] cursor-pointer whitespace-nowrap hover:scale-105 transition-transform flex items-center gap-2" 
                 onClick={handleReset}
               >
                 StudyBloom <span className="text-red-500">🎅</span>
               </div>
               
-              <div className="flex-1 max-w-sm">
-                <div className="relative flex items-center">
-                  <div className="absolute left-3 flex items-center pointer-events-none text-white/50 transition-colors">
-                    <Icons.Key />
-                  </div>
-                  <input
-                    type="password"
-                    value={apiKeyInput}
-                    onChange={handleApiKeyChange}
-                    placeholder="Dán Google API Key..."
-                    className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-24 py-2.5 rounded-2xl text-white text-sm font-bold placeholder:text-white/30 cursor-text outline-none ${
-                      keyVerificationStatus === 'success' ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
-                      keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'
-                    }`}
-                  />
-                  <button 
-                    onClick={handleVerifyKey}
-                    disabled={isVerifyingKey || !apiKeyInput}
-                    className={`absolute right-1 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tighter transition-all flex items-center gap-1 ${
-                      keyVerificationStatus === 'success' ? 'bg-emerald-500 text-white' : 
-                      keyVerificationStatus === 'fail' ? 'bg-red-500 text-white' : 
-                      'bg-amber-500 hover:bg-amber-600 text-white'
-                    } disabled:opacity-50`}
-                  >
-                    {isVerifyingKey ? (
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : keyVerificationStatus === 'success' ? (
-                      <Icons.Check />
-                    ) : 'Xác nhận'}
-                  </button>
-                </div>
-                <div className="mt-1 flex justify-start pl-1">
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[10px] text-amber-400/60 hover:text-amber-400 font-bold underline decoration-amber-400/30 transition-all">Lấy API key ở đây 🎁</a>
-                </div>
+              {/* Badge Button - Mobile Only (Hidden on Desktop) */}
+              <div className="flex md:hidden shrink-0">
+                <button onClick={() => setShowBadges(true)} className="glass-panel px-3 py-1.5 rounded-xl shadow-xl flex items-center gap-2 border-b-2 border-amber-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0">
+                  <span className="text-xl">{currentBadge?.icon || "🧭"}</span>
+                  <span className="font-black text-white text-[10px]">{totalPoints} pts</span>
+                </button>
               </div>
            </div>
 
-           <div className="flex shrink-0">
-              <button onClick={() => setShowBadges(true)} className="glass-panel px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 border-b-4 border-amber-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0">
+           {/* API Key Input Section (Middle on Desktop) */}
+           <div className="w-full md:flex-1 md:max-w-md order-3 md:order-2 flex flex-col items-center">
+              <div className="relative flex items-center group w-full">
+                <div className="absolute left-3 flex items-center pointer-events-none text-white/50 group-focus-within:text-amber-400 transition-colors">
+                  <Icons.Key />
+                </div>
+                <input
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={handleApiKeyChange}
+                  placeholder="Dán Google API Key..."
+                  className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-28 md:pr-24 py-3 rounded-2xl text-white text-sm font-bold placeholder:text-white/30 cursor-text outline-none ${
+                    keyVerificationStatus === 'success' ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 
+                    keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'
+                  }`}
+                />
+                <button 
+                  onClick={handleVerifyKey}
+                  disabled={isVerifyingKey || !apiKeyInput}
+                  className={`absolute right-1 px-4 py-2 rounded-xl font-black text-[11px] uppercase tracking-tighter transition-all flex items-center justify-center min-w-[80px] ${
+                    keyVerificationStatus === 'success' ? 'bg-emerald-500 text-white' : 
+                    keyVerificationStatus === 'fail' ? 'bg-red-500 text-white' : 
+                    'bg-amber-500 hover:bg-amber-600 text-white'
+                  } disabled:opacity-50 active:scale-95`}
+                >
+                  {isVerifyingKey ? (
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : keyVerificationStatus === 'success' ? (
+                    <Icons.Check />
+                  ) : 'Xác nhận'}
+                </button>
+              </div>
+              <div className="mt-1 flex justify-start pl-1 w-full">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[9px] md:text-[10px] text-amber-400/60 hover:text-amber-400 font-bold underline decoration-amber-400/30 transition-all">Lấy API key ở đây 🎁</a>
+              </div>
+           </div>
+
+           {/* Badge Section (Right on Desktop) */}
+           <div className="hidden md:flex shrink-0 order-3">
+              <button onClick={() => setShowBadges(true)} className="glass-panel px-5 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(245,158,11,0.2)] flex items-center gap-3 border-b-4 border-amber-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0 group">
                 {currentBadge ? (
                   <>
-                    <span className="text-xl md:text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">{currentBadge.icon}</span>
-                    <span className={`font-black text-xs md:text-sm hidden sm:inline text-amber-400`}>{currentBadge.name}</span>
+                    <span className="text-xl md:text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] group-hover:scale-110 transition-transform">{currentBadge.icon}</span>
+                    <span className={`font-black text-xs md:text-sm text-amber-400`}>{currentBadge.name}</span>
                   </>
                 ) : (
                   <>
@@ -250,14 +260,14 @@ const App: React.FC = () => {
         </header>
 
         {isQuotaError && (
-          <div className="glass-panel rounded-[2.5rem] p-10 md:p-16 shadow-[0_40px_80px_rgba(0,0,0,0.5)] border-4 border-white/10 mb-8 max-w-2xl mx-auto text-center animate-fade-in-up">
-             <div className="w-24 h-24 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse shadow-[0_0_30px_rgba(220,38,38,0.4)]">
-                <span className="text-5xl">🎄</span>
+          <div className="glass-panel rounded-[2.5rem] p-8 md:p-16 shadow-[0_40px_80px_rgba(0,0,0,0.5)] border-4 border-white/10 mb-8 max-w-2xl mx-auto text-center animate-fade-in-up">
+             <div className="w-20 h-20 md:w-24 md:h-24 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse shadow-[0_0_30px_rgba(220,38,38,0.4)]">
+                <span className="text-4xl md:text-5xl">🎄</span>
              </div>
-             <h2 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight tracking-tighter uppercase">
+             <h2 className="text-2xl md:text-4xl font-black text-white mb-4 leading-tight tracking-tighter uppercase">
                 Giáng sinh bị gián đoạn? ⛄
              </h2>
-             <p className="text-white/60 font-bold mb-10 text-lg max-w-md mx-auto leading-relaxed">
+             <p className="text-white/60 font-bold mb-10 text-base md:text-lg max-w-md mx-auto leading-relaxed">
                 {apiKeyInput 
                   ? "Mã API Key này dường như không hợp lệ hoặc đã hết lượt. Hãy thử lại với một Key chính chủ mới nhé!"
                   : "Để khởi động cỗ xe tuần lộc AI, bạn cần dán mã API Key cá nhân từ Google AI Studio vào ô bên dưới."}
@@ -273,7 +283,7 @@ const App: React.FC = () => {
                     value={apiKeyInput}
                     onChange={handleApiKeyChange}
                     placeholder="Dán mã tại đây..."
-                    className="w-full bg-black/40 focus:bg-black/60 border-4 border-white/5 focus:border-amber-500 transition-all pl-16 pr-6 py-6 rounded-[2rem] text-white text-xl font-black placeholder:text-white/10 outline-none shadow-inner"
+                    className="w-full bg-black/40 focus:bg-black/60 border-4 border-white/5 focus:border-amber-500 transition-all pl-16 pr-6 py-5 md:py-6 rounded-[1.5rem] md:rounded-[2rem] text-white text-lg md:text-xl font-black placeholder:text-white/10 outline-none shadow-inner"
                   />
                 </div>
 
@@ -281,11 +291,11 @@ const App: React.FC = () => {
                   <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-sm font-bold text-amber-400 underline hover:text-amber-300 transition-colors">Lấy túi quà (API Key) ở đây</a>
                 </div>
 
-                <Button onClick={handleVerifyKey} variant="primary" fullWidth size="lg" className="py-6 text-xl shadow-2xl rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700">
+                <Button onClick={handleVerifyKey} variant="primary" fullWidth size="lg" className="py-5 md:py-6 text-lg md:text-xl shadow-2xl rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700">
                    {isVerifyingKey ? "Đang kiểm tra..." : "Xác nhận & Thắp sáng! 🌟"}
                 </Button>
                 
-                <button onClick={() => setIsQuotaError(false)} className="text-sm font-black text-white/30 uppercase tracking-widest hover:text-white/60 transition-colors">Để sau</button>
+                <button onClick={() => setIsQuotaError(false)} className="text-[10px] md:text-sm font-black text-white/30 uppercase tracking-widest hover:text-white/60 transition-colors">Để sau</button>
              </div>
           </div>
         )}
@@ -293,36 +303,36 @@ const App: React.FC = () => {
         <main>
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
-              <div className="relative w-32 h-32 mb-8">
+              <div className="relative w-24 h-24 md:w-32 md:h-32 mb-8">
                  <div className="absolute inset-0 border-8 border-white/10 border-t-red-500 rounded-full animate-spin"></div>
                  <div className="absolute inset-4 border-8 border-white/5 border-t-emerald-500 rounded-full animate-spin [animation-direction:reverse]"></div>
-                 <div className="absolute inset-0 flex items-center justify-center text-4xl">🦌</div>
+                 <div className="absolute inset-0 flex items-center justify-center text-3xl md:text-4xl">🦌</div>
               </div>
-              <h3 className="text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] mb-2 text-center uppercase tracking-tighter">Tuần lộc đang chở bài học tới...</h3>
-              <p className="text-white/40 font-bold text-center">Tuyết đang rơi và AI đang soạn câu hỏi ^.^</p>
+              <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] mb-2 text-center uppercase tracking-tighter">Tuần lộc đang chở bài học tới...</h3>
+              <p className="text-white/40 font-bold text-center text-sm">Tuyết đang rơi và AI đang soạn câu hỏi ^.^</p>
             </div>
           ) : (!isQuotaError && !selectedGrade) ? (
             <div className="animate-fade-in space-y-8">
               <div className="text-center space-y-4 mb-12 relative">
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-5xl opacity-80">🔔</div>
-                <h1 className="text-6xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">StudyBloom</h1>
-                <p className="text-xs md:text-base text-amber-400 font-black max-w-3xl mx-auto drop-shadow-lg px-4 opacity-90 uppercase tracking-tight whitespace-nowrap">Phần mềm luyện tiếng Anh cho học sinh cấp 2 và 3</p>
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-4xl md:text-5xl opacity-80">🔔</div>
+                <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">StudyBloom</h1>
+                <p className="text-[10px] md:text-base text-amber-400 font-black max-w-3xl mx-auto drop-shadow-lg px-4 opacity-90 uppercase tracking-tight whitespace-nowrap">Phần mềm luyện tiếng Anh cho học sinh cấp 2 và 3</p>
               </div>
               
               <div className="grid gap-8">
               {Object.entries(GRADE_GROUPS).map(([groupName, grades]) => (
-                <div key={groupName} className="glass-panel rounded-[2.5rem] p-6 md:p-10 shadow-2xl border-t-4 border-t-red-600/50 hover:bg-white/5 transition-all">
-                  <h3 className="text-xl md:text-2xl font-black text-white mb-8 flex items-center gap-4">
-                    <span className="p-3 rounded-2xl bg-white/5 text-amber-400 shadow-inner"><Icons.Book /></span>
+                <div key={groupName} className="glass-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-2xl border-t-4 border-t-red-600/50 hover:bg-white/5 transition-all">
+                  <h3 className="text-lg md:text-2xl font-black text-white mb-6 md:mb-8 flex items-center gap-4">
+                    <span className="p-2 md:p-3 rounded-2xl bg-white/5 text-amber-400 shadow-inner"><Icons.Book /></span>
                     {groupName} {groupName.includes('THCS') ? '🌲' : '⛄'}
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                     {grades.map((grade) => (
                       <Button 
                         key={grade} 
                         onClick={() => setSelectedGrade(grade)} 
                         variant="outline" 
-                        className="hover:scale-105 transition-all bg-white/5 hover:bg-white/10 border-white/10 text-white text-base md:text-xl font-black h-20 rounded-[1.5rem]"
+                        className="hover:scale-105 transition-all bg-white/5 hover:bg-white/10 border-white/10 text-white text-sm md:text-xl font-black h-16 md:h-20 rounded-[1.2rem] md:rounded-[1.5rem]"
                       >
                         {grade.replace('Grade ', 'Lớp ')}
                       </Button>
@@ -334,69 +344,69 @@ const App: React.FC = () => {
             </div>
           ) : (!isQuotaError && !gameData) ? (
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-              <Button onClick={() => setSelectedGrade(null)} variant="outline" size="sm" className="bg-white/5 border-white/10 text-white font-bold px-6 hover:bg-white/10">← Trở lại</Button>
-              <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border-b-8 border-amber-600/30">
-                <h2 className="text-3xl md:text-4xl font-black text-white mb-10 tracking-tighter flex items-center gap-4">
+              <Button onClick={() => setSelectedGrade(null)} variant="outline" size="sm" className="bg-white/5 border-white/10 text-white font-bold px-6 hover:bg-white/10 rounded-xl">← Trở lại</Button>
+              <div className="glass-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border-b-8 border-amber-600/30">
+                <h2 className="text-2xl md:text-4xl font-black text-white mb-8 md:mb-10 tracking-tighter flex items-center gap-4">
                    Lớp học: <span className="text-red-500">{selectedGrade?.replace('Grade ', 'Lớp ')}</span> 🦌
                 </h2>
-                <div className="grid md:grid-cols-2 gap-10">
+                <div className="grid md:grid-cols-2 gap-8 md:gap-10">
                   <div>
                     <label className="block text-amber-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Giáo trình 📚</label>
                     <div className="space-y-3 max-h-72 overflow-y-auto pr-3 custom-scrollbar">
-                      <div onClick={() => setSelectedTextbook('')} className={`cursor-pointer p-6 rounded-[2rem] border-2 transition-all ${selectedTextbook === '' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
-                        <div className="font-black text-white text-lg">Tổng hợp (General) 🌍</div>
-                        <div className="text-xs font-bold text-white/40 mt-1">Ôn tập toàn diện kiến thức bài bản</div>
+                      <div onClick={() => setSelectedTextbook('')} className={`cursor-pointer p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === '' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
+                        <div className="font-black text-white text-base md:text-lg">Tổng hợp (General) 🌍</div>
+                        <div className="text-[10px] md:text-xs font-bold text-white/40 mt-1">Ôn tập toàn diện kiến thức bài bản</div>
                       </div>
                       {(parseInt(selectedGrade!.split(' ')[1]) <= 9 ? TEXTBOOKS_BY_GRADE['Secondary'] : TEXTBOOKS_BY_GRADE['High']).map(tb => (
-                        <div key={tb} onClick={() => setSelectedTextbook(tb)} className={`cursor-pointer p-6 rounded-[2rem] border-2 transition-all ${selectedTextbook === tb ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
-                          <div className="font-black text-white text-base">{tb.split('(')[0]}</div>
-                          <div className="text-xs font-bold text-white/40 mt-1 italic">{tb.includes('(') ? tb.split('(')[1].replace(')', '') : 'Phiên bản chuẩn'}</div>
+                        <div key={tb} onClick={() => setSelectedTextbook(tb)} className={`cursor-pointer p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === tb ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
+                          <div className="font-black text-white text-sm md:text-base">{tb.split('(')[0]}</div>
+                          <div className="text-[10px] md:text-xs font-bold text-white/40 mt-1 italic">{tb.includes('(') ? tb.split('(')[1].replace(')', '') : 'Phiên bản chuẩn'}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
                     <label className="block text-amber-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Kỹ năng ✨</label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 md:gap-4">
                       {Object.values(GameType).map((type) => (
                         <Button 
                           key={type} 
                           variant={selectedGameType === type ? 'secondary' : 'outline'} 
                           onClick={() => { setSelectedGameType(type); if (type === GameType.Grammar) setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); else setSelectedSubSkill(null); }} 
-                          className={`py-8 h-full rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5'}`}
+                          className={`py-6 md:py-8 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5'}`}
                         >
-                          <span className="text-[11px] font-black text-center leading-tight uppercase tracking-tighter">{type.split(' (')[0]}</span>
+                          <span className="text-[10px] md:text-[11px] font-black text-center leading-tight uppercase tracking-tighter">{type.split(' (')[0]}</span>
                         </Button>
                       ))}
                     </div>
                   </div>
                 </div>
                 {selectedGameType === GameType.Grammar && (
-                  <div className="mt-10 pt-10 border-t border-white/5">
+                  <div className="mt-8 md:mt-10 pt-8 md:pt-10 border-t border-white/5">
                     <label className="block text-amber-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Dạng bài tập chuyên sâu ❄️</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
                       {Object.values(GrammarSubSkill).map((sub) => (
                         <Button 
                           key={sub} 
                           variant={selectedSubSkill === sub ? 'primary' : 'outline'} 
                           size="sm" 
                           onClick={() => setSelectedSubSkill(sub)}
-                          className={`rounded-2xl ${selectedSubSkill === sub ? 'bg-emerald-600 border-emerald-800' : 'bg-black/20 border-white/5'}`}
+                          className={`rounded-xl md:rounded-2xl ${selectedSubSkill === sub ? 'bg-emerald-600 border-emerald-800' : 'bg-black/20 border-white/5'}`}
                         >
-                          <span className="text-[10px] font-black uppercase tracking-tighter">{sub}</span>
+                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter text-center">{sub}</span>
                         </Button>
                       ))}
                     </div>
                   </div>
                 )}
-                <div className="mt-12">
+                <div className="mt-10 md:mt-12">
                   <Button 
                     onClick={handleStartGame} 
                     fullWidth 
                     size="lg" 
                     variant="primary" 
                     disabled={!selectedGameType} 
-                    className="text-xl shadow-[0_20px_40px_rgba(220,38,38,0.3)] py-8 h-24 rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter"
+                    className="text-lg md:text-xl shadow-[0_20px_40px_rgba(220,38,38,0.3)] py-6 md:py-8 h-20 md:h-24 rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter"
                   >
                     Mở hộp quà bài học 🎁
                   </Button>
@@ -411,7 +421,7 @@ const App: React.FC = () => {
         </main>
       </div>
 
-      <footer className="text-center text-white/20 mt-16 text-[10px] pb-12 relative z-10 px-4">
+      <footer className="text-center text-white/20 mt-16 text-[9px] md:text-[10px] pb-12 relative z-10 px-4">
         <p className="font-black uppercase tracking-[0.5em] mb-2">StudyBloom 🎄 Holiday Interactive Edition</p>
         <p className="italic underline underline-offset-4 decoration-white/10">Học tập hiệu quả giữa không khí Giáng sinh ấm áp.</p>
       </footer>
