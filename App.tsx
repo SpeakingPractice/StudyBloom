@@ -18,7 +18,6 @@ declare global {
     openSelectKey: () => Promise<void>;
   }
   interface Window {
-    // Added optional modifier to ensure compatibility with other declarations of 'aistudio'
     aistudio?: AIStudio;
   }
 }
@@ -26,6 +25,7 @@ declare global {
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
   Badge: () => <svg className="w-6 h-6 mr-1 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>,
+  Key: () => <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
 };
 
 const BackgroundDecor = () => (
@@ -60,8 +60,8 @@ const App: React.FC = () => {
       await window.aistudio.openSelectKey();
       setIsQuotaError(false);
       setError(null);
-      // Nếu đã chọn lớp và môn, tự động thử lại sau khi chọn key
-      if (selectedGrade && selectedGameType) {
+      // Nếu đang dở việc chọn bài, tự động khởi động lại sau khi chọn key
+      if (selectedGrade && selectedGameType && !gameData) {
         handleStartGame();
       }
     }
@@ -84,10 +84,12 @@ const App: React.FC = () => {
       });
     } catch (err: any) {
       const msg = err.message || "Unknown error";
-      setError(msg);
       // Nhận diện lỗi quota từ API proxy (QUOTA_EXCEEDED hoặc 429)
-      if (msg.toUpperCase().includes("QUOTA_EXCEEDED") || msg.includes("Requested entity was not found")) {
+      if (msg.toUpperCase().includes("QUOTA_EXCEEDED") || msg.includes("Requested entity was not found") || msg.includes("429")) {
         setIsQuotaError(true);
+        setError(null); // Xóa error thông thường để hiện thông báo Key chuyên biệt
+      } else {
+        setError(msg);
       }
     } finally {
       setLoading(false);
@@ -135,9 +137,23 @@ const App: React.FC = () => {
                 StudyBloom
               </div>
               
-              <div className="flex items-center">
+              {/* Ô nhập API Key (nút kích hoạt selector) */}
+              <button 
+                onClick={handleUpdateApiKey}
+                className="flex items-center bg-white/20 hover:bg-white/30 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/30 transition-all group shrink-0"
+              >
+                <div className="p-1.5 bg-blue-500/80 rounded-lg text-white group-hover:bg-blue-600 transition-colors mr-2">
+                  <Icons.Key />
+                </div>
+                <div className="text-left hidden sm:block">
+                  <p className="text-[9px] font-black text-white/70 uppercase leading-none mb-0.5">API Configuration</p>
+                  <p className="text-[11px] font-bold text-white leading-none">Cập nhật API Key</p>
+                </div>
+              </button>
+              
+              <div className="flex items-center ml-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse mr-2 shadow-[0_0_10px_rgba(74,222,128,0.8)]"></div>
-                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest hidden sm:block">AI Study Node Active</span>
+                <span className="text-[10px] font-black text-white/50 uppercase tracking-widest hidden lg:block">AI Study Node Active</span>
               </div>
            </div>
 
@@ -160,28 +176,36 @@ const App: React.FC = () => {
            </div>
         </header>
 
-        {error && (
+        {/* Thông báo lỗi QUOTA (Hiển thị thay vì banner đỏ rực nếu người dùng muốn thay key) */}
+        {isQuotaError && (
+          <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white mb-8 max-w-2xl mx-auto text-center animate-fade-in-up">
+             <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-5xl">🔑</span>
+             </div>
+             <h2 className="text-2xl md:text-3xl font-black text-gray-800 mb-4 leading-tight uppercase tracking-tight">
+                API key hiện tại hết lượt sử dụng,<br/><span className="text-blue-600">hãy nhập API key mới</span>
+             </h2>
+             <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">
+                Hệ thống AI tạm thời chạm ngưỡng giới hạn miễn phí. Đừng lo lắng, hãy chọn một Key từ dự án có trả phí của bạn để tiếp tục bài học.
+             </p>
+             <div className="space-y-4">
+                <Button onClick={handleUpdateApiKey} variant="primary" fullWidth size="lg" className="py-5 text-xl shadow-blue-200">
+                  <Icons.Key /> Chọn API Key mới ngay
+                </Button>
+                <button onClick={() => setIsQuotaError(false)} className="text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Để sau</button>
+             </div>
+          </div>
+        )}
+
+        {/* Thông báo lỗi thông thường (không phải Quota) */}
+        {error && !isQuotaError && (
           <div className="bg-red-100/95 backdrop-blur-sm border-l-8 border-red-500 text-red-700 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-xl animate-fade-in-up">
              <div className="flex items-start gap-4">
                <span className="text-3xl">⚠️</span>
                <div className="flex-1">
-                 <p className="font-black text-lg uppercase tracking-tight mb-1 text-red-600">
-                   {isQuotaError ? "API key hiện tại hết lượt sử dụng, hãy nhập API key mới" : "Dịch vụ đang bận (Service Error)"}
-                 </p>
+                 <p className="font-black text-lg uppercase tracking-tight mb-1">Dịch vụ đang bận (Service Error)</p>
                  <p className="text-sm font-medium opacity-90 mb-4">{error}</p>
-                 
-                 {isQuotaError ? (
-                   <div className="space-y-4">
-                     <p className="text-xs bg-red-200/50 p-3 rounded-lg border border-red-200 font-bold italic">
-                       Hệ thống AI đã chạm ngưỡng giới hạn. Vui lòng bấm vào nút bên dưới để chọn một API Key từ dự án có trả phí (Paid Project) để tiếp tục học tập nhé!
-                     </p>
-                     <Button onClick={handleUpdateApiKey} variant="danger" fullWidth className="py-4 text-base shadow-red-300">
-                       Nhập API Key mới
-                     </Button>
-                   </div>
-                 ) : (
-                   <button onClick={() => setError(null)} className="underline text-xs font-black uppercase tracking-widest hover:text-red-900">Đóng thông báo</button>
-                 )}
+                 <button onClick={() => setError(null)} className="underline text-xs font-black uppercase tracking-widest hover:text-red-900">Đóng thông báo</button>
                </div>
              </div>
           </div>
@@ -194,7 +218,7 @@ const App: React.FC = () => {
               <h3 className="text-xl md:text-2xl font-bold text-white drop-shadow-md mb-2 text-center">Đang soạn bài học...</h3>
               <p className="text-white/80 text-center">Bạn đợi một chút để mình chuẩn bị nhé ^.^</p>
             </div>
-          ) : !selectedGrade ? (
+          ) : (!isQuotaError && !selectedGrade) ? (
             <div className="animate-fade-in space-y-8">
               <div className="text-center space-y-4 mb-8 md:mb-12">
                 <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight text-white drop-shadow-lg">StudyBloom</h1>
@@ -213,7 +237,7 @@ const App: React.FC = () => {
                 </div>
               ))}
             </div>
-          ) : !gameData ? (
+          ) : (!isQuotaError && !gameData) ? (
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
               <Button onClick={() => setSelectedGrade(null)} variant="outline" size="sm" className="bg-white/80 border-white text-gray-700">← Quay lại</Button>
               <div className="bg-white/90 backdrop-blur-lg rounded-3xl p-6 md:p-8 shadow-2xl border border-white/50">
@@ -261,10 +285,10 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-          ) : finalScore !== null ? (
-            <ResultCard score={finalScore} total={gameData.gameType === GameType.TypeToFly ? gameData.questions.length : gameData.questions.length * 2} onRetry={() => { setFinalScore(null); }} onHome={handleReset} />
+          ) : (!isQuotaError && finalScore !== null) ? (
+            <ResultCard score={finalScore} total={gameData?.gameType === GameType.TypeToFly ? gameData.questions.length : (gameData?.questions.length || 0) * 2} onRetry={() => { setFinalScore(null); }} onHome={handleReset} />
           ) : (
-            renderGameComponent()
+            !isQuotaError && renderGameComponent()
           )}
         </main>
       </div>
