@@ -115,16 +115,35 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
   const renderHintList = (hint: string | undefined) => {
     if (!hint) return null;
-    // Split by common delimiters like |, \n, or bullet marks
     const points = hint.split(/[|\n]+/).map(p => p.trim().replace(/^[•\-\*\s]+/, '')).filter(p => p.length > 0);
     return (
       <div className="space-y-3">
         {points.map((p, i) => (
-          <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+          <div key={i} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-blue-100 shadow-sm transition-all hover:shadow-md">
              <span className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></span>
              <span className="text-sm text-blue-800 font-bold">{p}</span>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderVocabularyTags = (meaning: string | undefined) => {
+    if (!meaning) return null;
+    const tags = meaning.split(',').map(tag => tag.trim());
+    return (
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag, i) => {
+          const parts = tag.split('-').map(p => p.trim());
+          const eng = parts[0];
+          const vie = parts[1];
+          return (
+            <div key={i} className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-[10px] font-black border border-amber-200 shadow-sm flex items-center gap-1.5">
+               <span className="uppercase">{eng}</span>
+               {vie && <span className="text-amber-500/80 font-bold border-l border-amber-300 pl-1.5">{vie}</span>}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -149,11 +168,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
           <div className="space-y-6">
             <div className="bg-amber-50/50 p-6 rounded-3xl border-2 border-dashed border-amber-100">
               <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-4">Từ vựng nên dùng</p>
-              <div className="flex flex-wrap gap-2">
-                {current.meaning?.split(',').map((w, i) => (
-                  <span key={i} className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black border border-amber-200">{w.trim()}</span>
-                ))}
-              </div>
+              {renderVocabularyTags(current.meaning)}
             </div>
           </div>
         </div>
@@ -197,8 +212,8 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
       ) : (
         <div className="flex flex-col items-center">
           <Button onClick={isListening ? stopRecordingSession : startRecordingSession} variant={isListening ? 'danger' : 'primary'}
-            className={`rounded-full w-32 h-32 flex items-center justify-center transition-all ${isListening ? 'ring-8 ring-red-100 scale-110 shadow-lg' : 'hover:scale-105'}`}>
-            <span className="font-black text-white">{isListening ? 'XÁC NHẬN' : 'BẮT ĐẦU'}</span>
+            className={`rounded-full w-32 h-32 flex items-center justify-center transition-all ${isListening ? 'ring-8 ring-red-100 scale-110 shadow-lg' : 'hover:scale-105 shadow-xl shadow-blue-500/20'}`}>
+            <span className="font-black text-white text-xl">{isListening ? 'XÁC NHẬN' : 'BẮT ĐẦU'}</span>
           </Button>
           <p className="mt-4 text-[10px] text-gray-400 font-black uppercase tracking-widest">{isListening ? "Hệ thống đang lắng nghe..." : "Nhấn để nói"}</p>
         </div>

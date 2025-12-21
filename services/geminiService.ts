@@ -46,7 +46,7 @@ async function callGeminiWithFallback(defaultModel: string, contents: any, confi
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
     const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
-    const contents = [{ parts: [{ text: `Read: "${text}"` }] }];
+    const contents = [{ parts: [{ text: `Read clearly: "${text}"` }] }];
     const result = await callGeminiProxy("gemini-2.5-flash-preview-tts", contents, {
       responseModalities: [Modality.AUDIO],
       speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } }
@@ -91,27 +91,37 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
   const gradeInt = parseInt(grade.replace('Grade ', ''));
 
   if (gameType === GameType.Speaking) {
-    specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS related to the student's life. 
-    IMPORTANT: Provide 'hint' as a CLEAR list of 3-4 bullet points separated by '|' character. 
-    'meaning' should be 3-5 keywords. No definitions.`;
+    specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS for ${grade} students. 
+    IMPORTANT: 'hint' field must be a CLEAR list of 3-4 bullet points separated by '|' character. 
+    'meaning' field MUST provide 3-5 keywords in English-Vietnamese pair format, e.g., 'hobby - sở thích, active - năng động'. 
+    Ensure topics are relevant to ${grade} students.`;
   } else if (gameType === GameType.Writing) {
     let wordCount = "50-80";
     if (gradeInt === 7) wordCount = "60-150";
     else if (gradeInt === 8) wordCount = "70-150";
     else if (gradeInt === 9) wordCount = "80-150";
     else if (gradeInt >= 10) wordCount = "100-300";
-    specificInstruction = `Generate 1 ESSAY topic for ${grade}. Word count: ${wordCount} words. Prompt should be in English.`;
-  } else if (gameType === GameType.Grammar && subSkill === GrammarSubSkill.SentenceTrans) {
-    specificInstruction = `Sentence transformation tasks. MUST provide 'startingWords' field containing the first 2-3 words of the correct answer.`;
+    specificInstruction = `Generate 1 ESSAY topic for ${grade}. Word count: ${wordCount} words. Based on textbook: ${specificTextbook || 'General'}.`;
+  } else if (gameType === GameType.Grammar) {
+    if (subSkill === GrammarSubSkill.SentenceTrans) {
+      specificInstruction = `Sentence transformation tasks. MUST provide 'startingWords' field containing the first 2-3 words of the correct answer.`;
+    } else {
+      specificInstruction = `Generate 10 advanced grammar questions for ${grade} based on textbook: ${specificTextbook || 'General Success'}. 
+      Task Type: ${subSkill}. 
+      Focus on specific syllabus units for this grade. 
+      - If Pronunciation: Choose word with different underlined sound.
+      - If Stress: Choose word with different stress pattern.
+      - If Synonym/Antonym: Advanced academic words suitable for ${grade}.
+      Include detailed explanations in Vietnamese.`;
+    }
   } else if (gameType === GameType.TypeToFly) {
-    specificInstruction = `Generate 15 vocabulary items for ${grade}. 
-    IMPORTANT: Use ONLY single words, short Collocations, or Phrasal Verbs (max 3 words). 
-    NO long sentences. 'explanation' should be the Vietnamese meaning.`;
+    specificInstruction = `Generate 15 vocabulary items for ${grade} from textbook: ${specificTextbook || 'General'}. 
+    Use ONLY short Collocations or Phrasal Verbs (max 3 words). Vietnamese meanings in 'explanation'.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade}.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. JSON output. Vietnamese for hints/explanations.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. JSON output only. Vietnamese for hints/explanations.`;
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
     responseSchema: responseSchema,
