@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { QuestionData } from '../types';
 import { Button } from './Button';
@@ -18,12 +19,10 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const prefetchedBufferRef = useRef<AudioBuffer | null>(null);
-  const nextPrefetchedBufferRef = useRef<AudioBuffer | null>(null);
 
   const current = questions[index];
 
-  const getAudioCtx = () => {
+  const initAudioCtx = () => {
     if (!audioCtxRef.current) {
       audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -38,17 +37,6 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
     stopAudio();
     setReadingCountdown(15);
     setAudioError(false);
-    
-    if (nextPrefetchedBufferRef.current) {
-      prefetchedBufferRef.current = nextPrefetchedBufferRef.current;
-      nextPrefetchedBufferRef.current = null;
-    } else {
-      prefetchedBufferRef.current = null;
-      if (current?.listeningScript) prefetchAudio(current.listeningScript, true);
-    }
-
-    const nextQ = questions[index + 1];
-    if (nextQ?.listeningScript) prefetchAudio(nextQ.listeningScript, false);
   }, [index]);
 
   useEffect(() => {
@@ -57,39 +45,6 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
       return () => clearTimeout(timer);
     }
   }, [readingCountdown]);
-
-  const decodeBase64 = (base64: string) => {
-    const binaryString = window.atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-    return bytes;
-  };
-
-  const decodeAudioDataToBuffer = async (data: Uint8Array, ctx: AudioContext): Promise<AudioBuffer> => {
-    // PCM 16-bit requires 2 bytes per sample alignment
-    const dataInt16 = new Int16Array(data.buffer, data.byteOffset, data.length / 2);
-    const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
-    const channelData = buffer.getChannelData(0);
-    for (let i = 0; i < dataInt16.length; i++) {
-      channelData[i] = dataInt16[i] / 32768.0;
-    }
-    return buffer;
-  };
-
-  const prefetchAudio = async (script: string, isCurrent: boolean) => {
-    try {
-      const audioData = await generateSpeech(script);
-      if (audioData) {
-        const ctx = getAudioCtx();
-        const bytes = decodeBase64(audioData);
-        const buffer = await decodeAudioDataToBuffer(bytes, ctx);
-        if (isCurrent) prefetchedBufferRef.current = buffer;
-        else nextPrefetchedBufferRef.current = buffer;
-      }
-    } catch (e) {
-      console.error("Prefetch Error:", e);
-    }
-  };
 
   const stopAudio = () => {
     if (currentSourceRef.current) {
@@ -101,36 +56,41 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
 
   const playAudio = async () => {
     if (!current?.listeningScript || isPlaying) return;
-    setAudioError(false);
     
-    const ctx = getAudioCtx();
+    const ctx = initAudioCtx();
     if (ctx.state === 'suspended') await ctx.resume();
 
-    if (prefetchedBufferRef.current) {
-      startPlayback(prefetchedBufferRef.current);
-    } else {
-      setIsPlaying(true);
+    setIsPlaying(true);
+    setAudioError(false);
+
+    try {
       const audioData = await generateSpeech(current.listeningScript);
       if (audioData) {
-        const bytes = decodeBase64(audioData);
-        const buffer = await decodeAudioDataToBuffer(bytes, ctx);
-        startPlayback(buffer);
-      } else {
-        setAudioError(true);
-        setIsPlaying(false);
-      }
-    }
-  };
+        const binaryString = window.atob(audioData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+        
+        const dataInt16 = new Int16Array(bytes.buffer, 0, bytes.length / 2);
+        const buffer = ctx.createBuffer(1, dataInt16.length, 24000);
+        const channelData = buffer.getChannelData(0);
+        for (let i = 0; i < dataInt16.length; i++) {
+          channelData[i] = dataInt16[i] / 32768.0;
+        }
 
-  const startPlayback = (buffer: AudioBuffer) => {
-    const ctx = getAudioCtx();
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.onended = () => setIsPlaying(false);
-    currentSourceRef.current = source;
-    setIsPlaying(true);
-    source.start(0);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.onended = () => setIsPlaying(false);
+        currentSourceRef.current = source;
+        source.start(0);
+      } else {
+        throw new Error("No audio data");
+      }
+    } catch (e) {
+      console.error("Audio Playback Error:", e);
+      setAudioError(true);
+      setIsPlaying(false);
+    }
   };
 
   const handleAnswer = (option: string) => {
@@ -149,7 +109,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   if (!current) return null;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-3xl p-8 shadow-xl">
+    <div className="max-w-2xl mx-auto bg-white rounded-3xl p-8 shadow-xl animate-fade-in">
       <div className="text-center mb-8">
         <h3 className="text-xl font-bold text-gray-400 mb-6 uppercase tracking-widest">Listening Challenge {index + 1}/{questions.length}</h3>
         
@@ -157,43 +117,33 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
           {readingCountdown > 0 ? (
             <div className="animate-fade-in">
               <div className="text-5xl font-black text-blue-500 mb-2">{readingCountdown}s</div>
-              <p className="text-xs font-bold text-gray-400 uppercase">Hãy đọc kỹ câu hỏi trước khi nghe</p>
+              <p className="text-xs font-bold text-gray-400 uppercase">Đọc kỹ câu hỏi trước khi nghe</p>
               <button onClick={() => setReadingCountdown(0)} className="text-blue-500 underline text-xs mt-2">Nghe luôn</button>
             </div>
           ) : (
             <>
-              <button 
-                onClick={playAudio}
-                disabled={isPlaying}
-                className={`rounded-full p-8 transition-all shadow-xl ${isPlaying ? 'bg-indigo-100 text-indigo-400 animate-pulse' : 'bg-blue-600 text-white hover:scale-110 active:scale-95'}`}
-              >
+              <button onClick={playAudio} disabled={isPlaying}
+                className={`rounded-full p-8 transition-all shadow-xl ${isPlaying ? 'bg-indigo-100 text-indigo-400 animate-pulse' : 'bg-blue-600 text-white hover:scale-110 active:scale-95'}`}>
                 <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 5.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 </svg>
               </button>
-              {audioError && <p className="text-red-500 text-[10px] mt-2 font-bold uppercase">Lỗi âm thanh. Hãy nhấn lại.</p>}
+              {audioError && <p className="text-red-500 text-[10px] mt-2 font-bold">Lỗi âm thanh, hãy nhấn lại.</p>}
               <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                {isPlaying ? "Đang phát âm thanh tự nhiên..." : "Bấm để nghe giọng nói ấm áp"}
+                {isPlaying ? "Đang phát..." : "Bấm để nghe giọng nói ấm áp"}
               </p>
             </>
           )}
         </div>
       </div>
 
-      <div className={`bg-blue-50/50 rounded-2xl p-6 mb-8 border border-blue-100 transition-all ${readingCountdown > 0 ? 'scale-105 ring-2 ring-blue-300' : ''}`}>
+      <div className="bg-blue-50/50 rounded-2xl p-6 mb-8 border border-blue-100">
         <p className="text-xl font-black text-gray-800 text-center">{current.questionText}</p>
       </div>
 
       <div className="grid gap-4">
         {current.options?.map((opt, i) => (
-          <Button 
-            key={i} 
-            onClick={() => handleAnswer(opt)} 
-            variant="outline" 
-            fullWidth 
-            disabled={!!feedback || readingCountdown > 0}
-            className="text-lg py-5"
-          >
+          <Button key={i} onClick={() => handleAnswer(opt)} variant="outline" fullWidth disabled={!!feedback || readingCountdown > 0} className="text-lg py-5">
             {opt}
           </Button>
         ))}

@@ -65,12 +65,16 @@ const responseSchema = {
         properties: {
           id: { type: Type.INTEGER },
           questionText: { type: Type.STRING },
+          correctAnswer: { type: Type.STRING },
           explanation: { type: Type.STRING },
           topic: { type: Type.STRING },
           hint: { type: Type.STRING },
+          startingWords: { type: Type.STRING },
+          listeningScript: { type: Type.STRING },
           speakingTarget: { type: Type.STRING },
           meaning: { type: Type.STRING },
           exampleSentence: { type: Type.STRING },
+          options: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -82,11 +86,21 @@ const responseSchema = {
 
 export const generateGameContent = async (grade: GradeLevel, gameType: GameType, specificTextbook?: string, subSkill?: GrammarSubSkill, userKey?: string) => {
   let specificInstruction = "";
+  const gradeInt = parseInt(grade.replace('Grade ', ''));
+
   if (gameType === GameType.Speaking) {
-    specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS (e.g., about their family, hobbies, local traditions like Tet, Pho, Ao Dai). 
-    Do NOT ask for definitions. Ask for their opinion or experience.
-    'hint' must be bullet points of ideas to answer. 
-    'meaning' must be 3-5 keywords student can use.`;
+    specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS related to the student's life. 
+    IMPORTANT: Provide 'hint' as a CLEAR list of 3-4 bullet points separated by '|' character. 
+    'meaning' should be 3-5 keywords. No definitions.`;
+  } else if (gameType === GameType.Writing) {
+    let wordCount = "50-80";
+    if (gradeInt === 7) wordCount = "60-150";
+    else if (gradeInt === 8) wordCount = "70-150";
+    else if (gradeInt === 9) wordCount = "80-150";
+    else if (gradeInt >= 10) wordCount = "100-300";
+    specificInstruction = `Generate 1 ESSAY topic for ${grade}. Word count: ${wordCount} words. Prompt should be in English.`;
+  } else if (gameType === GameType.Grammar && subSkill === GrammarSubSkill.SentenceTrans) {
+    specificInstruction = `Sentence transformation tasks. MUST provide 'startingWords' field containing the first 2-3 words of the correct answer.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade}.`;
   }
@@ -109,18 +123,40 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
       score: { type: Type.INTEGER },
       feedback: { type: Type.STRING },
       correctnessLevel: { type: Type.STRING },
-      reconstructedTranscript: { type: Type.STRING, description: "What you think the student actually meant to say, correcting browser transcription errors." }
-    }
+      reconstructedTranscript: { type: Type.STRING }
+    },
+    required: ["score", "feedback", "correctnessLevel", "reconstructedTranscript"]
   };
 
-  const systemInstruction = `You are an expert at understanding non-native speech patterns. 
-  Browser transcripts are often WRONG (e.g., 'text' instead of 'Tet', 'honest' instead of 'Banh Chung').
-  1. RECONSTRUCT: Based on the question "${target}", look at the noisy transcript "${transcript}" and figure out what words the student ACTUALLY said.
-  2. BE LENIENT: If they communicated the core meaning, give a high score.
-  3. FEEDBACK: In Vietnamese, encouraging and constructive.`;
+  const systemInstruction = `You are evaluating a student's answer to the question: "${target}". 
+  Student's speech transcript is: "${transcript}". 
+  1. SYNC: Your evaluation MUST be based on what is in the transcript.
+  2. RECONSTRUCT: Figure out the intended meaning despite minor transcription errors.
+  3. JSON only. Vietnamese feedback. Scale 0-100.`;
 
-  const prompt = `${systemInstruction}\nQuestion: "${target}". Transcript: "${transcript}". Level: ${grade}. Evaluate in JSON.`;
+  const prompt = `${systemInstruction}\nLevel: ${grade}. Transcript: "${transcript}".`;
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
+    responseMimeType: "application/json",
+    responseSchema: schema,
+    temperature: 0,
+    thinkingConfig: { thinkingBudget: 0 }
+  }, userKey);
+  return JSON.parse(cleanJsonResponse(result.text));
+};
+
+export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      score: { type: Type.INTEGER },
+      feedback: { type: Type.STRING },
+      corrections: { type: Type.STRING }
+    },
+    required: ["score", "feedback", "corrections"]
+  };
+  
+  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade essay: "${prompt}". Student wrote: "${studentText}". Level: ${grade}. Max score 10. Vietnamese feedback and corrections. Output JSON.`, {
     responseMimeType: "application/json",
     responseSchema: schema,
     temperature: 0,
@@ -131,23 +167,23 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
 
 export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
   const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
-  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Check grammar transformation: "${original}" -> "${targetPattern}". User said: "${studentAnswer}". JSON.`, {
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      status: { type: Type.STRING },
+      feedback: { type: Type.STRING },
+      explanation: { type: Type.STRING }
+    },
+    required: ["status", "feedback", "explanation"]
+  };
+  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Check rewrite: "${original}" to "${targetPattern}". Student said: "${studentAnswer}". JSON. Vietnamese.`, {
     responseMimeType: "application/json",
+    responseSchema: schema,
     temperature: 0,
   }, userKey);
   return JSON.parse(cleanJsonResponse(result.text));
 };
 
-export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
-  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
-  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing: "${prompt}". Student: "${studentText}". JSON.`, {
-    responseMimeType: "application/json",
-    temperature: 0,
-  }, userKey);
-  return JSON.parse(cleanJsonResponse(result.text));
-};
-
-// Fix: Added missing export for pronunciation evaluation used by SayItRightGame component
 export const evaluatePronunciation = async (target: string, transcript: string) => {
   const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
   const schema = {
@@ -159,16 +195,10 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     },
     required: ["isCorrect", "feedback", "advice"]
   };
-
-  const prompt = `Evaluate the pronunciation of the English word/phrase "${target}" based on the transcript "${transcript}".
-  Return whether it is correct or close enough (isCorrect: true/false), a short encouraging feedback in Vietnamese, and short advice in Vietnamese.
-  Return JSON format.`;
-
-  const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
+  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Pron check: "${target}". Transcript: "${transcript}". JSON. Vietnamese.`, {
     responseMimeType: "application/json",
     responseSchema: schema,
     temperature: 0,
-    thinkingConfig: { thinkingBudget: 0 }
   }, userKey);
   return JSON.parse(cleanJsonResponse(result.text));
 };

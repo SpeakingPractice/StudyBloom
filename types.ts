@@ -37,14 +37,15 @@ export interface QuestionData {
   explanation: string; 
   topic: string;
   hint?: string; 
+  startingWords?: string; // New: explicit starting words for sentence transformation
   listeningScript?: string; 
   speakingTarget?: string; 
   writingPrompt?: string; 
   phonetic?: string; 
   meaning?: string;  
   exampleSentence?: string;
-  wordType?: string; // New field for TypeToFly
-  countability?: string; // New field for TypeToFly
+  wordType?: string;
+  countability?: string;
 }
 
 export interface GameSession {
