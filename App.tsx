@@ -17,6 +17,8 @@ const Icons = {
   Key: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>,
   Close: () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
   Check: () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+  Mail: () => <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+  Send: () => <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>,
 };
 
 const BackgroundDecor = () => (
@@ -42,6 +44,13 @@ const App: React.FC = () => {
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const [keyVerificationStatus, setKeyVerificationStatus] = useState<'none' | 'success' | 'fail'>('none');
+
+  // Feedback states
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackContent, setFeedbackContent] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   useEffect(() => {
     const pts = localStorage.getItem('vieteng_points');
@@ -130,6 +139,46 @@ const App: React.FC = () => {
     setFinalScore(null);
     setGameData(null);
     handleStartGame();
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackContent.trim() || !feedbackEmail.trim()) return;
+    setIsSubmittingFeedback(true);
+    
+    try {
+      // Using formsubmit.co for actual email delivery
+      const response = await fetch("https://formsubmit.co/ajax/mquan1997td@gmail.com", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          email: feedbackEmail,
+          message: feedbackContent,
+          _subject: "Góp Ý Web Luyen Tieng Anh",
+          _template: "table" // Makes the email look cleaner
+        })
+      });
+
+      if (response.ok) {
+        setFeedbackSubmitted(true);
+        setFeedbackContent("");
+        setFeedbackEmail("");
+        
+        setTimeout(() => {
+          setFeedbackSubmitted(false);
+          setShowFeedbackForm(false);
+        }, 3000);
+      } else {
+        throw new Error("Failed to send");
+      }
+    } catch (err) {
+      console.error("Feedback error:", err);
+      alert("Có lỗi xảy ra khi gửi. Vui lòng thử lại sau!");
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   const renderGameComponent = () => {
@@ -445,9 +494,68 @@ const App: React.FC = () => {
         </main>
       </div>
 
-      <footer className="text-center text-white/20 mt-16 text-[9px] md:text-[10px] pb-12 relative z-10 px-4">
-        <p className="font-black uppercase tracking-[0.5em] mb-2">StudyBloom 🎄 Holiday Interactive Edition</p>
-        <p className="italic underline underline-offset-4 decoration-white/10">Học tập hiệu quả giữa không khí Giáng sinh ấm áp.</p>
+      <footer className="flex flex-col items-center mt-16 pb-12 relative z-10 px-4">
+        <div className="text-center text-white/20 text-[9px] md:text-[10px] mb-6">
+          <p className="font-black uppercase tracking-[0.5em] mb-2">StudyBloom 🎄 Holiday Interactive Edition</p>
+          <p className="italic underline underline-offset-4 decoration-white/10">Học tập hiệu quả giữa không khí Giáng sinh ấm áp.</p>
+        </div>
+        
+        {feedbackSubmitted ? (
+          <div className="animate-bounce-slow py-4 px-8 bg-emerald-500/20 rounded-2xl border-2 border-emerald-500/50 text-emerald-400 font-black text-sm shadow-lg flex items-center">
+            <Icons.Check /> Cảm ơn bạn! Phản hồi đã được gửi đi 🎁
+          </div>
+        ) : showFeedbackForm ? (
+          <div className="w-full max-w-md glass-panel p-6 rounded-[2rem] border-red-500/30 border-2 animate-fade-in-up shadow-2xl relative">
+            <h4 className="text-white font-black text-sm uppercase tracking-widest mb-4 flex items-center">
+              <Icons.Mail /> Gửi góp ý của bạn
+            </h4>
+            
+            <input 
+              type="email"
+              value={feedbackEmail}
+              onChange={(e) => setFeedbackEmail(e.target.value)}
+              placeholder="Email của bạn..."
+              className="w-full bg-black/40 border-2 border-white/10 focus:border-red-500/50 rounded-2xl p-4 text-white text-sm font-bold placeholder:text-white/20 outline-none transition-all mb-3"
+            />
+
+            <textarea 
+              autoFocus
+              value={feedbackContent}
+              onChange={(e) => setFeedbackContent(e.target.value)}
+              placeholder="Nhập ý kiến của bạn tại đây... (Ví dụ: Thêm bài tập, báo lỗi, ...)"
+              className="w-full bg-black/40 border-2 border-white/10 focus:border-red-500/50 rounded-2xl p-4 text-white text-sm font-bold placeholder:text-white/20 outline-none transition-all resize-none h-32 mb-4"
+            />
+            
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleFeedbackSubmit} 
+                disabled={!feedbackContent.trim() || !feedbackEmail.trim() || isSubmittingFeedback}
+                variant="primary" 
+                fullWidth
+                size="sm"
+                className="bg-red-600 border-red-800 hover:bg-red-700 py-3"
+              >
+                {isSubmittingFeedback ? "Đang gửi..." : (
+                  <span className="flex items-center">Gửi đi <Icons.Send /></span>
+                )}
+              </Button>
+              <button 
+                onClick={() => setShowFeedbackForm(false)}
+                className="px-6 text-white/40 hover:text-white text-xs font-black uppercase tracking-widest transition-colors"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setShowFeedbackForm(true)}
+            className="flex items-center px-8 py-4 rounded-2xl glass-panel border-red-500/30 border-2 hover:bg-red-600/10 hover:border-red-500/60 transition-all duration-300 text-white/60 hover:text-white font-black text-sm shadow-xl group"
+          >
+            <Icons.Mail />
+            <span className="group-hover:translate-x-0.5 transition-transform">Gửi phản hồi 💌</span>
+          </button>
+        )}
       </footer>
     </div>
   );
