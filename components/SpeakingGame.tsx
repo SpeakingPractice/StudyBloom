@@ -138,13 +138,14 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
   const renderHintList = (hint: string | undefined) => {
     if (!hint) return null;
+    // Regex covers bullet points: •, -, *, and numbers like 1.
     const points = hint.split('\n').filter(p => p.trim().length > 0);
     return (
       <ul className="text-left space-y-2">
         {points.map((p, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-blue-800 font-bold">
-            <span className="text-blue-400 mt-1">•</span>
-            <span>{p.replace(/^[-*]\s*/, '')}</span>
+            <span className="text-blue-400 mt-1 flex-shrink-0">•</span>
+            <span>{p.replace(/^[•\-\*\s]+/, '')}</span>
           </li>
         ))}
       </ul>
@@ -219,8 +220,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
-             <p className="text-gray-400 font-bold italic text-sm text-center">Hãy nhấn nút bên dưới và nói tiếng Anh thật tự nhiên! 🎙️</p>
-             <p className="text-[9px] text-gray-300 uppercase tracking-widest font-black">Hệ thống chấp nhận giọng vùng miền và các thuật ngữ văn hóa</p>
+             <p className="text-gray-400 font-bold italic text-sm text-center">...</p>
           </div>
         )}
         {isListening && (
@@ -257,8 +257,8 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
            </div>
 
            <div className="grid grid-cols-2 gap-4">
-             <Button onClick={startRecordingSession} variant="outline" className="py-5 rounded-2xl font-black text-xs uppercase">Thử lại (Retry) 🔄</Button>
-             <Button onClick={nextQuestion} variant="secondary" className="py-5 rounded-2xl shadow-lg font-black text-xs uppercase">Tiếp theo (Next) →</Button>
+             <Button onClick={startRecordingSession} variant="outline" className="py-5 rounded-2xl font-black text-xs uppercase">Thử lại 🔄</Button>
+             <Button onClick={nextQuestion} variant="secondary" className="py-5 rounded-2xl shadow-lg font-black text-xs uppercase">Tiếp theo →</Button>
            </div>
         </div>
       ) : (
@@ -287,7 +287,6 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.3em] animate-pulse">
                 {isListening ? "HỆ THỐNG ĐANG LẮNG NGHE..." : "TAP TO RECORD"}
              </p>
-             <p className="text-[8px] text-gray-300 font-bold uppercase tracking-widest italic">Ưu tiên thấu hiểu ý định truyền đạt</p>
           </div>
         </div>
       )}

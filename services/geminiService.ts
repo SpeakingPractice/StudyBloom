@@ -3,7 +3,7 @@
 import { Type, Modality } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
-// @google/genai guidelines: prioritizing Flash for maximum speed and cultural awareness
+// @google/genai guidelines: prioritizing Flash for maximum speed
 const FALLBACK_MODELS = [
   "gemini-3-flash-preview",
   "gemini-2.5-flash-preview-09-2025",
@@ -118,25 +118,27 @@ export const generateGameContent = async (
       specificInstruction = `Fast response. 6 items. ${subSkill || 'General'}.`;
       break;
     case GameType.Listening:
-      specificInstruction = `Fast response. 5 tasks. Use standard educational content.`;
+      specificInstruction = `Fast response. 5 tasks. Standard education content.`;
       break;
     case GameType.Speaking:
-      specificInstruction = `Fast response. 5 tasks. 
-      Important: Include cultural context where possible (e.g., Vietnamese traditions). 
-      Hint: Bullet points. Meaning: 3-5 keywords. Example: natural response.`;
+      specificInstruction = `FAST RESPONSE. 5 tasks. 
+      IMPORTANT: Generate PERSONAL QUESTIONS asking about the student's own life, hobbies, or opinions related to the topic (e.g., 'What do you often do at Tet?', 'Which English skill do you find most difficult?'). 
+      DO NOT ask vocabulary definitions.
+      'hint' must be bullet points for student to follow.
+      'meaning' must be 3-5 high-level English keywords student should use.`;
       break;
     case GameType.TypeToFly:
       specificInstruction = `Fast response. 8 vocab items.`;
       break;
     case GameType.Writing:
       let wordCount = gradeInt <= 6 ? "50-80" : gradeInt <= 9 ? "80-150" : "150-300";
-      specificInstruction = `Generate 1 prompt. Limit: ${wordCount} words. Curriculum based.`;
+      specificInstruction = `Generate 1 writing prompt. Limit: ${wordCount} words.`;
       break;
     default:
       specificInstruction = `6 items. Fast!`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Vietnamese for explanations and hints. English for tasks.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Vietnamese for explanations/hints. English for tasks.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
@@ -161,20 +163,21 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     }
   };
 
-  const systemInstruction = `You are an advanced context-aware speech recognition expert for non-native English speakers. 
-  Evaluated criteria:
-  1. ACCENT LENIENCY: Accept non-native accents. Prioritize communicative success.
-  2. CULTURAL TERMS: Recognize and preserve terms like 'Tet', 'Ao Dai', 'Pho', 'Banh Mi', 'Li xi', etc. Do not penalize or autocorrect them to English words that sound similar (e.g., 'Tet' is not 'text' or 'test').
-  3. CONTEXTUAL INFERENCE: If the transcript contains words that sound like English but fit better as cultural concepts or specific topics, infer the correct intent. 
-  4. FEEDBACK: Be encouraging. Focus on the ability to convey meaning effectively.`;
+  const systemInstruction = `You are an AI that RECONSTRUCTS intent from speech-to-text transcripts of non-native speakers.
+  Browser's speech recognition often fails (e.g., hearing 'text' instead of 'Tet').
+  1. ANALYZE: If transcript sounds phonetically similar to a word that fits the context of "${target}", assume the student meant the correct word.
+  2. LENIENCY: Focus 90% on MEANING and 10% on grammar. 
+  3. CULTURAL PRESERVATION: Keep Vietnamese terms ('Tet', 'Ao Dai', etc.) as correct inputs.
+  4. SCORE: 0-100 based on how well they answered the personal question.
+  5. FEEDBACK in Vietnamese.`;
 
-  const prompt = `${systemInstruction}\nTask: "${target}". Student said: "${transcript}". Level: ${grade}. Analyze intent and provide score (0-100) and feedback in Vietnamese.`;
+  const prompt = `${systemInstruction}\nQuestion Asked: "${target}". Transcript from browser: "${transcript}". Student Level: ${grade}. Provide JSON evaluation.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: schema,
-      temperature: 0, // Deterministic for recognition
+      temperature: 0,
       thinkingConfig: { thinkingBudget: 0 }
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
@@ -214,7 +217,7 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing: "${prompt}", Student: "${studentText}", Level: ${grade}. Scale 0-10. Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing: "${prompt}", Student: "${studentText}", Level: ${grade}. Scale 0-10. Fast response. Vietnamese.`, {
       responseMimeType: "application/json",
       responseSchema: schema,
       temperature: 0,
@@ -236,7 +239,7 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     required: ["isCorrect", "feedback", "advice"]
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Pron check: "${target}", User: "${transcript}". Be lenient with accents. Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Pron check: "${target}", User: "${transcript}". Be lenient. Vietnamese.`, {
       responseMimeType: "application/json",
       responseSchema: schema,
       temperature: 0,
