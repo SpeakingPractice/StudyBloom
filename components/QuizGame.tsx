@@ -18,7 +18,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   
   const [userInput, setUserInput] = useState("");
   const [isInputCorrect, setIsInputCorrect] = useState<boolean | null>(null);
-  const [hintCount, setHintCount] = useState(0); 
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [aiResult, setAiResult] = useState<{status: string, feedback: string, explanation: string} | null>(null);
 
@@ -30,7 +29,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     setShowFeedback(false);
     setUserInput("");
     setIsInputCorrect(null);
-    setHintCount(0);
     setAiResult(null);
   }, [currentIndex]);
 
@@ -89,10 +87,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     return "Hãy bắt đầu viết...";
   };
 
-  const handleShowHint = () => {
-    setHintCount(prev => prev + 2);
-  };
-
   return (
     <div className="max-w-2xl mx-auto w-full">
       <div className="mb-6 bg-gray-200/50 backdrop-blur-sm rounded-full h-4 overflow-hidden border border-white/30">
@@ -140,11 +134,10 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
               }`} 
             />
             {!showFeedback && (
-              <div className="flex gap-3">
+              <div className="flex">
                  <Button onClick={handleInputCheck} disabled={!userInput.trim() || isEvaluating} variant="primary" fullWidth>
                     {isEvaluating ? "Đang kiểm tra..." : "Kiểm tra"}
                  </Button>
-                 <Button onClick={handleShowHint} variant="outline" className="bg-yellow-50 text-yellow-700">Gợi ý 💡</Button>
               </div>
             )}
             {showFeedback && aiResult && (
