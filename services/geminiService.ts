@@ -116,7 +116,12 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     }
   } else if (gameType === GameType.TypeToFly) {
     specificInstruction = `Generate 15 vocabulary items for ${grade} from textbook: ${specificTextbook || 'General'}. 
-    Use ONLY short Collocations or Phrasal Verbs (max 3 words). Vietnamese meanings in 'explanation'.`;
+    CRITICAL RULES:
+    1. 'questionText' MUST contain ONLY the target word/phrase itself.
+    2. MAXIMUM length for each item is 3 words (e.g., 'set the table', 'go out', 'beautiful').
+    3. ABSOLUTELY NO sentences.
+    4. ABSOLUTELY NO 'Fill in the blank' prompts or context sentences like 'We need to...'.
+    5. Vietnamese meanings MUST go in the 'explanation' field only.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade}.`;
   }
