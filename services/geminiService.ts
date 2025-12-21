@@ -3,7 +3,7 @@
 import { Type, Modality } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
-// @google/genai guidelines: prioritizing Flash for speed as requested
+// @google/genai guidelines: prioritizing Flash for maximum speed
 const FALLBACK_MODELS = [
   "gemini-3-flash-preview",
   "gemini-2.5-flash-preview-09-2025",
@@ -112,43 +112,37 @@ export const generateGameContent = async (
 ): Promise<{ questions: QuestionData[]; textbookContext: string }> => {
   let specificInstruction = "";
   const gradeInt = parseInt(grade.replace('Grade ', ''));
-  const isLowerSecondary = gradeInt <= 8;
-  const isHighSchool = gradeInt >= 10;
-  const diffLevel = isLowerSecondary ? "Basic" : isHighSchool ? "Advanced" : "Intermediate";
-
+  
   switch (gameType) {
     case GameType.Grammar:
-      specificInstruction = `6 items. Sub-skill: ${subSkill || 'General Grammar'}.`;
+      specificInstruction = `Fast response. Generate 6 items. Sub-skill: ${subSkill || 'General'}. Focus on high frequency topics.`;
       break;
     case GameType.Listening:
-      specificInstruction = `5 listening tasks.`;
+      specificInstruction = `Fast response. 5 listening tasks. Simple everyday scenarios.`;
       break;
     case GameType.Speaking:
-      specificInstruction = `5 speaking tasks. 
-      For each:
-      - 'speakingTarget' is the core requirement.
-      - 'hint' MUST be a bulleted list of 2-3 key ideas to include (e.g., "- Say your name\n- Mention age").
-      - 'meaning' MUST be 3-5 key words/phrases student should use (comma separated).
-      - 'exampleSentence' MUST be a short natural sample answer.`;
+      specificInstruction = `Fast response. 5 speaking tasks. 
+      Bullet points for 'hint'. 3-5 keywords for 'meaning'. One natural 'exampleSentence'.`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `8 vocab items.`;
+      specificInstruction = `Fast response. 8 essential vocab items from this level.`;
       break;
     case GameType.Writing:
       let wordCount = gradeInt <= 6 ? "50-80" : gradeInt <= 9 ? "80-150" : "150-300";
-      specificInstruction = `1 writing prompt. Limit: ${wordCount} words.`;
+      specificInstruction = `EXTREMELY FAST response. Generate 1 prompt. Limit: ${wordCount} words. Curriculum based.`;
       break;
     default:
-      specificInstruction = `6 items.`;
+      specificInstruction = `6 items. Fast!`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Response in JSON. Vietnamese for 'explanation', 'topic', 'hint' (only for bullets), 'textbookContext'. English for questions.`;
+  const prompt = `CRITICAL: RESPONSE UNDER 3 SECONDS. Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Vietnamese for 'explanation', 'topic', 'hint', 'textbookContext'. English for questions.`;
 
   try {
     const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.1
+      temperature: 0.1,
+      thinkingConfig: { thinkingBudget: 0 } // Disable thinking for maximum speed
     }, userKey);
     
     return JSON.parse(cleanJsonResponse(result.text));
@@ -166,9 +160,11 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score speaking: Task "${target}", Student transcript "${transcript}". Grade ${grade}. Check if student included main points. Response in Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score speaking: Task "${target}", User: "${transcript}". Level ${grade}. Fast assessment. Vietnamese feedback.`, {
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      temperature: 0,
+      thinkingConfig: { thinkingBudget: 0 }
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
@@ -186,9 +182,11 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
     required: ["status", "feedback", "explanation"]
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Check rewrite: "${original}", Pattern: "${targetPattern}", Student: "${studentAnswer}". Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Rewrite check: "${original}", Pattern: "${targetPattern}", User: "${studentAnswer}". Fast response. Vietnamese.`, {
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      temperature: 0,
+      thinkingConfig: { thinkingBudget: 0 }
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
@@ -205,9 +203,11 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing: "${prompt}", Student: "${studentText}", Level: ${grade}. Scale 0-10. Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing: "${prompt}", Student: "${studentText}", Level: ${grade}. Scale 0-10. Fast response. Vietnamese.`, {
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      temperature: 0,
+      thinkingConfig: { thinkingBudget: 0 }
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return {}; }
@@ -225,9 +225,11 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     required: ["isCorrect", "feedback", "advice"]
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Pronunciation check: "${target}", User: "${transcript}". Vietnamese.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Pron check: "${target}", User: "${transcript}". Fast response. Vietnamese.`, {
       responseMimeType: "application/json",
-      responseSchema: schema
+      responseSchema: schema,
+      temperature: 0,
+      thinkingConfig: { thinkingBudget: 0 }
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }

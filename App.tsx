@@ -210,7 +210,6 @@ const App: React.FC = () => {
                 StudyBloom <span className="text-red-500">🎅</span>
               </div>
               
-              {/* Badge Button - Mobile Only (No white box, with Glow) */}
               <div className="flex md:hidden shrink-0">
                 <button onClick={() => setShowBadges(true)} className="flex items-center gap-2 transition-all active:scale-90 px-2 py-1">
                   <span className="text-2xl drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-pulse-subtle">
@@ -221,7 +220,6 @@ const App: React.FC = () => {
               </div>
            </div>
 
-           {/* API Key Input Section - Hidden if verification is success */}
            {keyVerificationStatus !== 'success' && (
              <div className="w-full md:flex-1 md:max-w-md order-3 md:order-2 flex flex-col items-center animate-fade-in">
                 <div className="relative flex items-center group w-full">
@@ -258,7 +256,6 @@ const App: React.FC = () => {
              </div>
            )}
 
-           {/* Badge Section (Desktop stays as requested) */}
            <div className="hidden md:flex shrink-0 order-3">
               <button onClick={() => setShowBadges(true)} className="glass-panel px-5 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(245,158,11,0.2)] flex items-center gap-3 border-b-4 border-amber-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0 group">
                 {currentBadge ? (
@@ -362,7 +359,7 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : (!isQuotaError && !gameData) ? (
-            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+            <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
               <Button onClick={() => setSelectedGrade(null)} variant="outline" size="sm" className="bg-white/5 border-white/10 text-white font-bold px-6 hover:bg-white/10 rounded-xl">← Trở lại</Button>
               <div className="glass-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border-b-8 border-amber-600/30">
                 <h2 className="text-2xl md:text-4xl font-black text-white mb-8 md:mb-10 tracking-tighter flex items-center gap-4">
@@ -371,30 +368,30 @@ const App: React.FC = () => {
                 <div className="grid md:grid-cols-2 gap-8 md:gap-10">
                   <div>
                     <label className="block text-amber-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Giáo trình 📚</label>
-                    <div className="space-y-3 max-h-72 overflow-y-auto pr-3 custom-scrollbar">
-                      <div onClick={() => setSelectedTextbook('')} className={`cursor-pointer p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === '' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
-                        <div className="font-black text-white text-base md:text-lg">Tổng hợp (General) 🌍</div>
-                        <div className="text-[10px] md:text-xs font-bold text-white/40 mt-1">Ôn tập toàn diện kiến thức bài bản</div>
+                    <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-3 custom-scrollbar">
+                      <div onClick={() => setSelectedTextbook('')} className={`cursor-pointer p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === '' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
+                        <div className="font-black text-white text-lg md:text-xl">Tổng hợp (General) 🌍</div>
+                        <div className="text-xs md:text-sm font-bold text-white/40 mt-1">Ôn tập toàn diện kiến thức bài bản</div>
                       </div>
                       {(parseInt(selectedGrade!.split(' ')[1]) <= 9 ? TEXTBOOKS_BY_GRADE['Secondary'] : TEXTBOOKS_BY_GRADE['High']).map(tb => (
-                        <div key={tb} onClick={() => setSelectedTextbook(tb)} className={`cursor-pointer p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === tb ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
-                          <div className="font-black text-white text-sm md:text-base">{tb.split('(')[0]}</div>
-                          <div className="text-[10px] md:text-xs font-bold text-white/40 mt-1 italic">{tb.includes('(') ? tb.split('(')[1].replace(')', '') : 'Phiên bản chuẩn'}</div>
+                        <div key={tb} onClick={() => setSelectedTextbook(tb)} className={`cursor-pointer p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === tb ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'border-white/5 bg-black/20 hover:border-white/20'}`}>
+                          <div className="font-black text-white text-lg md:text-xl">{tb.split('(')[0]}</div>
+                          <div className="text-xs md:text-sm font-bold text-white/40 mt-1 italic">{tb.includes('(') ? tb.split('(')[1].replace(')', '') : 'Phiên bản chuẩn'}</div>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
                     <label className="block text-amber-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Kỹ năng ✨</label>
-                    <div className="grid grid-cols-2 gap-3 md:gap-4">
+                    <div className="grid grid-cols-2 gap-4 md:gap-5">
                       {Object.values(GameType).map((type) => (
                         <Button 
                           key={type} 
                           variant={selectedGameType === type ? 'secondary' : 'outline'} 
                           onClick={() => { setSelectedGameType(type); if (type === GameType.Grammar) setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); else setSelectedSubSkill(null); }} 
-                          className={`py-6 md:py-8 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5 hover:bg-white/10 transition-colors'}`}
+                          className={`py-8 md:py-10 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5 hover:bg-white/10 transition-colors'}`}
                         >
-                          <span className="text-[10px] md:text-[11px] font-black text-center leading-tight uppercase tracking-tighter text-white">
+                          <span className="text-sm md:text-lg font-black text-center leading-tight uppercase tracking-tighter text-white px-2">
                             {type.split(' (')[0]}
                           </span>
                         </Button>
@@ -405,16 +402,16 @@ const App: React.FC = () => {
                 {selectedGameType === GameType.Grammar && (
                   <div className="mt-8 md:mt-10 pt-8 md:pt-10 border-t border-white/5">
                     <label className="block text-amber-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Dạng bài tập chuyên sâu ❄️</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                       {Object.values(GrammarSubSkill).map((sub) => (
                         <Button 
                           key={sub} 
                           variant={selectedSubSkill === sub ? 'primary' : 'outline'} 
-                          size="sm" 
+                          size="md" 
                           onClick={() => setSelectedSubSkill(sub)}
-                          className={`rounded-xl md:rounded-2xl ${selectedSubSkill === sub ? 'bg-emerald-600 border-emerald-800' : 'bg-black/20 border-white/5 hover:bg-white/10 transition-colors'}`}
+                          className={`rounded-xl md:rounded-2xl py-4 ${selectedSubSkill === sub ? 'bg-emerald-600 border-emerald-800' : 'bg-black/20 border-white/5 hover:bg-white/10 transition-colors'}`}
                         >
-                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter text-center text-white">{sub}</span>
+                          <span className="text-xs md:text-sm font-black uppercase tracking-tighter text-center text-white">{sub}</span>
                         </Button>
                       ))}
                     </div>
@@ -427,7 +424,7 @@ const App: React.FC = () => {
                     size="lg" 
                     variant="primary" 
                     disabled={!selectedGameType} 
-                    className="text-lg md:text-xl shadow-[0_20px_40px_rgba(220,38,38,0.3)] py-6 md:py-8 h-20 md:h-24 rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter"
+                    className="text-xl md:text-2xl shadow-[0_20px_40px_rgba(220,38,38,0.3)] py-8 md:py-10 h-24 md:h-28 rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter"
                   >
                     Mở hộp quà bài học 🎁
                   </Button>
