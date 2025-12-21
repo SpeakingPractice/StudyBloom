@@ -16,10 +16,13 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
   const [isListening, setIsListening] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [feedback, setFeedback] = useState<{ score: number; message: string; level: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ score: number; message: string; level: string; reconstructedTranscript?: string } | null>(null);
   const [statusText, setStatusText] = useState("");
+  const [userAudioUrl, setUserAudioUrl] = useState<string | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const shouldListenRef = useRef<boolean>(false);
   const finalTranscriptRef = useRef<string>("");
 
@@ -44,14 +47,35 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     }
   };
 
-  const startRecordingSession = () => {
+  const startRecordingSession = async () => {
     if (!Recognition) {
-      alert("Trình duyệt của bạn không hỗ trợ nhận diện giọng nói (hãy thử dùng Google Chrome).");
+      alert("Trình duyệt không hỗ trợ nhận diện giọng nói.");
       return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setUserAudioUrl(URL.createObjectURL(audioBlob));
+      };
+
+      mediaRecorder.start();
+    } catch (err) {
+      console.error("Camera/Mic Error:", err);
     }
 
     setFeedback(null);
     setTranscript("");
+    setUserAudioUrl(null);
     finalTranscriptRef.current = "";
     shouldListenRef.current = true;
     setIsListening(true);
@@ -81,8 +105,6 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     recognition.onend = () => {
       if (shouldListenRef.current) {
         try { recognition.start(); } catch (e) {}
-      } else {
-        setIsListening(false);
       }
     };
 
@@ -97,6 +119,9 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     shouldListenRef.current = false;
     if (recognitionRef.current) {
       recognitionRef.current.stop();
+    }
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
     }
     setIsListening(false);
     setStatusText("");
@@ -115,7 +140,8 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
       setFeedback({
         score: result.score,
         message: result.feedback,
-        level: result.correctnessLevel
+        level: result.correctnessLevel,
+        reconstructedTranscript: result.reconstructedTranscript
       });
       const earnedPoints = (result.score / 100) * 2;
       setTotalScore(prev => prev + earnedPoints);
@@ -127,6 +153,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
   const nextQuestion = () => {
     setFeedback(null);
     setTranscript("");
+    setUserAudioUrl(null);
     setStatusText("");
     finalTranscriptRef.current = "";
     if (index < questions.length - 1) {
@@ -138,14 +165,14 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
 
   const renderHintList = (hint: string | undefined) => {
     if (!hint) return null;
-    // Regex covers bullet points: •, -, *, and numbers like 1.
     const points = hint.split('\n').filter(p => p.trim().length > 0);
     return (
       <ul className="text-left space-y-2">
         {points.map((p, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-blue-800 font-bold">
             <span className="text-blue-400 mt-1 flex-shrink-0">•</span>
-            <span>{p.replace(/^[•\-\*\s]+/, '')}</span>
+            {/* Clean any double bullets or marks from AI generation */}
+            <span>{p.replace(/^[•\-\*\s.]{1,2}/, '').trim()}</span>
           </li>
         ))}
       </ul>
@@ -172,7 +199,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
         <span className="text-[10px] font-black bg-blue-100 text-blue-600 px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm">BÀI TẬP {index + 1}/{questions.length}</span>
         <div className="flex items-center gap-2">
            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">AI Context Aware Activated</span>
+           <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">AI Context Understanding</span>
         </div>
       </div>
 
@@ -182,7 +209,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-blue-50/50 p-6 rounded-3xl border-2 border-dashed border-blue-100">
             <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-400 rounded-full"></span> Ý chính cần đạt
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span> Ý chính gợi ý
             </p>
             {renderHintList(current.hint)}
           </div>
@@ -190,7 +217,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
           <div className="space-y-6">
             <div className="bg-amber-50/50 p-6 rounded-3xl border-2 border-dashed border-amber-100">
               <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 bg-amber-400 rounded-full"></span> Từ vựng quan trọng
+                <span className="w-2 h-2 bg-amber-400 rounded-full"></span> Từ vựng nên dùng
               </p>
               {renderVocab(current.meaning)}
             </div>
@@ -207,15 +234,20 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
         </div>
       </div>
 
-      <div className="mb-8 min-h-[7rem] bg-gray-50 rounded-3xl p-6 border-2 border-gray-100 flex items-center justify-center transition-all shadow-inner relative overflow-hidden group">
+      <div className="mb-8 min-h-[7rem] bg-gray-50 rounded-3xl p-6 border-2 border-gray-100 flex items-center justify-center transition-all shadow-inner relative overflow-hidden">
         {isEvaluating ? (
           <div className="flex flex-col items-center gap-3">
              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-             <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest animate-pulse">AI đang thấu hiểu ý định của bạn...</p>
+             <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest animate-pulse">AI đang phân tích giọng nói và ngữ cảnh...</p>
+          </div>
+        ) : feedback?.reconstructedTranscript ? (
+          <div className="w-full">
+            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-3 text-center">AI Hiểu rằng bạn đã nói:</p>
+            <p className="text-emerald-900 text-lg md:text-xl font-bold italic text-center leading-relaxed">"{feedback.reconstructedTranscript}"</p>
           </div>
         ) : transcript ? (
           <div className="w-full">
-            <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] mb-3 text-center">Ghi nhận thời gian thực:</p>
+            <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em] mb-3 text-center">Ghi nhận (Real-time):</p>
             <p className="text-gray-800 text-lg md:text-xl font-bold italic text-center leading-relaxed">"{transcript}"</p>
           </div>
         ) : (
@@ -227,6 +259,19 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
           <div className="absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-gradient-x w-full"></div>
         )}
       </div>
+
+      {userAudioUrl && (
+        <div className="mb-8 flex flex-col items-center animate-fade-in-up">
+           <button 
+             onClick={() => new Audio(userAudioUrl).play()}
+             className="flex items-center gap-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-6 py-3 rounded-2xl border-2 border-indigo-200 transition-all font-black text-sm uppercase tracking-tighter shadow-sm active:scale-95"
+           >
+              <span>Nghe lại bài nói của tôi</span>
+              <span className="text-lg">🎧</span>
+           </button>
+           <p className="text-[8px] text-gray-300 mt-2 font-black uppercase tracking-widest italic">Hãy nghe lại để tự đánh giá phát âm của mình bạn nhé!</p>
+        </div>
+      )}
       
       {statusText && <p className="text-[10px] font-black text-amber-600 mb-6 animate-pulse text-center uppercase tracking-widest">{statusText}</p>}
 
@@ -239,7 +284,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
                  </div>
                  <div>
                     <h4 className="font-black text-gray-800 uppercase tracking-tight text-xl">Đánh giá thấu hiểu</h4>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Context-Aware AI Feedback</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cultural-Aware AI Feedback</p>
                  </div>
               </div>
               <div className={`w-20 h-20 rounded-full flex flex-col items-center justify-center font-black border-4 shadow-lg ${feedback.score >= 80 ? 'bg-green-50 border-green-200 text-green-600' : feedback.score >= 50 ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-red-50 border-red-200 text-red-600'}`}>
@@ -250,10 +295,6 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
            
            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-8 shadow-inner">
               <p className="text-gray-700 font-bold leading-relaxed">{feedback.message}</p>
-              <div className="mt-4 flex items-center gap-2">
-                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                 <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Success Level: {feedback.level}</p>
-              </div>
            </div>
 
            <div className="grid grid-cols-2 gap-4">
@@ -293,7 +334,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
       
       {!feedback && (
         <div className="mt-10 flex justify-center border-t border-gray-50 pt-6">
-          <button onClick={nextQuestion} className="text-[9px] font-black text-gray-300 hover:text-blue-600 transition-colors uppercase tracking-[0.2em]">Skip this task</button>
+          <button onClick={nextQuestion} className="text-[9px] font-black text-gray-300 hover:text-blue-600 transition-colors uppercase tracking-[0.2em]">Bỏ qua bài này</button>
         </div>
       )}
     </div>
