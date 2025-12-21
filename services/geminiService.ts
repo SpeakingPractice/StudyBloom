@@ -176,10 +176,24 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
     },
     required: ["status", "feedback", "explanation"]
   };
-  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Check rewrite: "${original}" to "${targetPattern}". Student said: "${studentAnswer}". JSON. Vietnamese.`, {
+
+  const prompt = `Task: Compare the student's answer with the target pattern for a sentence transformation exercise.
+  Original: "${original}"
+  Target Answer Pattern: "${targetPattern}"
+  Student's Answer: "${studentAnswer}"
+
+  LENIENCY RULES:
+  1. IGNORE capitalization at the start of the sentence.
+  2. IGNORE missing or extra ending punctuation (like periods, question marks).
+  3. If the grammar and core meaning are correct, set status to "CORRECT".
+  4. Provide feedback and explanation in Vietnamese.
+  5. JSON output only.`;
+
+  const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
     responseSchema: schema,
     temperature: 0,
+    thinkingConfig: { thinkingBudget: 0 }
   }, userKey);
   return JSON.parse(cleanJsonResponse(result.text));
 };

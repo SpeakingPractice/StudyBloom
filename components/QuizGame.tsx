@@ -79,7 +79,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     return 'outline';
   };
 
-  // Helper to get starting words safely
   const getStartingHint = () => {
     if (currentQuestion.startingWords) return currentQuestion.startingWords;
     if (currentQuestion.correctAnswer) {
@@ -130,11 +129,15 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
 
         {isInputMode ? (
           <div className="mb-6 space-y-4">
-            <textarea value={userInput} onChange={(e) => setUserInput(e.target.value)} disabled={showFeedback || isEvaluating}
+            <textarea 
+              value={userInput} 
+              onChange={(e) => setUserInput(e.target.value)} 
+              disabled={showFeedback || isEvaluating}
               placeholder="Nhập câu trả lời của bạn..."
-              className={`w-full p-4 text-lg border-2 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all resize-none h-32 font-medium ${
+              className={`w-full p-4 text-lg border-2 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all resize-none h-32 font-bold text-gray-900 ${
                 isInputCorrect === true ? 'border-green-500 bg-green-50' : isInputCorrect === false ? 'border-red-500 bg-red-50' : 'border-gray-100 bg-white'
-              }`} />
+              }`} 
+            />
             {!showFeedback && (
               <div className="flex gap-3">
                  <Button onClick={handleInputCheck} disabled={!userInput.trim() || isEvaluating} variant="primary" fullWidth>
@@ -144,10 +147,10 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
               </div>
             )}
             {showFeedback && aiResult && (
-              <div className={`p-6 rounded-2xl border-2 animate-fade-in ${isInputCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
-                 <p className="font-bold">{aiResult.feedback}</p>
-                 <p className="text-gray-800 font-bold mt-2">Đáp án: {currentQuestion.correctAnswer}</p>
-                 <p className="text-gray-600 text-sm mt-2 italic">{aiResult.explanation}</p>
+              <div className={`p-6 rounded-2xl border-2 animate-fade-in ${isInputCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                 <p className="font-black text-gray-800">{aiResult.feedback}</p>
+                 <p className="text-gray-900 font-black mt-2">Đáp án: {currentQuestion.correctAnswer}</p>
+                 <p className="text-gray-600 text-sm mt-2 font-bold italic">{aiResult.explanation}</p>
               </div>
             )}
           </div>
