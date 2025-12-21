@@ -22,8 +22,8 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
   
   /**
    * PHYSICS
-   * Gravity: 0.00198 (Maintained high)
-   * Lift: Reduced by 30% from -0.45 to -0.315 for higher difficulty
+   * Gravity: 0.00198
+   * Lift: liftPerWord
    */
   const gravity = 0.00198; 
   const liftPerWord = -0.315; 
@@ -128,6 +128,14 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         .layer-far { animation-duration: 40s; opacity: 0.3; }
         .layer-mid { animation-duration: 20s; opacity: 0.6; }
         .layer-near { animation-duration: 10s; z-index: 10; }
+        
+        @keyframes wingFlap {
+          0%, 100% { transform: rotate(0deg); }
+          50% { transform: rotate(-45deg); }
+        }
+        .animate-wing {
+          animation: wingFlap 0.15s ease-in-out infinite;
+        }
       `}</style>
 
       <div className="relative bg-gradient-to-b from-sky-400 to-sky-100 backdrop-blur-md rounded-3xl h-[300px] md:h-[400px] mb-4 overflow-hidden border-4 border-white shadow-2xl">
@@ -144,14 +152,27 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
            <div className="flex-1 flex items-end justify-around text-3xl pb-1"><span>🌿</span><span>🪵</span><span>🌱</span><span>🌿</span></div>
         </div>
 
-        <div className="absolute left-[30%] transition-transform duration-200 ease-out z-20"
+        {/* CUSTOM FLAPPY BIRD DESIGN */}
+        <div className="absolute left-[30%] transition-transform duration-200 ease-out z-50"
           style={{ top: `${birdY}%`, transform: `translateY(-50%) rotate(${velocityRef.current * 20}deg)` }}>
-          <div className="text-4xl md:text-5xl filter drop-shadow-lg select-none scale-x-[-1]">🐤</div>
+          <div className="relative w-12 h-10 md:w-16 md:h-12 scale-x-[-1]">
+            {/* Body */}
+            <div className="absolute inset-0 bg-yellow-400 border-[3px] md:border-4 border-black rounded-[40%] shadow-inner"></div>
+            {/* Eye */}
+            <div className="absolute top-[10%] left-[60%] w-[35%] h-[40%] bg-white border-[2px] md:border-[3px] border-black rounded-full flex items-center justify-center">
+              <div className="w-[40%] h-[40%] bg-black rounded-full translate-x-1"></div>
+            </div>
+            {/* Lip (Beak) */}
+            <div className="absolute bottom-[15%] -left-[15%] w-[50%] h-[35%] bg-orange-500 border-[2px] md:border-[3px] border-black rounded-full"></div>
+            <div className="absolute bottom-[20%] -left-[10%] w-[40%] h-[20%] bg-red-600 border-t-[1px] md:border-t-2 border-black rounded-full opacity-30"></div>
+            {/* Wing */}
+            <div className={`absolute top-[35%] right-[10%] w-[45%] h-[40%] bg-white border-[2px] md:border-[3px] border-black rounded-[50%_50%_20%_80%] origin-right ${hasStarted && !isGameOver ? 'animate-wing' : ''}`}></div>
+          </div>
         </div>
 
         {!hasStarted && (
            <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-40 backdrop-blur-[1px]">
-              <div className="bg-white/90 px-6 py-3 rounded-2xl border-2 border-sky-200 text-sky-600 font-black uppercase text-[10px] tracking-tight animate-pulse">
+              <div className="bg-white/90 px-6 py-3 rounded-2xl border-2 border-sky-200 text-sky-600 font-black uppercase text-[10px] tracking-tight animate-pulse shadow-xl">
                 Gõ để bắt đầu
               </div>
            </div>

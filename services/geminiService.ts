@@ -74,7 +74,9 @@ const responseSchema = {
           speakingTarget: { type: Type.STRING },
           meaning: { type: Type.STRING },
           exampleSentence: { type: Type.STRING },
-          options: { type: Type.ARRAY, items: { type: Type.STRING } }
+          options: { type: Type.ARRAY, items: { type: Type.STRING } },
+          wordType: { type: Type.STRING },
+          countability: { type: Type.STRING }
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -101,6 +103,10 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     specificInstruction = `Generate 1 ESSAY topic for ${grade}. Word count: ${wordCount} words. Prompt should be in English.`;
   } else if (gameType === GameType.Grammar && subSkill === GrammarSubSkill.SentenceTrans) {
     specificInstruction = `Sentence transformation tasks. MUST provide 'startingWords' field containing the first 2-3 words of the correct answer.`;
+  } else if (gameType === GameType.TypeToFly) {
+    specificInstruction = `Generate 15 vocabulary items for ${grade}. 
+    IMPORTANT: Use ONLY single words, short Collocations, or Phrasal Verbs (max 3 words). 
+    NO long sentences. 'explanation' should be the Vietnamese meaning.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade}.`;
   }
