@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { QuestionData } from '../types';
 import { Button } from './Button';
@@ -54,7 +55,7 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     finalTranscriptRef.current = "";
     shouldListenRef.current = true;
     setIsListening(true);
-    setStatusText("Đang lắng nghe liên tục... (Listening continuously...)");
+    setStatusText("Hệ thống đang sẵn sàng nghe...");
 
     const recognition = new Recognition();
     recognition.lang = 'en-US';
@@ -74,7 +75,6 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
           interimTranscript += result[0].transcript;
         }
       }
-      // Combine stable text and ongoing interim text for visual display
       setTranscript(finalTranscriptRef.current + interimTranscript);
     };
 
@@ -82,21 +82,14 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
       console.error("Speech Recognition Error:", event.error);
       if (event.error === 'not-allowed') {
         setStatusText("Vui lòng cấp quyền micro!");
-        shouldListenRef.current = false;
         setIsListening(false);
+        shouldListenRef.current = false;
       }
-      // Other errors (like network) might trigger onend, which handles restart
     };
 
     recognition.onend = () => {
-      // THE CRITICAL PART: If we haven't manually stopped, restart immediately.
-      // This ensures silence or browser timeouts don't end the session.
       if (shouldListenRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          console.warn("Recognition restart attempt failed:", e);
-        }
+        try { recognition.start(); } catch (e) {}
       } else {
         setIsListening(false);
       }
@@ -105,15 +98,12 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     try {
       recognition.start();
     } catch (e) {
-      console.error("Initial start failed:", e);
       setIsListening(false);
       setStatusText("Lỗi khởi động micro.");
     }
   };
 
   const stopRecordingSession = async () => {
-    if (!shouldListenRef.current && !isListening) return; // Prevent double trigger
-    
     shouldListenRef.current = false;
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -127,9 +117,8 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
       return;
     }
 
-    // Trigger AI Evaluation
     setIsEvaluating(true);
-    const result = await evaluateSpeaking(current.speakingTarget || "", fullTranscript, grade);
+    const result = await evaluateSpeaking(current.speakingTarget || current.questionText, fullTranscript, grade);
     setIsEvaluating(false);
 
     if (result) {
@@ -138,7 +127,6 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
         message: result.feedback,
         level: result.correctnessLevel
       });
-      // Add to session score (scaled to 2 points max per question)
       const earnedPoints = (result.score / 100) * 2;
       setTotalScore(prev => prev + earnedPoints);
     } else {
@@ -158,61 +146,116 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
     }
   };
 
-  if (!Recognition) return <div className="text-center p-8 bg-white rounded-3xl">Trình duyệt không hỗ trợ Speaking. Hãy dùng Chrome.</div>;
+  const renderHintList = (hint: string | undefined) => {
+    if (!hint) return null;
+    const points = hint.split('\n').filter(p => p.trim().length > 0);
+    return (
+      <ul className="text-left space-y-2">
+        {points.map((p, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-blue-800 font-bold">
+            <span className="text-blue-400 mt-1">•</span>
+            <span>{p.replace(/^[-*]\s*/, '')}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  const renderVocab = (vocab: string | undefined) => {
+    if (!vocab) return null;
+    const words = vocab.split(',').map(w => w.trim());
+    return (
+      <div className="flex flex-wrap gap-2">
+        {words.map((w, i) => (
+          <span key={i} className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight border border-amber-200">
+            {w}
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-3xl p-8 shadow-xl text-center animate-fade-in">
+    <div className="max-w-3xl mx-auto bg-white rounded-[2.5rem] p-6 md:p-10 shadow-2xl border-4 border-blue-50 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <span className="text-xs font-black bg-blue-50 text-blue-500 px-3 py-1 rounded-full uppercase tracking-widest">Question {index + 1}/{questions.length}</span>
-        <span className="text-xs font-bold text-gray-400">{current.topic}</span>
+        <span className="text-[10px] font-black bg-blue-100 text-blue-600 px-4 py-1.5 rounded-full uppercase tracking-widest shadow-sm">QUESTION {index + 1}/{questions.length}</span>
+        <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{current.topic}</span>
       </div>
 
-      <h3 className="text-lg font-bold text-gray-500 mb-2">{current.questionText}</h3>
-      
-      <div className="bg-blue-50/50 p-6 rounded-3xl mb-8 border-2 border-dashed border-blue-200 relative overflow-hidden">
-        <div className="absolute top-2 left-2 opacity-10">
-           <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 13.1216 16 12.017 16L9.017 16C7.91243 16 7.017 16.8954 7.017 18L7.017 21L4.017 21L4.017 18C4.017 15.2386 6.25557 13 9.017 13L12.017 13C14.7784 13 17.017 15.2386 17.017 18L17.017 21L14.017 21ZM12 11C9.23858 11 7 8.76142 7 6C7 3.23858 9.23858 1 12 1C14.7614 1 17 3.23858 17 6C17 8.76142 14.7614 11 12 11Z"/></svg>
+      <div className="mb-8">
+        <h3 className="text-2xl font-black text-gray-800 mb-6 leading-tight">{current.questionText}</h3>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-blue-50/50 p-6 rounded-3xl border-2 border-dashed border-blue-100">
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span> Điểm chính cần nói
+            </p>
+            {renderHintList(current.hint)}
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-amber-50/50 p-6 rounded-3xl border-2 border-dashed border-amber-100">
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 bg-amber-400 rounded-full"></span> Từ vựng gợi ý
+              </p>
+              {renderVocab(current.meaning)}
+            </div>
+
+            {current.exampleSentence && (
+              <div className="bg-emerald-50/50 p-6 rounded-3xl border-2 border-dashed border-emerald-100">
+                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full"></span> Mẫu câu tham khảo
+                </p>
+                <p className="text-sm font-bold text-emerald-800 italic leading-relaxed">"{current.exampleSentence}"</p>
+              </div>
+            )}
+          </div>
         </div>
-        <p className="text-3xl font-black text-blue-700 leading-tight select-none">{current.speakingTarget}</p>
       </div>
 
-      <div className="mb-6 min-h-[4rem] bg-gray-50 rounded-2xl p-5 border border-gray-100 flex items-center justify-center transition-all">
+      <div className="mb-8 min-h-[6rem] bg-gray-50 rounded-3xl p-6 border-2 border-gray-100 flex items-center justify-center transition-all shadow-inner relative overflow-hidden">
         {isEvaluating ? (
-          <div className="flex items-center gap-3 text-blue-600 font-bold">
-            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            Đang chấm điểm...
+          <div className="flex flex-col items-center gap-3">
+             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+             <p className="text-xs font-black text-blue-600 uppercase tracking-widest">AI đang lắng nghe & chấm điểm...</p>
           </div>
         ) : transcript ? (
-          <p className="text-gray-700 text-lg font-medium italic">"{transcript}"</p>
+          <div className="w-full">
+            <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-2 text-center">Transcript:</p>
+            <p className="text-gray-800 text-lg font-bold italic text-center leading-relaxed">"{transcript}"</p>
+          </div>
         ) : (
-          <p className="text-gray-400 italic text-sm">Ghi âm sẽ tiếp tục cho đến khi bạn nhấn Dừng (Continuous Recording...)</p>
+          <p className="text-gray-400 font-bold italic text-sm text-center">Nhấn giữ nút Micro và bắt đầu nói để ghi điểm! 🚀</p>
+        )}
+        {isListening && (
+          <div className="absolute bottom-0 left-0 h-1 bg-blue-500 animate-pulse w-full"></div>
         )}
       </div>
       
-      {statusText && <p className="text-sm font-bold text-orange-500 mb-4 animate-pulse">{statusText}</p>}
+      {statusText && <p className="text-sm font-black text-red-500 mb-6 animate-pulse text-center uppercase tracking-tighter">{statusText}</p>}
 
       {feedback ? (
-        <div className="mb-8 p-6 rounded-3xl bg-white border-2 border-gray-100 shadow-sm animate-fade-in-up text-left">
-           <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                 <span className="text-2xl">{feedback.score >= 80 ? '🌟' : feedback.score >= 50 ? '👍' : '💪'}</span>
-                 <h4 className="font-black text-gray-800 uppercase tracking-tight">Kết quả luyện nói</h4>
+        <div className="mb-8 p-8 rounded-[2rem] bg-white border-4 border-gray-50 shadow-xl animate-fade-in-up text-left">
+           <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                 <span className="text-4xl">{feedback.score >= 80 ? '🌟' : feedback.score >= 50 ? '👍' : '💪'}</span>
+                 <div>
+                    <h4 className="font-black text-gray-800 uppercase tracking-tight text-xl">Kết quả đánh giá</h4>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">AI Feedback Report</p>
+                 </div>
               </div>
-              <div className={`px-4 py-1 rounded-full font-black text-white ${feedback.score >= 80 ? 'bg-green-500' : feedback.score >= 50 ? 'bg-orange-500' : 'bg-red-500'}`}>
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center font-black text-2xl border-4 ${feedback.score >= 80 ? 'bg-green-50 border-green-200 text-green-600' : feedback.score >= 50 ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-red-50 border-red-200 text-red-600'}`}>
                 {feedback.score}%
               </div>
            </div>
            
-           <div className="space-y-3">
-              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                 <p className="text-xs font-bold text-gray-400 uppercase mb-1">Nhận xét từ AI</p>
-                 <p className="text-gray-700 text-sm leading-relaxed">{feedback.message}</p>
-              </div>
+           <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-8 shadow-inner">
+              <p className="text-gray-700 font-bold leading-relaxed">{feedback.message}</p>
            </div>
 
-           <div className="mt-6 flex gap-3">
-             <Button onClick={startRecordingSession} variant="outline" fullWidth>Nói lại (Retry)</Button>
-             <Button onClick={nextQuestion} variant="secondary" fullWidth>Tiếp theo (Next)</Button>
+           <div className="flex flex-col md:flex-row gap-4">
+             <Button onClick={startRecordingSession} variant="outline" fullWidth className="py-5 rounded-2xl">Nói lại bài này 🔄</Button>
+             <Button onClick={nextQuestion} variant="secondary" fullWidth className="py-5 rounded-2xl shadow-lg">Câu tiếp theo →</Button>
            </div>
         </div>
       ) : (
@@ -221,31 +264,31 @@ export const SpeakingGame: React.FC<SpeakingGameProps> = ({ questions, onComplet
             onClick={toggleRecord} 
             variant={isListening ? 'danger' : 'primary'}
             disabled={isEvaluating}
-            className={`rounded-full w-28 h-28 flex flex-col items-center justify-center transition-all shadow-xl ${isListening ? 'ring-8 ring-red-100 scale-110' : 'hover:scale-105 active:scale-95'}`}
+            className={`rounded-full w-32 h-32 flex flex-col items-center justify-center transition-all shadow-2xl relative ${isListening ? 'ring-8 ring-red-100 scale-110 shadow-red-500/30' : 'hover:scale-105 active:scale-95 shadow-blue-600/30'}`}
           >
             {isListening ? (
-               <>
-                  <div className="w-10 h-10 bg-white rounded-lg mb-2"></div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">Dừng lại</span>
-               </>
+               <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 bg-white rounded-xl mb-3 animate-pulse"></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Dừng ghi</span>
+               </div>
             ) : (
-              <>
-                <svg className="w-12 h-12 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              <div className="flex flex-col items-center">
+                <svg className="w-14 h-14 mb-2 drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
                 <span className="text-[10px] font-black uppercase tracking-widest">Bắt đầu nói</span>
-              </>
+              </div>
             )}
           </Button>
-          <p className="text-xs text-gray-400 mt-6 font-bold uppercase tracking-widest">
-              {isListening ? "Ghi âm đang diễn ra... (Silence is okay!)" : "Nhấn Micro để bắt đầu nói"}
+          <p className="text-[10px] text-gray-400 mt-8 font-black uppercase tracking-[0.2em] animate-pulse">
+              {isListening ? "Hệ thống đang ghi nhận giọng nói của bạn..." : "Nhấn nút để bắt đầu thử thách phát âm"}
           </p>
         </div>
       )}
       
       {!feedback && (
-        <div className="mt-8 flex justify-center">
-          <Button onClick={nextQuestion} variant="outline" size="sm" className="text-gray-400 border-gray-100">Bỏ qua (Skip)</Button>
+        <div className="mt-10 flex justify-center border-t border-gray-50 pt-6">
+          <button onClick={nextQuestion} className="text-[10px] font-black text-gray-300 hover:text-gray-600 transition-colors uppercase tracking-widest">Bỏ qua bài này (Skip Task)</button>
         </div>
       )}
     </div>

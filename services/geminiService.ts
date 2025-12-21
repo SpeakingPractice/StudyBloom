@@ -3,10 +3,11 @@
 import { Type, Modality } from "@google/genai";
 import { GameType, GradeLevel, QuestionData, GrammarSubSkill } from "../types";
 
-// @google/genai guidelines: MUST NOT use gemini-1.5-flash-latest or gemini-pro.
+// @google/genai guidelines: prioritizing Flash for speed as requested
 const FALLBACK_MODELS = [
-  "gemini-3-pro-preview",
-  "gemini-3-flash-preview"
+  "gemini-3-flash-preview",
+  "gemini-2.5-flash-preview-09-2025",
+  "gemini-3-pro-preview"
 ];
 
 function cleanJsonResponse(text: string): string {
@@ -26,13 +27,11 @@ function parseErrorMessage(error: any): string {
   }
 }
 
-// Cập nhật Proxy để nhận và truyền API Key tùy chỉnh
 async function callGeminiProxy(model: string, contents: any, config: any, userKey?: string) {
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
-      // Truyền Key qua header
       'x-api-key': userKey || ""
     },
     body: JSON.stringify({ model, contents, config }),
@@ -85,16 +84,16 @@ const responseSchema = {
           questionText: { type: Type.STRING },
           options: { type: Type.ARRAY, items: { type: Type.STRING } },
           correctAnswer: { type: Type.STRING },
-          explanation: { type: Type.STRING, description: "Max 30 words explanation in Vietnamese" },
+          explanation: { type: Type.STRING },
           topic: { type: Type.STRING },
-          hint: { type: Type.STRING },
-          listeningScript: { type: Type.STRING, description: "Max 50 words" },
-          speakingTarget: { type: Type.STRING },
+          hint: { type: Type.STRING, description: "For Speaking: Bullet points of key points to mention. For others: structure hint." },
+          listeningScript: { type: Type.STRING },
+          speakingTarget: { type: Type.STRING, description: "Main goal of the speaking task" },
           phonetic: { type: Type.STRING },
-          meaning: { type: Type.STRING },
-          exampleSentence: { type: Type.STRING },
-          wordType: { type: Type.STRING, description: "E.g. Noun, Verb, Adjective, Adverb" },
-          countability: { type: Type.STRING, description: "For Nouns: Countable or Uncountable. For others: leave empty." },
+          meaning: { type: Type.STRING, description: "For Speaking: Key Vocabulary list separated by commas" },
+          exampleSentence: { type: Type.STRING, description: "For Speaking: A sample model answer or phrases" },
+          wordType: { type: Type.STRING },
+          countability: { type: Type.STRING },
         },
         required: ["id", "questionText", "explanation", "topic"],
       },
@@ -115,110 +114,45 @@ export const generateGameContent = async (
   const gradeInt = parseInt(grade.replace('Grade ', ''));
   const isLowerSecondary = gradeInt <= 8;
   const isHighSchool = gradeInt >= 10;
-  
-  const diffLevel = isLowerSecondary ? "Basic (Lớp 6-8)" : isHighSchool ? "Advanced (Lớp 10-12)" : "Intermediate (Lớp 9)";
+  const diffLevel = isLowerSecondary ? "Basic" : isHighSchool ? "Advanced" : "Intermediate";
 
   switch (gameType) {
     case GameType.Grammar:
-      if (subSkill === GrammarSubSkill.SentenceTrans) {
-        specificInstruction = `5 Sentence Transformation tasks. 'topic' in Vietnamese. 'hint' has the grammar structure.`;
-      } else if (subSkill === GrammarSubSkill.Synonym || subSkill === GrammarSubSkill.Antonym) {
-        const typeStr = subSkill === GrammarSubSkill.Synonym ? "Synonym (Từ đồng nghĩa)" : "Antonym (Từ trái nghĩa)";
-        specificInstruction = `6 ${typeStr} tasks. Level: ${diffLevel}. 
-        Format: Provide a full sentence in 'questionText'. Wrap the target word in <u></u> tags (e.g. "He is very <u>modest</u> about his wins."). 
-        Options must be 4 single words. 
-        IMPORTANT: For Grade 6-8, use simple words like 'big', 'happy', 'scared', 'finish'. For Grade 9-12, use more academic words.`;
-      } else {
-        specificInstruction = `6 grammar MCQs. Level ${diffLevel}.`;
-      }
+      specificInstruction = `6 items. Sub-skill: ${subSkill || 'General Grammar'}.`;
       break;
     case GameType.Listening:
-      specificInstruction = `5 short listening tasks. Max 40 words per script.`;
+      specificInstruction = `5 listening tasks.`;
       break;
     case GameType.Speaking:
-      specificInstruction = `5 short speaking tasks.`;
+      specificInstruction = `5 speaking tasks. 
+      For each:
+      - 'speakingTarget' is the core requirement.
+      - 'hint' MUST be a bulleted list of 2-3 key ideas to include (e.g., "- Say your name\n- Mention age").
+      - 'meaning' MUST be 3-5 key words/phrases student should use (comma separated).
+      - 'exampleSentence' MUST be a short natural sample answer.`;
       break;
     case GameType.TypeToFly:
-      specificInstruction = `8 vocabulary items. English word in 'questionText', VN meaning in 'explanation'.`;
+      specificInstruction = `8 vocab items.`;
       break;
     case GameType.Writing:
-      let wordCountRange = "100-300 words";
-      if (gradeInt === 6) wordCountRange = "50-80 words";
-      else if (gradeInt === 7) wordCountRange = "60-150 words";
-      else if (gradeInt === 8) wordCountRange = "70-150 words";
-      else if (gradeInt === 9) wordCountRange = "80-150 words";
-
-      specificInstruction = `Generate EXACTLY 1 writing prompt. The topic must relate to the curriculum of ${grade}. 
-      Specify the required word count for the student as ${wordCountRange}. 
-      'topic' in Vietnamese. Prompt in English.`;
+      let wordCount = gradeInt <= 6 ? "50-80" : gradeInt <= 9 ? "80-150" : "150-300";
+      specificInstruction = `1 writing prompt. Limit: ${wordCount} words.`;
       break;
     default:
-      specificInstruction = `6 items. Level ${diffLevel}.`;
+      specificInstruction = `6 items.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output valid JSON. All 'explanation', 'topic', and 'meaning' MUST be Vietnamese.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Response in JSON. Vietnamese for 'explanation', 'topic', 'hint' (only for bullets), 'textbookContext'. English for questions.`;
 
   try {
-    const result = await callGeminiWithFallback("gemini-3-pro-preview", prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
       responseMimeType: "application/json",
       responseSchema: responseSchema,
-      temperature: 0.1,
-      thinkingConfig: { thinkingBudget: 0 }
+      temperature: 0.1
     }, userKey);
     
-    const cleaned = cleanJsonResponse(result.text);
-    const parsed = JSON.parse(cleaned);
-    return parsed;
-  } catch (error: any) { 
-    if (error.message.includes("Requested entity was not found")) {
-      throw new Error("Dịch vụ tạm thời gián đoạn. Vui lòng thử lại sau.");
-    }
-    throw error; 
-  }
-};
-
-export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
-  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      status: { type: Type.STRING, description: "Must be 'CORRECT', 'INCORRECT', or 'PARTIAL'" },
-      feedback: { type: Type.STRING, description: "Max 20 words in Vietnamese" },
-      explanation: { type: Type.STRING, description: "Max 20 words in Vietnamese" }
-    },
-    required: ["status", "feedback", "explanation"]
-  };
-  
-  const prompt = `Analyze: Original: "${original}", Expected: "${targetPattern}", Student: "${studentAnswer}". Feedback in Vietnamese.`;
-
-  try {
-    const result = await callGeminiWithFallback("gemini-3-pro-preview", prompt, {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 }
-    }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
-  } catch { return null; }
-};
-
-export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
-  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      score: { type: Type.INTEGER, description: "Score from 0 to 10" },
-      feedback: { type: Type.STRING },
-      corrections: { type: Type.STRING }
-    }
-  };
-  try {
-    const result = await callGeminiWithFallback("gemini-3-pro-preview", `Grade writing task: Prompt "${prompt}". Student text: "${studentText}". Level: ${grade}. Evaluate based on grammatical accuracy, vocabulary usage, and task fulfillment. SCORE ON A SCALE OF 0 TO 10. Response in Vietnamese.`, {
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 }
-    }, userKey);
-    return JSON.parse(cleanJsonResponse(result.text));
-  } catch { return {}; }
+  } catch (error: any) { throw error; }
 };
 
 export const evaluateSpeaking = async (target: string, transcript: string, grade: string) => {
@@ -232,13 +166,51 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     }
   };
   try {
-    const result = await callGeminiWithFallback("gemini-3-pro-preview", `Score speech: Target "${target}", User transcript "${transcript}". Vietnamese feedback.`, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Score speaking: Task "${target}", Student transcript "${transcript}". Grade ${grade}. Check if student included main points. Response in Vietnamese.`, {
       responseMimeType: "application/json",
-      responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 }
+      responseSchema: schema
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
+};
+
+export const evaluateSentenceTransformation = async (original: string, targetPattern: string, studentAnswer: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      status: { type: Type.STRING },
+      feedback: { type: Type.STRING },
+      explanation: { type: Type.STRING }
+    },
+    required: ["status", "feedback", "explanation"]
+  };
+  try {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Check rewrite: "${original}", Pattern: "${targetPattern}", Student: "${studentAnswer}". Vietnamese.`, {
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }, userKey);
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch { return null; }
+};
+
+export const evaluateWriting = async (prompt: string, studentText: string, grade: string) => {
+  const userKey = localStorage.getItem('user_gemini_api_key') || undefined;
+  const schema = {
+    type: Type.OBJECT,
+    properties: {
+      score: { type: Type.INTEGER },
+      feedback: { type: Type.STRING },
+      corrections: { type: Type.STRING }
+    }
+  };
+  try {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade writing: "${prompt}", Student: "${studentText}", Level: ${grade}. Scale 0-10. Vietnamese.`, {
+      responseMimeType: "application/json",
+      responseSchema: schema
+    }, userKey);
+    return JSON.parse(cleanJsonResponse(result.text));
+  } catch { return {}; }
 };
 
 export const evaluatePronunciation = async (target: string, transcript: string) => {
@@ -252,14 +224,10 @@ export const evaluatePronunciation = async (target: string, transcript: string) 
     },
     required: ["isCorrect", "feedback", "advice"]
   };
-
-  const prompt = `Evaluate if the pronunciation of "${transcript}" is a correct or acceptable attempt at saying "${target}". Respond in Vietnamese.`;
-
   try {
-    const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
+    const result = await callGeminiWithFallback("gemini-3-flash-preview", `Pronunciation check: "${target}", User: "${transcript}". Vietnamese.`, {
       responseMimeType: "application/json",
-      responseSchema: schema,
-      thinkingConfig: { thinkingBudget: 0 }
+      responseSchema: schema
     }, userKey);
     return JSON.parse(cleanJsonResponse(result.text));
   } catch { return null; }
