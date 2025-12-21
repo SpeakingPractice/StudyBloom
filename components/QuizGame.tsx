@@ -74,7 +74,8 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
 
   const getButtonVariant = (option: string) => {
     if (!showFeedback) return selectedOption === option ? 'primary' : 'outline';
-    if (option === currentQuestion.correctAnswer) return 'primary'; 
+    // Đổi màu xanh lá (success) cho đáp án đúng khi hiện feedback
+    if (option === currentQuestion.correctAnswer) return 'success'; 
     if (option === selectedOption && option !== currentQuestion.correctAnswer) return 'danger';
     return 'outline';
   };
@@ -159,7 +160,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             {currentQuestion.options?.map((option, idx) => (
               <Button key={idx} variant={getButtonVariant(option)} onClick={() => handleOptionClick(option)} fullWidth className="text-left py-4 px-6">
                 <span className="mr-3 font-black text-blue-400">{String.fromCharCode(65 + idx)}.</span>
-                {option}
+                <span dangerouslySetInnerHTML={{ __html: option }} />
               </Button>
             ))}
           </div>

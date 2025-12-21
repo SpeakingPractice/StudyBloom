@@ -109,7 +109,7 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
       specificInstruction = `Generate 10 advanced grammar questions for ${grade} based on textbook: ${specificTextbook || 'General Success'}. 
       Task Type: ${subSkill}. 
       Focus on specific syllabus units for this grade. 
-      - If Pronunciation: Choose word with different underlined sound.
+      - If Pronunciation: Choose word with different underlined sound. CRITICAL: In each of the 4 options, you MUST wrap the letters being tested in <u></u> tags (e.g., "br<u>ea</u>dwinner"). The 'correctAnswer' must also include these tags to match the option.
       - If Stress: Choose word with different stress pattern.
       - If Synonym/Antonym: Advanced academic words suitable for ${grade}.
       Include detailed explanations in Vietnamese.`;
