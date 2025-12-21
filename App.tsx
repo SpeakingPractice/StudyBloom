@@ -126,6 +126,12 @@ const App: React.FC = () => {
     setIsQuotaError(false);
   };
 
+  const handleRetry = () => {
+    setFinalScore(null);
+    setGameData(null);
+    handleStartGame();
+  };
+
   const renderGameComponent = () => {
     if (!gameData) return null;
     const commonProps = { questions: gameData.questions, onComplete: setFinalScore };
@@ -432,7 +438,7 @@ const App: React.FC = () => {
               </div>
             </div>
           ) : (!isQuotaError && finalScore !== null) ? (
-            <ResultCard score={finalScore} total={calculateTotalPossibleScore()} onRetry={() => { setFinalScore(null); }} onHome={handleReset} />
+            <ResultCard score={finalScore} total={calculateTotalPossibleScore()} onRetry={handleRetry} onHome={handleReset} />
           ) : (
             !isQuotaError && renderGameComponent()
           )}

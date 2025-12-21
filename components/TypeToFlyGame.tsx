@@ -152,21 +152,24 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
            <div className="flex-1 flex items-end justify-around text-3xl pb-1"><span>🌿</span><span>🪵</span><span>🌱</span><span>🌿</span></div>
         </div>
 
-        {/* CUSTOM FLAPPY BIRD DESIGN */}
+        {/* CUSTOM FLAPPY BIRD DESIGN - REDESIGNED FOR ROUNDER BODY AND EYE ALIGNMENT */}
         <div className="absolute left-[30%] transition-transform duration-200 ease-out z-50"
           style={{ top: `${birdY}%`, transform: `translateY(-50%) rotate(${velocityRef.current * 20}deg)` }}>
-          <div className="relative w-12 h-10 md:w-16 md:h-12 scale-x-[-1]">
-            {/* Body */}
-            <div className="absolute inset-0 bg-yellow-400 border-[3px] md:border-4 border-black rounded-[40%] shadow-inner"></div>
-            {/* Eye */}
-            <div className="absolute top-[10%] left-[60%] w-[35%] h-[40%] bg-white border-[2px] md:border-[3px] border-black rounded-full flex items-center justify-center">
-              <div className="w-[40%] h-[40%] bg-black rounded-full translate-x-1"></div>
+          <div className="relative w-12 h-12 md:w-16 md:h-16 scale-x-[-1]">
+            {/* Body - Now a perfect circle */}
+            <div className="absolute inset-0 bg-yellow-400 border-[3px] md:border-4 border-black rounded-full shadow-inner"></div>
+            
+            {/* Eye - Moved to the front (left side of flipped container) */}
+            <div className="absolute top-[10%] left-[10%] w-[45%] h-[50%] bg-white border-[2px] md:border-[3px] border-black rounded-full flex items-center justify-center">
+              <div className="w-[35%] h-[45%] bg-black rounded-full -translate-x-0.5"></div>
             </div>
-            {/* Lip (Beak) */}
-            <div className="absolute bottom-[15%] -left-[15%] w-[50%] h-[35%] bg-orange-500 border-[2px] md:border-[3px] border-black rounded-full"></div>
-            <div className="absolute bottom-[20%] -left-[10%] w-[40%] h-[20%] bg-red-600 border-t-[1px] md:border-t-2 border-black rounded-full opacity-30"></div>
-            {/* Wing */}
-            <div className={`absolute top-[35%] right-[10%] w-[45%] h-[40%] bg-white border-[2px] md:border-[3px] border-black rounded-[50%_50%_20%_80%] origin-right ${hasStarted && !isGameOver ? 'animate-wing' : ''}`}></div>
+            
+            {/* Lip (Beak) - Front */}
+            <div className="absolute bottom-[20%] -left-[20%] w-[55%] h-[35%] bg-orange-500 border-[2px] md:border-[3px] border-black rounded-full"></div>
+            <div className="absolute bottom-[25%] -left-[15%] w-[45%] h-[15%] bg-red-600 border-t-[1px] md:border-t-2 border-black rounded-full opacity-30"></div>
+            
+            {/* Wing - Back */}
+            <div className={`absolute top-[35%] right-[5%] w-[45%] h-[40%] bg-white border-[2px] md:border-[3px] border-black rounded-full origin-right ${hasStarted && !isGameOver ? 'animate-wing' : ''}`}></div>
           </div>
         </div>
 
