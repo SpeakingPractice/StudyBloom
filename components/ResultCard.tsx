@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { MOTIVATIONAL_MESSAGES, BADGE_LEVELS, Badge } from '../constants';
@@ -16,10 +17,10 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
   const percentage = Math.round((score / total) * 100);
   
   let message = "";
-  if (percentage === 100) message = "Xuất sắc! (Perfect!) 🌟";
+  if (percentage === 100) message = "Khai bút tuyệt vời! (Perfect!) 🧧";
   else if (percentage >= 80) message = MOTIVATIONAL_MESSAGES[0];
   else if (percentage >= 60) message = MOTIVATIONAL_MESSAGES[1];
-  else message = "Cố gắng hơn nữa nhé! (Try again!) 💪";
+  else message = "Lộc xuân đang đợi, cố lên! (Try again!) 🐉";
 
   useEffect(() => {
     // 1. Get previous total
@@ -42,17 +43,17 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
   }, [score]);
 
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full mx-auto text-center border-4 border-blue-100 animate-fade-in-up">
+    <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full mx-auto text-center border-4 border-yellow-100 animate-fade-in-up">
       <div className="mb-6">
-        <h2 className="text-3xl font-extrabold text-gray-800 mt-4">Kết Quả</h2>
+        <h2 className="text-3xl font-extrabold text-gray-800 mt-4">Kết Quả Khai Bút</h2>
         <p className="text-gray-500 text-lg">Results</p>
       </div>
 
       <div className="relative inline-block mb-4">
-         <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+         <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-yellow-600">
             {score}/{total}
          </div>
-         <p className="text-sm text-gray-400 font-semibold mt-2">Tổng điểm tích lũy: {currentTotalScore}</p>
+         <p className="text-sm text-gray-400 font-semibold mt-2">Tổng lộc tích lũy: {currentTotalScore}</p>
       </div>
       
       <p className="text-xl text-orange-500 font-bold mb-8">{message}</p>
@@ -60,13 +61,13 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
       {/* NEW BADGE UNLOCKED SECTION */}
       {newBadges.length > 0 && (
         <div className="bg-yellow-50 rounded-xl p-6 mb-8 border-2 border-yellow-200 animate-bounce shadow-lg">
-          <p className="text-sm font-black text-yellow-600 uppercase mb-3 tracking-widest">🎉 New Badge Unlocked! 🎉</p>
+          <p className="text-sm font-black text-yellow-600 uppercase mb-3 tracking-widest">🎉 Nhận Lì Xì Huy Hiệu! 🎉</p>
           <div className="space-y-4">
             {newBadges.map(badge => (
               <div key={badge.name} className="flex flex-col items-center">
                 <span className="text-6xl mb-2 filter drop-shadow-md">{badge.icon}</span>
                 <span className={`text-xl font-black ${badge.color}`}>{badge.name}</span>
-                <span className="text-xs text-gray-500 font-bold">Reached {badge.score} points</span>
+                <span className="text-xs text-gray-500 font-bold">Đạt {badge.score} điểm</span>
               </div>
             ))}
           </div>
@@ -76,14 +77,14 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
       {/* Session Performance Badges (Small) */}
       {percentage === 100 && newBadges.length === 0 && (
         <div className="mb-8">
-           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-700 font-bold text-sm">
-             ⭐ Perfect Score Bonus!
+           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-100 text-yellow-700 font-bold text-sm">
+             ⭐ Khai bút đại cát!
            </span>
         </div>
       )}
 
       <div className="space-y-3">
-        <Button onClick={onRetry} fullWidth variant="primary" size="lg">
+        <Button onClick={onRetry} fullWidth variant="primary" size="lg" className="bg-red-600 border-red-800 hover:bg-red-700 text-white">
           Chơi lại (Play Again)
         </Button>
         <Button onClick={onHome} fullWidth variant="outline" size="lg">
