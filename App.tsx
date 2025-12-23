@@ -50,22 +50,17 @@ const BanhChung = ({ className }: { className?: string }) => (
         <stop offset="100%" stopColor="#1b5e20" />
       </linearGradient>
     </defs>
-    {/* Vỏ bánh */}
     <rect x="5" y="5" width="90" height="90" rx="6" fill="url(#banhChungGreen)" stroke="#0d3311" strokeWidth="1" />
-    {/* Lạt buộc */}
     <rect x="5" y="32" width="90" height="4" fill="#f1f8e9" opacity="0.8" />
     <rect x="5" y="64" width="90" height="4" fill="#f1f8e9" opacity="0.8" />
     <rect x="32" y="5" width="4" height="90" fill="#f1f8e9" opacity="0.8" />
     <rect x="64" y="5" width="4" height="90" fill="#f1f8e9" opacity="0.8" />
-    {/* Nhãn đỏ trung tâm */}
     <g transform="rotate(45 50 50)">
       <rect x="28" y="28" width="44" height="44" fill="#d32f2f" />
       <rect x="30" y="30" width="40" height="40" fill="none" stroke="#ffd54f" strokeWidth="1" />
     </g>
-    {/* Chữ TẾT 2026 */}
     <text x="50" y="47" textAnchor="middle" fill="#ffd54f" fontSize="13" fontWeight="900" style={{ fontFamily: 'sans-serif' }}>TẾT</text>
     <text x="50" y="62" textAnchor="middle" fill="#ffd54f" fontSize="11" fontWeight="900" style={{ fontFamily: 'sans-serif' }}>2026</text>
-    {/* Hoa mai nhỏ trang trí góc */}
     <circle cx="82" cy="18" r="6" fill="#ffea00" />
     <circle cx="82" cy="18" r="2.5" fill="#ff8f00" />
   </svg>
@@ -86,6 +81,13 @@ const App: React.FC = () => {
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const [keyVerificationStatus, setKeyVerificationStatus] = useState<'none' | 'success' | 'fail'>('none');
+
+  // State cho phản hồi (Feedback)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
 
   useEffect(() => {
     const pts = localStorage.getItem('vieteng_points');
@@ -198,12 +200,41 @@ const App: React.FC = () => {
     }
   };
 
+  // Hàm gửi phản hồi chuyên nghiệp qua FormSubmit
+  const submitFeedback = async () => {
+    if (!feedbackText.trim() || isSendingFeedback) return;
+    setIsSendingFeedback(true);
+    try {
+      await fetch("https://formsubmit.co/ajax/mquan1997td@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          email: userEmail || "Không để lại email",
+          message: feedbackText,
+          _subject: "Góp Ý Web Luyen Tieng Anh"
+        })
+      });
+      setFeedbackSuccess(true);
+      setFeedbackText("");
+      setUserEmail("");
+      setTimeout(() => {
+        setShowFeedbackModal(false);
+        setFeedbackSuccess(false);
+      }, 2500);
+    } catch (e) {
+      alert("Hệ thống bận, vui lòng thử lại sau!");
+    } finally {
+      setIsSendingFeedback(false);
+    }
+  };
+
   const currentBadge = BADGE_LEVELS.slice().reverse().find(b => totalPoints >= b.score);
 
   return (
     <div className="relative min-h-screen font-sans text-gray-100">
       <BackgroundDecor />
       
+      {/* Modal Kho Huy Hiệu */}
       {showBadges && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowBadges(false)}></div>
@@ -229,6 +260,53 @@ const App: React.FC = () => {
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Phản Hồi (Feedback) */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isSendingFeedback && setShowFeedbackModal(false)}></div>
+          <div className="relative bg-[#1a0505] border-2 border-yellow-500/30 rounded-[2rem] w-full max-w-lg p-8 shadow-2xl animate-fade-in">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-2xl font-black text-yellow-400 flex items-center gap-2 tracking-tighter uppercase">Góp Ý Đầu Xuân 🧧</h3>
+              <button onClick={() => !isSendingFeedback && setShowFeedbackModal(false)} className="text-white/40 hover:text-white transition-colors"><Icons.Close /></button>
+            </div>
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-6">Chúng tôi luôn lắng nghe lộc ý của bạn</p>
+            
+            {feedbackSuccess ? (
+              <div className="py-12 flex flex-col items-center animate-fade-in text-center">
+                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4"><Icons.Check /></div>
+                 <p className="font-black text-white text-xl">Đã gửi lộc ý thành công! 🌸</p>
+                 <p className="text-white/40 text-sm mt-2 font-bold">Cảm ơn bạn đã đóng góp.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] text-yellow-500/70 font-black uppercase tracking-widest mb-2 px-1">Email của bạn</label>
+                  <input 
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    placeholder="example@gmail.com"
+                    className="w-full bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all placeholder:text-white/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-yellow-500/70 font-black uppercase tracking-widest mb-2 px-1">Nội dung góp ý</label>
+                  <textarea 
+                    value={feedbackText} 
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    placeholder="Nhập góp ý hoặc báo lỗi tại đây..."
+                    className="w-full h-32 bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all resize-none placeholder:text-white/20"
+                  />
+                </div>
+                <Button onClick={submitFeedback} disabled={!feedbackText.trim() || isSendingFeedback} variant="primary" fullWidth className="py-4 bg-red-600 border-red-800 text-white shadow-[0_10px_20px_rgba(220,38,38,0.2)]">
+                  {isSendingFeedback ? "Đang gửi..." : "Gửi ngay 🧧"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -261,21 +339,15 @@ const App: React.FC = () => {
                     Lấy API key ở đây <span className="text-xs">🔑</span>
                   </a>
                 </div>
-                {/* Trang trí chân khung nhập liệu */}
                 <div className="absolute -bottom-14 left-0 w-full flex justify-between items-end px-2 pointer-events-none">
-                  {/* Lồng đèn trái */}
                   <div className="flex flex-col items-center">
                     <div className="w-px h-5 bg-yellow-600/60"></div>
                     <span className="text-2xl lantern-sway -mt-1">🏮</span>
                   </div>
-
-                  {/* 2 Bánh chưng SVG xếp chồng như hình mẫu - Di chuyển lên trên 1 chút bằng mb-2 */}
                   <div className="relative w-20 h-16 flex items-center justify-center mb-2">
                     <BanhChung className="absolute left-0 top-1 transform rotate-[-12deg] z-10" />
                     <BanhChung className="absolute right-0 bottom-0 transform rotate-[6deg] scale-105 z-20" />
                   </div>
-
-                  {/* Lồng đèn phải */}
                   <div className="flex flex-col items-center">
                     <div className="w-px h-5 bg-yellow-600/60"></div>
                     <span className="text-2xl lantern-sway -mt-1">🏮</span>
@@ -310,7 +382,6 @@ const App: React.FC = () => {
                     StudyBl<LetterFlower /><LetterFlower />m
                   </h1>
                 </div>
-
                 <p className="text-[10px] md:text-base text-yellow-400 font-black max-w-3xl mx-auto drop-shadow-lg px-4 uppercase tracking-tight whitespace-nowrap mt-4">
                   Khai bút đầu xuân cùng Tiếng Anh Cấp 2-3
                 </p>
@@ -369,7 +440,7 @@ const App: React.FC = () => {
         <div className="text-center text-white/20 text-[9px] md:text-[10px] mb-6">
           <p className="font-black uppercase tracking-[0.5em] mb-2">StudyBloom 🧧 Lunar New Year Edition</p>
         </div>
-        <button onClick={() => setShowBadges(true)} className="flex items-center px-8 py-4 rounded-2xl glass-panel border-yellow-500/30 border-2 hover:bg-yellow-600/10 hover:border-yellow-500/60 transition-all duration-300 text-white/60 hover:text-white font-black text-sm shadow-xl group">
+        <button onClick={() => setShowFeedbackModal(true)} className="flex items-center px-8 py-4 rounded-2xl glass-panel border-yellow-500/30 border-2 hover:bg-yellow-600/10 hover:border-yellow-500/60 transition-all duration-300 text-white/60 hover:text-white font-black text-sm shadow-xl group">
           <Icons.Mail /><span className="group-hover:translate-x-0.5 transition-transform">Gửi phản hồi 🧧</span>
         </button>
       </footer>
