@@ -82,7 +82,6 @@ const App: React.FC = () => {
   const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const [keyVerificationStatus, setKeyVerificationStatus] = useState<'none' | 'success' | 'fail'>('none');
 
-  // State cho phản hồi (Feedback)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
@@ -113,7 +112,6 @@ const App: React.FC = () => {
     if (!apiKeyInput.trim()) return;
     setIsVerifyingKey(true);
     setKeyVerificationStatus('none');
-    
     try {
       await generateGameContent(GradeLevel.Grade6, GameType.Grammar, "", GrammarSubSkill.GrammarQuiz, apiKeyInput);
       setKeyVerificationStatus('success');
@@ -200,7 +198,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Hàm gửi phản hồi chuyên nghiệp qua FormSubmit
   const submitFeedback = async () => {
     if (!feedbackText.trim() || isSendingFeedback) return;
     setIsSendingFeedback(true);
@@ -234,7 +231,6 @@ const App: React.FC = () => {
     <div className="relative min-h-screen font-sans text-gray-100">
       <BackgroundDecor />
       
-      {/* Modal Kho Huy Hiệu */}
       {showBadges && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowBadges(false)}></div>
@@ -264,7 +260,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Phản Hồi (Feedback) */}
       {showFeedbackModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isSendingFeedback && setShowFeedbackModal(false)}></div>
@@ -274,7 +269,6 @@ const App: React.FC = () => {
               <button onClick={() => !isSendingFeedback && setShowFeedbackModal(false)} className="text-white/40 hover:text-white transition-colors"><Icons.Close /></button>
             </div>
             <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-6">Chúng tôi luôn lắng nghe lộc ý của bạn</p>
-            
             {feedbackSuccess ? (
               <div className="py-12 flex flex-col items-center animate-fade-in text-center">
                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4"><Icons.Check /></div>
@@ -285,22 +279,11 @@ const App: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] text-yellow-500/70 font-black uppercase tracking-widest mb-2 px-1">Email của bạn</label>
-                  <input 
-                    type="email"
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    placeholder="example@gmail.com"
-                    className="w-full bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all placeholder:text-white/20"
-                  />
+                  <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="example@gmail.com" className="w-full bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all placeholder:text-white/20" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-yellow-500/70 font-black uppercase tracking-widest mb-2 px-1">Nội dung góp ý</label>
-                  <textarea 
-                    value={feedbackText} 
-                    onChange={(e) => setFeedbackText(e.target.value)}
-                    placeholder="Nhập góp ý hoặc báo lỗi tại đây..."
-                    className="w-full h-32 bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all resize-none placeholder:text-white/20"
-                  />
+                  <textarea value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)} placeholder="Nhập góp ý hoặc báo lỗi tại đây..." className="w-full h-32 bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all resize-none placeholder:text-white/20" />
                 </div>
                 <Button onClick={submitFeedback} disabled={!feedbackText.trim() || isSendingFeedback} variant="primary" fullWidth className="py-4 bg-red-600 border-red-800 text-white shadow-[0_10px_20px_rgba(220,38,38,0.2)]">
                   {isSendingFeedback ? "Đang gửi..." : "Gửi ngay 🧧"}
@@ -335,9 +318,7 @@ const App: React.FC = () => {
                   </button>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[10px] text-yellow-500/70 hover:text-yellow-400 font-black uppercase tracking-widest transition-colors flex items-center gap-1">
-                    Lấy API key ở đây <span className="text-xs">🔑</span>
-                  </a>
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[10px] text-yellow-500/70 hover:text-yellow-400 font-black uppercase tracking-widest transition-colors flex items-center gap-1">Lấy API key ở đây <span className="text-xs">🔑</span></a>
                 </div>
                 <div className="absolute -bottom-14 left-0 w-full flex justify-between items-end px-2 pointer-events-none">
                   <div className="flex flex-col items-center">
@@ -378,13 +359,9 @@ const App: React.FC = () => {
             <div className="animate-fade-in space-y-8">
               <div className="text-center space-y-4 mb-12 relative flex flex-col items-center">
                 <div className="relative inline-block mt-8">
-                  <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_10px_50px_rgba(255,215,0,0.3)] relative z-10 flex items-center justify-center">
-                    StudyBl<LetterFlower /><LetterFlower />m
-                  </h1>
+                  <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_10px_50px_rgba(255,215,0,0.3)] relative z-10 flex items-center justify-center">StudyBl<LetterFlower /><LetterFlower />m</h1>
                 </div>
-                <p className="text-[10px] md:text-base text-yellow-400 font-black max-w-3xl mx-auto drop-shadow-lg px-4 uppercase tracking-tight whitespace-nowrap mt-4">
-                  Khai bút đầu xuân cùng Tiếng Anh Cấp 2-3
-                </p>
+                <p className="text-[10px] md:text-base text-yellow-400 font-black max-w-3xl mx-auto drop-shadow-lg px-4 uppercase tracking-tight whitespace-nowrap mt-4">Khai bút đầu xuân cùng Tiếng Anh Cấp 2-3</p>
               </div>
               <div className="grid gap-8">
               {Object.entries(GRADE_GROUPS).map(([groupName, grades]) => (
@@ -416,16 +393,29 @@ const App: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-yellow-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Kỹ năng ✨</label>
-                    <div className="grid grid-cols-2 gap-4 md:gap-5">
+                    <div className="grid grid-cols-2 gap-4 md:gap-5 mb-8">
                       {Object.values(GameType).map((type) => (
-                        <Button key={type} variant={selectedGameType === type ? 'secondary' : 'outline'} onClick={() => { setSelectedGameType(type); if (type === GameType.Grammar) setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); else setSelectedSubSkill(null); }} className={`py-8 md:py-10 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5 hover:bg-white/10'}`}>
+                        <Button key={type} variant={selectedGameType === type ? 'secondary' : 'outline'} onClick={() => { setSelectedGameType(type); if (type !== GameType.Grammar) setSelectedSubSkill(null); else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); }} className={`py-6 md:py-8 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5 hover:bg-white/10'}`}>
                           <span className="text-sm md:text-lg font-black text-center leading-tight uppercase tracking-tighter text-white px-2">{type.split(' (')[0]}</span>
                         </Button>
                       ))}
                     </div>
+
+                    {selectedGameType === GameType.Grammar && (
+                      <div className="animate-fade-in-up">
+                        <label className="block text-yellow-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Dạng bài tập 📝</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {Object.values(GrammarSubSkill).map((sub) => (
+                            <button key={sub} onClick={() => setSelectedSubSkill(sub)} className={`px-4 py-3 rounded-xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter leading-tight ${selectedSubSkill === sub ? 'bg-yellow-500 border-yellow-700 text-black shadow-lg' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}>
+                              {sub}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="mt-10 md:mt-12"><Button onClick={handleStartGame} fullWidth size="lg" variant="primary" disabled={!selectedGameType} className="text-xl md:text-2xl py-8 md:py-10 h-24 md:h-28 rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter">Nhận lì xì bài học 🧧</Button></div>
+                <div className="mt-10 md:mt-12"><Button onClick={handleStartGame} fullWidth size="lg" variant="primary" disabled={!selectedGameType || (selectedGameType === GameType.Grammar && !selectedSubSkill)} className="text-xl md:text-2xl py-8 md:py-10 h-24 md:h-28 rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter">Nhận lì xì bài học 🧧</Button></div>
               </div>
             </div>
           ) : (!isQuotaError && finalScore !== null) ? (

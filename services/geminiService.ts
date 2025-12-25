@@ -89,44 +89,40 @@ const responseSchema = {
 export const generateGameContent = async (grade: GradeLevel, gameType: GameType, specificTextbook?: string, subSkill?: GrammarSubSkill, userKey?: string) => {
   let specificInstruction = "";
   const gradeInt = parseInt(grade.replace('Grade ', ''));
+  const difficultyRange = gradeInt <= 8 ? "A1 to B1 (Elementary to Intermediate)" : "A1 to B2 (Elementary to Upper-Intermediate)";
 
   if (gameType === GameType.Speaking) {
-    specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS for ${grade} students. 
+    specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS for ${grade} students at ${difficultyRange} level. 
     IMPORTANT: 'hint' field must be a CLEAR list of 3-4 bullet points separated by '|' character. 
-    'meaning' field MUST provide 3-5 keywords in English-Vietnamese pair format, e.g., 'hobby - sở thích, active - năng động'. 
-    Ensure topics are relevant to ${grade} students.`;
+    'meaning' field MUST provide 3-5 keywords in English-Vietnamese pair format.`;
   } else if (gameType === GameType.Writing) {
-    let wordCount = "50-80";
-    if (gradeInt === 7) wordCount = "60-150";
-    else if (gradeInt === 8) wordCount = "70-150";
-    else if (gradeInt === 9) wordCount = "80-150";
-    else if (gradeInt >= 10) wordCount = "100-300";
-    specificInstruction = `Generate 1 ESSAY topic for ${grade}. Word count: ${wordCount} words. Based on textbook: ${specificTextbook || 'General'}.`;
+    let wordCount = gradeInt <= 9 ? "80-150" : "150-300";
+    specificInstruction = `Generate 1 ESSAY topic for ${grade} (${difficultyRange}). Word count: ${wordCount} words. Based on textbook: ${specificTextbook || 'General'}.`;
   } else if (gameType === GameType.Grammar) {
-    if (subSkill === GrammarSubSkill.SentenceTrans) {
-      specificInstruction = `Sentence transformation tasks. MUST provide 'startingWords' field containing the first 2-3 words of the correct answer.`;
-    } else {
-      specificInstruction = `Generate 10 advanced grammar questions for ${grade} based on textbook: ${specificTextbook || 'General Success'}. 
-      Task Type: ${subSkill}. 
-      Focus on specific syllabus units for this grade. 
-      - If Pronunciation: Choose word with different underlined sound. CRITICAL: In each of the 4 options, you MUST wrap the letters being tested in <u></u> tags (e.g., "br<u>ea</u>dwinner"). The 'correctAnswer' must also include these tags to match the option.
-      - If Stress: Choose word with different stress pattern.
-      - If Synonym/Antonym: Advanced academic words suitable for ${grade}.
-      Include detailed explanations in Vietnamese.`;
-    }
+    const subSkillPrompts: Record<string, string> = {
+      [GrammarSubSkill.Pronunciation]: "Pick the word whose underlined part is pronounced differently. Wrap the letters in <u></u> (e.g., 'br<u>ea</u>d').",
+      [GrammarSubSkill.Stress]: "Choose the word that has a different stress pattern from the others.",
+      [GrammarSubSkill.GrammarQuiz]: "Standard multiple-choice grammar and vocabulary questions.",
+      [GrammarSubSkill.FillBlank]: "Complete sentences by filling in the blanks with the correct word/phrase.",
+      [GrammarSubSkill.Synonym]: "Choose the word closest in meaning to the underlined word in a sentence.",
+      [GrammarSubSkill.Antonym]: "Choose the word opposite in meaning to the underlined word in a sentence.",
+      [GrammarSubSkill.Paragraph]: "Generate a short cloze test (filling gaps in a paragraph).",
+      [GrammarSubSkill.WordForm]: "Supply the correct form of the word in brackets to complete the sentence.",
+      [GrammarSubSkill.SentenceTrans]: "Sentence transformation tasks. MUST provide 'startingWords' with 2-3 starting words of the answer.",
+    };
+
+    specificInstruction = `Generate 10 advanced questions for ${grade}. 
+    Difficulty: ${difficultyRange}. 
+    Type: ${subSkillPrompts[subSkill || GrammarSubSkill.GrammarQuiz]}. 
+    Textbook context: ${specificTextbook || 'Global Success'}. 
+    Provide detailed explanations in Vietnamese.`;
   } else if (gameType === GameType.TypeToFly) {
-    specificInstruction = `Generate 15 vocabulary items for ${grade} from textbook: ${specificTextbook || 'General'}. 
-    CRITICAL RULES:
-    1. 'questionText' MUST contain ONLY the target word/phrase itself.
-    2. MAXIMUM length for each item is 3 words (e.g., 'set the table', 'go out', 'beautiful').
-    3. ABSOLUTELY NO sentences.
-    4. ABSOLUTELY NO 'Fill in the blank' prompts or context sentences like 'We need to...'.
-    5. Vietnamese meanings MUST go in the 'explanation' field only.`;
+    specificInstruction = `Generate 15 vocabulary items for ${grade} (${difficultyRange}). Max 3 words per item. No sentences. Vietnamese in explanation only.`;
   } else {
-    specificInstruction = `Standard ${gameType} for ${grade}.`;
+    specificInstruction = `Standard ${gameType} for ${grade} at ${difficultyRange} level.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. JSON output only. Vietnamese for hints/explanations.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Language: Vietnamese for support parts.`;
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
     responseSchema: responseSchema,
@@ -149,13 +145,7 @@ export const evaluateSpeaking = async (target: string, transcript: string, grade
     required: ["score", "feedback", "correctnessLevel", "reconstructedTranscript"]
   };
 
-  const systemInstruction = `You are evaluating a student's answer to the question: "${target}". 
-  Student's speech transcript is: "${transcript}". 
-  1. SYNC: Your evaluation MUST be based on what is in the transcript.
-  2. RECONSTRUCT: Figure out the intended meaning despite minor transcription errors.
-  3. JSON only. Vietnamese feedback. Scale 0-100.`;
-
-  const prompt = `${systemInstruction}\nLevel: ${grade}. Transcript: "${transcript}".`;
+  const prompt = `Evaluate speech for: "${target}". Transcript: "${transcript}". Level: ${grade}. Score 0-100. Vietnamese feedback. Output JSON.`;
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
     responseSchema: schema,
@@ -177,7 +167,7 @@ export const evaluateWriting = async (prompt: string, studentText: string, grade
     required: ["score", "feedback", "corrections"]
   };
   
-  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade essay: "${prompt}". Student wrote: "${studentText}". Level: ${grade}. Max score 10. Vietnamese feedback and corrections. Output JSON.`, {
+  const result = await callGeminiWithFallback("gemini-3-flash-preview", `Grade essay: "${prompt}". Student wrote: "${studentText}". Level: ${grade}. Max score 10. Vietnamese feedback. Output JSON.`, {
     responseMimeType: "application/json",
     responseSchema: schema,
     temperature: 0,
@@ -198,17 +188,7 @@ export const evaluateSentenceTransformation = async (original: string, targetPat
     required: ["status", "feedback", "explanation"]
   };
 
-  const prompt = `Task: Compare the student's answer with the target pattern for a sentence transformation exercise.
-  Original: "${original}"
-  Target Answer Pattern: "${targetPattern}"
-  Student's Answer: "${studentAnswer}"
-
-  LENIENCY RULES:
-  1. IGNORE capitalization at the start of the sentence.
-  2. IGNORE missing or extra ending punctuation (like periods, question marks).
-  3. If the grammar and core meaning are correct, set status to "CORRECT".
-  4. Provide feedback and explanation in Vietnamese.
-  5. JSON output only.`;
+  const prompt = `Compare student's answer to target. Original: "${original}". Target: "${targetPattern}". Student: "${studentAnswer}". Ignore caps/punctuation. Status: CORRECT/INCORRECT. Vietnamese feedback. JSON only.`;
 
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
