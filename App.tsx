@@ -351,7 +351,7 @@ const App: React.FC = () => {
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
               <div className="relative w-24 h-24 md:w-32 md:h-32 mb-8">
                  <div className="absolute inset-0 border-8 border-white/10 border-t-yellow-500 rounded-full animate-spin"></div>
-                 <div className="absolute inset-0 flex items-center justify-center text-3xl md:text-4xl">🐉</div>
+                 <div className="absolute inset-0 flex items-center justify-center text-3xl md:text-4xl">🐎</div>
               </div>
               <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] mb-2 text-center uppercase tracking-tighter">Đang bày mâm ngũ quả...</h3>
             </div>

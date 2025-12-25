@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { QuestionData, GrammarSubSkill } from '../types';
 import { Button } from './Button';
 import { evaluateSentenceTransformation } from '../services/geminiService';
@@ -24,6 +24,12 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
   const currentQuestion = questions[currentIndex];
   const isInputMode = subSkill === GrammarSubSkill.SentenceTrans;
 
+  // Xáo trộn options mỗi khi đổi câu hỏi để tránh việc đáp án đúng luôn ở vị trí cố định
+  const shuffledOptions = useMemo(() => {
+    if (!currentQuestion || !currentQuestion.options) return [];
+    return [...currentQuestion.options].sort(() => Math.random() - 0.5);
+  }, [currentIndex, currentQuestion]);
+
   useEffect(() => {
     setSelectedOption(null);
     setShowFeedback(false);
@@ -38,6 +44,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     if (showFeedback) return;
     setSelectedOption(option);
     setShowFeedback(true);
+    // Kiểm tra đáp án chính xác
     if (option === currentQuestion.correctAnswer) {
       setScore(prev => prev + 2);
     }
@@ -72,7 +79,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
 
   const getButtonVariant = (option: string) => {
     if (!showFeedback) return selectedOption === option ? 'primary' : 'outline';
-    // Đổi màu xanh lá (success) cho đáp án đúng khi hiện feedback
     if (option === currentQuestion.correctAnswer) return 'success'; 
     if (option === selectedOption && option !== currentQuestion.correctAnswer) return 'danger';
     return 'outline';
@@ -150,7 +156,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {currentQuestion.options?.map((option, idx) => (
+            {shuffledOptions.map((option, idx) => (
               <Button key={idx} variant={getButtonVariant(option)} onClick={() => handleOptionClick(option)} fullWidth className="text-left py-4 px-6">
                 <span className="mr-3 font-black text-blue-400">{String.fromCharCode(65 + idx)}.</span>
                 <span dangerouslySetInnerHTML={{ __html: option }} />

@@ -78,7 +78,7 @@ const responseSchema = {
           wordType: { type: Type.STRING },
           countability: { type: Type.STRING }
         },
-        required: ["id", "questionText", "explanation", "topic"],
+        required: ["id", "questionText", "correctAnswer", "explanation", "topic", "options"],
       },
     },
     textbookContext: { type: Type.STRING }
@@ -100,8 +100,8 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     specificInstruction = `Generate 1 ESSAY topic for ${grade} (${difficultyRange}). Word count: ${wordCount} words. Based on textbook: ${specificTextbook || 'General'}.`;
   } else if (gameType === GameType.Grammar) {
     const subSkillPrompts: Record<string, string> = {
-      [GrammarSubSkill.Pronunciation]: "Pick the word whose underlined part is pronounced differently. Wrap the letters in <u></u> (e.g., 'br<u>ea</u>d').",
-      [GrammarSubSkill.Stress]: "Choose the word that has a different stress pattern from the others.",
+      [GrammarSubSkill.Pronunciation]: "Pick the word whose underlined part is pronounced differently. Wrap the letters in <u></u> (e.g., 'br<u>ea</u>d'). Ensure the pronunciation logic is strictly correct according to International Phonetic Alphabet (IPA).",
+      [GrammarSubSkill.Stress]: "Choose the word that has a different stress pattern from the others. Verify the syllable stress accurately.",
       [GrammarSubSkill.GrammarQuiz]: "Standard multiple-choice grammar and vocabulary questions.",
       [GrammarSubSkill.FillBlank]: "Complete sentences by filling in the blanks with the correct word/phrase.",
       [GrammarSubSkill.Synonym]: "Choose the word closest in meaning to the underlined word in a sentence.",
@@ -115,7 +115,12 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     Difficulty: ${difficultyRange}. 
     Type: ${subSkillPrompts[subSkill || GrammarSubSkill.GrammarQuiz]}. 
     Textbook context: ${specificTextbook || 'Global Success'}. 
-    Provide detailed explanations in Vietnamese.`;
+    IMPORTANT: 
+    - 'options' MUST NOT contain A, B, C, D prefixes. 
+    - 'correctAnswer' MUST exactly match one string in 'options'. 
+    - Ensure only ONE option is correct. 
+    - Provide detailed explanations in Vietnamese. 
+    - Randomize the position of the correct answer in the 'options' array.`;
   } else if (gameType === GameType.TypeToFly) {
     specificInstruction = `Generate 15 vocabulary items for ${grade} (${difficultyRange}). Max 3 words per item. No sentences. Vietnamese in explanation only.`;
   } else {
