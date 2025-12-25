@@ -114,7 +114,7 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
   }
 
   return (
-    <div className="max-w-3xl mx-auto w-full">
+    <div className="max-w-3xl mx-auto w-full px-2">
       <style>{`
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         .scenery-layer { display: flex; width: 200%; position: absolute; bottom: 0; left: 0; pointer-events: none; white-space: nowrap; }
@@ -132,58 +132,59 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
         }
       `}</style>
 
-      <div className="relative bg-gradient-to-b from-sky-400 to-sky-100 backdrop-blur-md rounded-3xl h-[250px] md:h-[350px] mb-4 overflow-hidden border-4 border-white shadow-2xl">
+      {/* Cố định chiều cao game area để mobile keyboard không làm layout nhảy quá nhiều */}
+      <div className="relative bg-gradient-to-b from-sky-400 to-sky-100 backdrop-blur-md rounded-3xl h-[180px] md:h-[300px] mb-3 overflow-hidden border-4 border-white shadow-2xl">
         <div className={`scenery-layer layer-far ${hasStarted ? 'scenery-animate' : ''}`}>
-           <div className="flex-1 flex items-end justify-around text-8xl pb-8"><span>⛰️</span><span>🏔️</span><span>⛰️</span><span>🏔️</span></div>
-           <div className="flex-1 flex items-end justify-around text-8xl pb-8"><span>⛰️</span><span>🏔️</span><span>⛰️</span><span>🏔️</span></div>
+           <div className="flex-1 flex items-end justify-around text-6xl pb-8"><span>⛰️</span><span>🏔️</span><span>⛰️</span><span>🏔️</span></div>
+           <div className="flex-1 flex items-end justify-around text-6xl pb-8"><span>⛰️</span><span>🏔️</span><span>⛰️</span><span>🏔️</span></div>
         </div>
         <div className={`scenery-layer layer-mid ${hasStarted ? 'scenery-animate' : ''}`}>
-           <div className="flex-1 flex items-end justify-around text-6xl pb-4"><span>🏡</span><span>🌳</span><span>🏠</span><span>🌾</span></div>
-           <div className="flex-1 flex items-end justify-around text-6xl pb-4"><span>🏡</span><span>🌳</span><span>🏠</span><span>🌾</span></div>
+           <div className="flex-1 flex items-end justify-around text-4xl pb-4"><span>🏡</span><span>🌳</span><span>🏠</span><span>🌾</span></div>
+           <div className="flex-1 flex items-end justify-around text-4xl pb-4"><span>🏡</span><span>🌳</span><span>🏠</span><span>🌾</span></div>
         </div>
         <div className={`scenery-layer layer-near ${hasStarted ? 'scenery-animate' : ''}`}>
-           <div className="flex-1 flex items-end justify-around text-3xl pb-1"><span>🌿</span><span>🪵</span><span>🌱</span><span>🌿</span></div>
-           <div className="flex-1 flex items-end justify-around text-3xl pb-1"><span>🌿</span><span>🪵</span><span>🌱</span><span>🌿</span></div>
+           <div className="flex-1 flex items-end justify-around text-2xl pb-1"><span>🌿</span><span>🪵</span><span>🌱</span><span>🌿</span></div>
+           <div className="flex-1 flex items-end justify-around text-2xl pb-1"><span>🌿</span><span>🪵</span><span>🌱</span><span>🌿</span></div>
         </div>
 
         <div className="absolute left-[30%] transition-transform duration-200 ease-out z-50"
           style={{ top: `${birdY}%`, transform: `translateY(-50%) rotate(${velocityRef.current * 20}deg)` }}>
-          <div className="relative w-12 h-12 md:w-16 md:h-16 scale-x-[-1]">
-            <div className="absolute inset-0 bg-yellow-400 border-[3px] md:border-4 border-black rounded-full shadow-inner"></div>
-            <div className="absolute top-[10%] left-[10%] w-[45%] h-[50%] bg-white border-[2px] md:border-[3px] border-black rounded-full flex items-center justify-center">
+          <div className="relative w-10 h-10 md:w-16 md:h-16 scale-x-[-1]">
+            <div className="absolute inset-0 bg-yellow-400 border-[2px] md:border-4 border-black rounded-full shadow-inner"></div>
+            <div className="absolute top-[10%] left-[10%] w-[45%] h-[50%] bg-white border-[1px] md:border-[3px] border-black rounded-full flex items-center justify-center">
               <div className="w-[35%] h-[45%] bg-black rounded-full -translate-x-0.5"></div>
             </div>
-            <div className="absolute bottom-[20%] -left-[20%] w-[55%] h-[35%] bg-orange-500 border-[2px] md:border-[3px] border-black rounded-full"></div>
-            <div className="absolute bottom-[25%] -left-[15%] w-[45%] h-[15%] bg-red-600 border-t-[1px] md:border-t-2 border-black rounded-full opacity-30"></div>
-            <div className={`absolute top-[35%] right-[5%] w-[45%] h-[40%] bg-white border-[2px] md:border-[3px] border-black rounded-full origin-right ${hasStarted && !isGameOver ? 'animate-wing' : ''}`}></div>
+            <div className="absolute bottom-[20%] -left-[20%] w-[55%] h-[35%] bg-orange-500 border-[1px] md:border-[3px] border-black rounded-full"></div>
+            <div className={`absolute top-[35%] right-[5%] w-[45%] h-[40%] bg-white border-[1px] md:border-[3px] border-black rounded-full origin-right ${hasStarted && !isGameOver ? 'animate-wing' : ''}`}></div>
           </div>
         </div>
 
         {!hasStarted && (
            <div className="absolute inset-0 flex items-center justify-center bg-black/10 z-40 backdrop-blur-[1px]">
-              <div className="bg-white/90 px-6 py-3 rounded-2xl border-2 border-sky-200 text-sky-600 font-black uppercase text-[10px] tracking-tight animate-pulse shadow-xl">
+              <div className="bg-white/90 px-4 py-2 rounded-xl border-2 border-sky-200 text-sky-600 font-black uppercase text-[10px] tracking-tight animate-pulse shadow-xl">
                 Gõ để bắt đầu
               </div>
            </div>
         )}
 
-        <div className="absolute top-4 left-4 z-50 bg-white/70 px-3 py-1 rounded-full text-[10px] font-black text-sky-600 shadow-sm border border-sky-100">
-          Points: {score}
+        <div className="absolute top-3 left-3 z-50 bg-white/70 px-3 py-1 rounded-full text-[9px] font-black text-sky-600 shadow-sm border border-sky-100">
+          Pts: {score}
         </div>
       </div>
 
-      <div className="bg-white rounded-[1.5rem] px-4 py-4 md:py-6 shadow-2xl text-center border-b-8 border-sky-100 max-w-lg mx-auto relative z-20">
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-[10px] font-black text-sky-400/60 uppercase tracking-widest mb-1">TARGET WORD</p>
+      {/* Phần điều khiển thu nhỏ cho mobile keyboard */}
+      <div className="bg-white rounded-[1.2rem] px-3 py-3 md:py-6 shadow-2xl text-center border-b-6 border-sky-100 max-w-lg mx-auto relative z-20">
+        <div className="flex flex-col items-center gap-1.5">
+          <p className="text-[9px] font-black text-sky-400/60 uppercase tracking-widest">TARGET WORD</p>
           
-          <div className="flex flex-wrap justify-center items-center text-2xl md:text-4xl font-black tracking-tight text-slate-800 gap-x-1 mb-3 bg-slate-50/50 p-4 rounded-2xl border-2 border-dashed border-sky-100 w-full">
+          <div className="flex flex-wrap justify-center items-center text-xl md:text-3xl font-black tracking-tight text-slate-800 gap-x-1 mb-2 bg-slate-50/50 p-2 md:p-4 rounded-xl border-2 border-dashed border-sky-100 w-full min-h-[50px]">
             {currentWord.split('').map((char, i) => {
               const userChar = userInput[i];
               const isTyped = i < userInput.length;
               const isCorrect = isTyped && char.toLowerCase() === userChar.toLowerCase();
               
               if (char === ' ') {
-                return <span key={i} className="mx-2 bg-sky-200/50 h-6 w-3 rounded-full"></span>;
+                return <span key={i} className="mx-1 bg-sky-200/50 h-5 w-2 rounded-full"></span>;
               }
 
               return (
@@ -192,7 +193,7 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
                   className={`inline-block transition-all relative ${
                     isTyped 
                       ? (isCorrect ? 'text-sky-500' : 'text-rose-500 scale-110') 
-                      : 'text-slate-300' // Tăng độ đậm từ slate-200 lên slate-300
+                      : 'text-slate-300'
                   }`}
                 >
                   {char}
@@ -203,23 +204,18 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
           </div>
           
           <div className="w-full">
-            <div className="px-4 py-3 bg-sky-50 rounded-xl border-2 border-sky-100 shadow-inner">
-               <div className="flex justify-between items-center mb-1">
-                 <span className="text-[10px] font-black text-sky-400 uppercase tracking-widest">NGHĨA</span>
-                 <div className="flex gap-2">
+            <div className="px-3 py-2 bg-sky-50 rounded-xl border border-sky-100 shadow-inner">
+               <div className="flex justify-between items-center mb-0.5">
+                 <span className="text-[8px] font-black text-sky-400 uppercase tracking-widest">NGHĨA</span>
+                 <div className="flex gap-1.5">
                    {currentQuestion?.wordType && (
-                     <span className="bg-blue-600 text-white text-[8px] px-2 py-0.5 rounded-full font-black uppercase">
+                     <span className="bg-blue-600 text-white text-[7px] px-1.5 py-0.5 rounded-full font-black uppercase">
                        {currentQuestion.wordType}
-                     </span>
-                   )}
-                   {currentQuestion?.countability && (
-                     <span className="bg-purple-500 text-white text-[8px] px-2 py-0.5 rounded-full font-black uppercase">
-                       {currentQuestion.countability}
                      </span>
                    )}
                  </div>
                </div>
-               <p className="text-sky-800 font-black text-lg md:text-xl leading-tight">
+               <p className="text-sky-800 font-black text-sm md:text-xl leading-tight">
                  {currentQuestion?.explanation || "Học tập vui vẻ!"}
                </p>
             </div>
@@ -234,10 +230,10 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
             spellCheck="false" 
             value={userInput} 
             onChange={handleInputChange}
-            className="w-full text-center p-3 rounded-xl border-2 border-sky-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all text-xl font-black text-sky-600 uppercase mt-4 shadow-inner outline-none"
+            className="w-full text-center p-2 rounded-xl border-2 border-sky-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 transition-all text-lg font-black text-sky-600 uppercase mt-2 shadow-inner outline-none"
             placeholder="Type here..." />
           
-          <div className="mt-4 w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div className="mt-2 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
              <div className="h-full bg-sky-400 transition-all duration-300" style={{ width: `${((currentIndex) / questions.length) * 100}%` }} />
           </div>
         </div>

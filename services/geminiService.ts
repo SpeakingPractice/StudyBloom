@@ -94,40 +94,41 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
   if (gameType === GameType.Speaking) {
     specificInstruction = `Generate 5 PERSONAL OPEN QUESTIONS for ${grade} students at ${difficultyRange} level. 
     IMPORTANT: 'hint' field must be a CLEAR list of 3-4 bullet points separated by '|' character. 
-    'meaning' field MUST provide 3-5 keywords in English-Vietnamese pair format.`;
+    'meaning' field MUST provide 3-5 keywords in English-Vietnamese pair format.
+    'explanation' field MUST provide a short tips for speaking well in Vietnamese.`;
   } else if (gameType === GameType.Writing) {
     let wordCount = gradeInt <= 9 ? "80-150" : "150-300";
-    specificInstruction = `Generate 1 ESSAY topic for ${grade} (${difficultyRange}). Word count: ${wordCount} words. Based on textbook: ${specificTextbook || 'General'}.`;
+    specificInstruction = `Generate 1 ESSAY topic for ${grade} (${difficultyRange}). Word count: ${wordCount} words. Based on textbook: ${specificTextbook || 'General'}.
+    'explanation' field: provide a 1-sentence tip on how to structure this specific essay in Vietnamese.`;
   } else if (gameType === GameType.Grammar) {
     const subSkillPrompts: Record<string, string> = {
-      [GrammarSubSkill.Pronunciation]: "Pick the word whose underlined part is pronounced differently. Wrap the letters in <u></u> (e.g., 'br<u>ea</u>d'). Ensure the pronunciation logic is strictly correct according to International Phonetic Alphabet (IPA).",
-      [GrammarSubSkill.Stress]: "Choose the word that has a different stress pattern from the others. Verify the syllable stress accurately.",
-      [GrammarSubSkill.GrammarQuiz]: "Standard multiple-choice grammar and vocabulary questions.",
-      [GrammarSubSkill.FillBlank]: "Complete sentences by filling in the blanks with the correct word/phrase.",
-      [GrammarSubSkill.Synonym]: "Choose the word closest in meaning to the underlined word in a sentence.",
-      [GrammarSubSkill.Antonym]: "Choose the word opposite in meaning to the underlined word in a sentence.",
-      [GrammarSubSkill.Paragraph]: "Generate a short cloze test (filling gaps in a paragraph).",
-      [GrammarSubSkill.WordForm]: "Supply the correct form of the word in brackets to complete the sentence.",
-      [GrammarSubSkill.SentenceTrans]: "Sentence transformation tasks. MUST provide 'startingWords' with 2-3 starting words of the answer.",
+      [GrammarSubSkill.Pronunciation]: "Pick the word whose underlined part is pronounced differently. IMPORTANT: Underline the SPECIFIC phonemes being tested (e.g., '<u>th</u>ink', '<u>th</u>ere'). Wrap letters in <u></u>. Ensure IPA accuracy.",
+      [GrammarSubSkill.Stress]: "Choose the word that has a different stress pattern. Wrap the stressed syllable in <b></b> or use an apostrophe before the stressed syllable.",
+      [GrammarSubSkill.GrammarQuiz]: "Standard multiple-choice grammar/vocabulary questions.",
+      [GrammarSubSkill.FillBlank]: "Complete sentences by filling in the blanks.",
+      [GrammarSubSkill.Synonym]: "Choose the word closest in meaning to the underlined word.",
+      [GrammarSubSkill.Antonym]: "Choose the word opposite in meaning to the underlined word.",
+      [GrammarSubSkill.Paragraph]: "Generate a short cloze test.",
+      [GrammarSubSkill.WordForm]: "Supply the correct form of the word in brackets.",
+      [GrammarSubSkill.SentenceTrans]: "Sentence transformation. Provide 'startingWords'.",
     };
 
-    specificInstruction = `Generate 10 advanced questions for ${grade}. 
-    Difficulty: ${difficultyRange}. 
-    Type: ${subSkillPrompts[subSkill || GrammarSubSkill.GrammarQuiz]}. 
-    Textbook context: ${specificTextbook || 'Global Success'}. 
+    specificInstruction = `Generate 10 advanced questions for ${grade}. Difficulty: ${difficultyRange}. Type: ${subSkillPrompts[subSkill || GrammarSubSkill.GrammarQuiz]}. 
     IMPORTANT: 
     - 'options' MUST NOT contain A, B, C, D prefixes. 
     - 'correctAnswer' MUST exactly match one string in 'options'. 
-    - Ensure only ONE option is correct. 
-    - Provide detailed explanations in Vietnamese. 
-    - Randomize the position of the correct answer in the 'options' array.`;
+    - 'explanation' field MUST provide a CONCISE (1 sentence) grammatical explanation in Vietnamese why the answer is correct.
+    - Randomize correct answer position.`;
   } else if (gameType === GameType.TypeToFly) {
-    specificInstruction = `Generate 15 vocabulary items for ${grade} (${difficultyRange}). Max 3 words per item. No sentences. Vietnamese in explanation only.`;
+    specificInstruction = `Generate 15 vocabulary items for ${grade} (${difficultyRange}). 
+    CRITICAL: 'questionText' MUST ONLY contain the English word itself (e.g. "Neighbor"). 
+    NO instructions like "Choose the correct word" in questionText.
+    'explanation' field: provide the Vietnamese meaning.`;
   } else {
-    specificInstruction = `Standard ${gameType} for ${grade} at ${difficultyRange} level.`;
+    specificInstruction = `Standard ${gameType} for ${grade} at ${difficultyRange} level. 'explanation' field MUST have 1 short Vietnamese sentence.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Language: Vietnamese for support parts.`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Language: Vietnamese for support parts (explanation, meaning).`;
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
     responseSchema: responseSchema,

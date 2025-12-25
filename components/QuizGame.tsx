@@ -165,6 +165,18 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
           </div>
         )}
 
+        {showFeedback && !isInputMode && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-2xl border-2 border-blue-100 animate-fade-in">
+             <div className="flex items-center gap-2 mb-1">
+               <span className="text-xl">💡</span>
+               <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Giải thích (Explanation)</p>
+             </div>
+             <p className="text-sm font-bold text-gray-700 leading-snug">
+               {currentQuestion.explanation || "Hãy lưu ý cấu trúc ngữ pháp này nhé!"}
+             </p>
+          </div>
+        )}
+
         {showFeedback && (
           <div className="flex justify-end mt-4">
              <Button onClick={handleNext} size="lg" variant="secondary">Tiếp theo →</Button>
