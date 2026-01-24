@@ -120,19 +120,33 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     - 'explanation' field MUST provide a CONCISE (1 sentence) grammatical explanation in Vietnamese why the answer is correct.
     - Randomize correct answer position.`;
   } else if (gameType === GameType.TypeToFly) {
-    specificInstruction = `Generate 15 vocabulary items for ${grade} (${difficultyRange}). 
+    // UPDATED: Added explicit word length and difficulty constraints per grade
+    let lengthConstraint = "";
+    if (gradeInt === 6) {
+      lengthConstraint = "ONLY words with 3-5 letters. Use VERY simple A1 level words (e.g., cat, tree, jump). NO complex or academic words.";
+    } else if (gradeInt === 7) {
+      lengthConstraint = "ONLY words with 4-6 letters. Common A1-A2 level vocabulary.";
+    } else if (gradeInt <= 9) {
+      lengthConstraint = "Words with 5-10 letters. B1 level vocabulary.";
+    } else {
+      lengthConstraint = "Advanced words with 8-15 letters. B2-C1 academic level vocabulary.";
+    }
+
+    specificInstruction = `Generate 15 UNIQUE and RANDOM vocabulary items for ${grade} students. 
+    ${lengthConstraint}
     CRITICAL: 'questionText' MUST ONLY contain the English word itself (e.g. "Neighbor"). 
-    NO instructions like "Choose the correct word" in questionText.
-    'explanation' field: provide the Vietnamese meaning.`;
+    NO instructions or sentences in questionText.
+    VARIETY: Ensure the list is randomized and different from previous generations by including a mix of different themes (nature, city, hobby, technology).
+    'explanation' field: provide ONLY the Vietnamese meaning.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade} at ${difficultyRange} level. 'explanation' field MUST have 1 short Vietnamese sentence.`;
   }
 
-  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Language: Vietnamese for support parts (explanation, meaning).`;
+  const prompt = `Task: ${specificInstruction}. Grade: ${grade}. Textbook: ${specificTextbook || 'General'}. Output JSON. Language: Vietnamese for support parts (explanation, meaning). Generation Timestamp: ${Date.now()}.`;
   const result = await callGeminiWithFallback("gemini-3-flash-preview", prompt, {
     responseMimeType: "application/json",
     responseSchema: responseSchema,
-    temperature: 0.1,
+    temperature: 0.8, // Increased temperature for more variety in word selection
     thinkingConfig: { thinkingBudget: 0 }
   }, userKey);
   return JSON.parse(cleanJsonResponse(result.text));
