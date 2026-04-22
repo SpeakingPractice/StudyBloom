@@ -10,22 +10,12 @@
     <style>
         body {
             font-family: 'Nunito', sans-serif;
-            /* Màu đỏ tươi sáng hơn theo yêu cầu */
-            background-color: #b20a0a; 
-            background-image: radial-gradient(circle at center, #e31a1a 0%, #b20a0a 70%, #8b0000 100%);
+            /* Màu đỏ tươi rực rỡ */
+            background-color: #ff0000; 
+            background-image: radial-gradient(circle at center, #ff3333 0%, #cc0000 70%, #990000 100%);
             min-height: 100vh;
             overflow-x: hidden;
             margin: 0;
-        }
-
-        #firework-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
         }
 
         .glass-panel {
@@ -68,80 +58,8 @@
 </script>
 </head>
 <body>
-    <canvas id="firework-canvas"></canvas>
-    
     <div id="root"></div>
 
-    <script>
-        const canvas = document.getElementById('firework-canvas');
-        const ctx = canvas.getContext('2d');
-        let fireworks = [];
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.angle = Math.random() * Math.PI * 2;
-                this.velocity = Math.random() * 4 + 1.5;
-                this.friction = 0.95;
-                this.gravity = 0.08;
-                this.alpha = 1;
-                this.decay = Math.random() * 0.02 + 0.01;
-                this.length = Math.random() * 12 + 6;
-            }
-            draw() {
-                ctx.save();
-                ctx.globalAlpha = this.alpha;
-                ctx.beginPath();
-                ctx.strokeStyle = this.color;
-                ctx.lineWidth = 2;
-                const endX = this.x + Math.cos(this.angle) * this.length;
-                const endY = this.y + Math.sin(this.angle) * this.length;
-                ctx.moveTo(this.x, this.y);
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
-                ctx.restore();
-            }
-            update() {
-                this.velocity *= this.friction;
-                this.x += Math.cos(this.angle) * this.velocity;
-                this.y += Math.sin(this.angle) * this.velocity + this.gravity;
-                this.alpha -= this.decay;
-            }
-        }
-
-        function createFirework(x, y) {
-            const colors = ['#ff8c00', '#ff4500', '#4ade80', '#ffcc00', '#ffffff', '#eab308'];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const particleCount = 45;
-            for (let i = 0; i < particleCount; i++) {
-                fireworks.push(new Particle(x, y, color));
-            }
-        }
-
-        function animate() {
-            ctx.fillStyle = 'rgba(178, 10, 10, 0.2)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            fireworks = fireworks.filter(p => p.alpha > 0);
-            fireworks.forEach(p => { p.update(); p.draw(); });
-            requestAnimationFrame(animate);
-        }
-
-        setInterval(() => {
-            if (document.hidden) return;
-            createFirework(Math.random() * canvas.width, Math.random() * (canvas.height * 0.5) + (canvas.height * 0.1));
-        }, 2000);
-
-        animate();
-    </script>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

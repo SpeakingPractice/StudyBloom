@@ -4,19 +4,14 @@ import { GradeLevel } from './types';
 export const TEXTBOOKS_BY_GRADE: Record<string, string[]> = {
   'Secondary': [
     'Global Success (6-9)',
-    'Achievers',
     'Friends Plus',
-    'i-Learn Smart World',
-    'Right On!',
-    'English Discovery',
-    'THiNK'
+    'i-Learn Smart World'
   ],
   'High': [
     'Global Success (10-12)',
     'Friends Global',
     'Bright',
-    'i-Learn Smart World',
-    'English Discovery'
+    'i-Learn Smart World'
   ]
 };
 

@@ -23,8 +23,8 @@ const Icons = {
 
 const BackgroundDecor = () => (
   <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-    <div className="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-yellow-400/5 rounded-full mix-blend-overlay filter blur-[120px] animate-blob"></div>
-    <div className="absolute top-[20%] right-[-10%] w-[40rem] h-[40rem] bg-yellow-500/5 rounded-full mix-blend-overlay filter blur-[150px] animate-blob animation-delay-2000"></div>
+    <div className="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-yellow-400/10 rounded-full mix-blend-overlay filter blur-[120px] animate-blob"></div>
+    <div className="absolute top-[20%] right-[-10%] w-[40rem] h-[40rem] bg-yellow-500/10 rounded-full mix-blend-overlay filter blur-[150px] animate-blob animation-delay-2000"></div>
   </div>
 );
 
