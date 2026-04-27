@@ -212,7 +212,7 @@ const App: React.FC = () => {
     switch (gameData.gameType) {
       case GameType.Writing: return count * 10;
       case GameType.TypeToFly: return count;
-      case GameType.CoinCollector: return count * 100;
+      case GameType.CoinCollector: return count * 10;
       default: return count * 2;
     }
   };

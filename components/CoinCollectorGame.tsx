@@ -16,6 +16,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isJumping, setIsJumping] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
+  const [showScorePopup, setShowScorePopup] = useState(false);
 
   const currentQuestion = questions[currentIndex];
 
@@ -35,9 +36,11 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     setIsCorrect(correct);
 
     if (correct) {
-      setScore(s => s + 100);
+      setScore(s => s + 10);
       setIsJumping(true);
+      setShowScorePopup(true);
       setTimeout(() => setIsJumping(false), 600);
+      setTimeout(() => setShowScorePopup(false), 800);
     } else {
       setHearts(h => {
         const newHearts = h - 1;
@@ -166,9 +169,21 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
            <motion.div 
              animate={isJumping ? { y: -80 } : { y: 0 }}
              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-             className="text-6xl filter drop-shadow-lg"
+             className="text-6xl filter drop-shadow-lg relative"
            >
              {isCorrect === false ? '💀' : isCorrect === true ? '🎉' : '👨‍🔧'}
+             <AnimatePresence>
+               {showScorePopup && (
+                 <motion.span 
+                   initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                   animate={{ opacity: 1, y: -40, scale: 1.2 }}
+                   exit={{ opacity: 0 }}
+                   className="absolute -top-12 left-1/2 -translate-x-1/2 pixel-font text-[#FBD000] text-sm whitespace-nowrap drop-shadow-[0_2px_0_#8B6914]"
+                 >
+                   +10
+                 </motion.span>
+               )}
+             </AnimatePresence>
            </motion.div>
         </div>
 
