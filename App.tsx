@@ -10,6 +10,7 @@ import { ListeningGame } from './components/ListeningGame';
 import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
+import { CoinCollectorGame } from './components/CoinCollectorGame';
 
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
@@ -200,6 +201,7 @@ const App: React.FC = () => {
       case GameType.Writing: return <WritingGame {...commonProps} grade={gameData.grade} />;
       case GameType.Grammar: return <QuizGame {...commonProps} subSkill={gameData.subSkill} />;
       case GameType.TypeToFly: return <TypeToFlyGame {...commonProps} />;
+      case GameType.CoinCollector: return <CoinCollectorGame {...commonProps} />;
       default: return <QuizGame {...commonProps} />;
     }
   };
@@ -210,6 +212,7 @@ const App: React.FC = () => {
     switch (gameData.gameType) {
       case GameType.Writing: return count * 10;
       case GameType.TypeToFly: return count;
+      case GameType.CoinCollector: return count * 100;
       default: return count * 2;
     }
   };
@@ -480,7 +483,7 @@ const App: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 md:gap-6">
                       {Object.values(GameType).map((type) => {
-                        const isSpecial = type === GameType.TypeToFly;
+                        const isSpecial = type === GameType.TypeToFly || type === GameType.CoinCollector;
                         const isSelected = selectedGameType === type;
                         
                         return (
@@ -499,7 +502,7 @@ const App: React.FC = () => {
                                 : ''
                             } ${
                                 isSpecial 
-                                ? 'bg-[#049CD8] border-[#025A80] shadow-[0_6px_0_#013D60] hover:bg-[#05b1f5] hover:-translate-y-1' 
+                                ? (type === GameType.CoinCollector ? 'bg-[#FBD000] border-[#C8980A] shadow-[0_6px_0_#8B6914] hover:bg-[#FFE033] hover:-translate-y-1' : 'bg-[#049CD8] border-[#025A80] shadow-[0_6px_0_#013D60] hover:bg-[#05b1f5] hover:-translate-y-1')
                                 : 'bg-[#43B047] border-[#256B28] shadow-[0_6px_0_#174D0F] hover:bg-[#55D45A] hover:-translate-y-1'
                             }`}
                           >
@@ -508,6 +511,11 @@ const App: React.FC = () => {
                                 <span className="flex items-center gap-3">
                                   <span className="text-xl">🐦</span> 
                                   FLAPPY BIRD
+                                </span>
+                              ) : type === GameType.CoinCollector ? (
+                                <span className="flex items-center gap-3 text-[#5C3010]">
+                                  <span className="text-xl">💰</span> 
+                                  COIN COLLECTOR
                                 </span>
                               ) : type.includes('Grammar') ? 'Grammar' :
                                   type.includes('Listening') ? 'Listening' :

@@ -15,6 +15,7 @@ export enum GameType {
   Speaking = 'Luyện Nói (Speaking)',
   Writing = 'Luyện Viết (Writing)',
   TypeToFly = 'Flappy Bird (Typing)',
+  CoinCollector = 'Coin Collector (Vocab)',
 }
 
 export enum GrammarSubSkill {

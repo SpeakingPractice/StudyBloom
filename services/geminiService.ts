@@ -138,6 +138,18 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     NO instructions or sentences in questionText.
     VARIETY: Ensure the list is randomized and different from previous generations by including a mix of different themes (nature, city, hobby, technology).
     'explanation' field: provide ONLY the Vietnamese meaning.`;
+  } else if (gameType === GameType.CoinCollector) {
+    let cefrLevel = "";
+    if (gradeInt <= 7) cefrLevel = "A1 to A2";
+    else if (gradeInt <= 9) cefrLevel = "B1";
+    else cefrLevel = "B2";
+
+    specificInstruction = `Generate 10 English vocabulary multiple-choice questions for ${grade} (${cefrLevel} level).
+    - 'questionText' MUST be the English word itself.
+    - 'hint' MUST be a short part-of-speech and simplified synonym/context (e.g., "noun — a large animal", "adjective — feeling happy").
+    - 'options' MUST have 4 strings (unique, in English).
+    - 'correctAnswer' MUST match one of the options.
+    - 'explanation' is not used but provide Vietnamese meaning.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade} at ${difficultyRange} level. 'explanation' field MUST have 1 short Vietnamese sentence.`;
   }
