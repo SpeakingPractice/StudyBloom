@@ -43,31 +43,31 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
   }, [score]);
 
   return (
-    <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full mx-auto text-center border-4 border-yellow-100 animate-fade-in-up">
+    <div className="glass-panel p-8 max-w-md w-full mx-auto text-center border-4 border-[#8B6914] animate-fade-in-up bg-[#E8D5A3]">
       <div className="mb-6">
-        <h2 className="text-3xl font-extrabold text-gray-800 mt-4">Kết Quả Khai Bút</h2>
-        <p className="text-gray-500 text-lg">Results</p>
+        <h2 className="pixel-font text-xl text-[#E52521] mt-4 drop-shadow-[2px_2px_0_#8B1A18]">LEVEL COMPLETE!</h2>
+        <p className="font-bold text-[10px] text-[#5C3010] mt-2 uppercase tracking-widest">Kết quả bài học</p>
       </div>
 
-      <div className="relative inline-block mb-4">
-         <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-yellow-600">
+      <div className="relative inline-block mb-4 p-6 bg-[#1A1A2E] rounded-2xl border-4 border-[#FBD000] shadow-[0_4px_0_rgba(0,0,0,0.2)]">
+         <div className="pixel-font text-3xl text-[#FBD000] drop-shadow-[2px_2px_0_#C8980A]">
             {score}/{total}
          </div>
-         <p className="text-sm text-gray-400 font-semibold mt-2">Tổng lộc tích lũy: {currentTotalScore}</p>
+         <p className="pixel-font text-[8px] text-white/60 mt-4">TOTAL SCORE: {currentTotalScore}</p>
       </div>
       
-      <p className="text-xl text-orange-500 font-bold mb-8">{message}</p>
+      <p className="pixel-font text-[10px] text-[#43B047] mb-8 leading-relaxed drop-shadow-[1px_1px_0_#256B28]">{message}</p>
 
       {/* NEW BADGE UNLOCKED SECTION */}
       {newBadges.length > 0 && (
-        <div className="bg-yellow-50 rounded-xl p-6 mb-8 border-2 border-yellow-200 animate-bounce shadow-lg">
-          <p className="text-sm font-black text-yellow-600 uppercase mb-3 tracking-widest">🎉 Nhận Lì Xì Huy Hiệu! 🎉</p>
+        <div className="bg-[#1A1A2E] rounded-xl p-6 mb-8 border-4 border-[#FBD000] animate-bounce shadow-lg">
+          <p className="pixel-font text-[8px] text-[#FBD000] uppercase mb-4 tracking-widest">🎉 NEW POWER-UP! 🎉</p>
           <div className="space-y-4">
             {newBadges.map(badge => (
               <div key={badge.name} className="flex flex-col items-center">
-                <span className="text-6xl mb-2 filter drop-shadow-md">{badge.icon}</span>
-                <span className={`text-xl font-black ${badge.color}`}>{badge.name}</span>
-                <span className="text-xs text-gray-500 font-bold">Đạt {badge.score} điểm</span>
+                <span className="text-6xl mb-2 filter drop-shadow-[0_0_15px_rgba(251,208,0,0.5)]">{badge.icon}</span>
+                <span className={`pixel-font text-[10px] ${badge.color}`}>{badge.name}</span>
+                <span className="pixel-font text-[7px] text-white/50 mt-2">REACHED {badge.score} PTS</span>
               </div>
             ))}
           </div>
@@ -77,19 +77,19 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
       {/* Session Performance Badges (Small) */}
       {percentage === 100 && newBadges.length === 0 && (
         <div className="mb-8">
-           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-100 text-yellow-700 font-bold text-sm">
-             ⭐ Khai bút đại cát!
+           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#43B047] text-white pixel-font text-[8px] shadow-[0_3px_0_#256B28]">
+             ⭐ PERFECT CLEAR!
            </span>
         </div>
       )}
 
-      <div className="space-y-3">
-        <Button onClick={onRetry} fullWidth variant="primary" size="lg" className="bg-red-600 border-red-800 hover:bg-red-700 text-white">
-          Chơi lại (Play Again)
-        </Button>
-        <Button onClick={onHome} fullWidth variant="outline" size="lg">
-          Chọn bài học khác (Home)
-        </Button>
+      <div className="space-y-4">
+        <button onClick={onRetry} className="w-full bg-[#43B047] border-4 border-[#256B28] text-white pixel-font text-[10px] py-6 shadow-[0_4px_0_#256B28] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center rounded-xl">
+          PLAY AGAIN
+        </button>
+        <button onClick={onHome} className="w-full border-4 border-[#8B6914] text-[#8B6914] pixel-font text-[10px] py-6 hover:bg-white/50 transition-all flex items-center justify-center rounded-xl">
+          MAIN MENU
+        </button>
       </div>
     </div>
   );

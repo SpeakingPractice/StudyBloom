@@ -22,9 +22,22 @@ const Icons = {
 };
 
 const BackgroundDecor = () => (
-  <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-    <div className="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-yellow-400/10 rounded-full mix-blend-overlay filter blur-[120px] animate-blob"></div>
-    <div className="absolute top-[20%] right-[-10%] w-[40rem] h-[40rem] bg-yellow-500/10 rounded-full mix-blend-overlay filter blur-[150px] animate-blob animation-delay-2000"></div>
+  <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10 sky-bg">
+    {/* Clouds */}
+    <div className="absolute top-[10%] left-[5%] w-32 h-12 bg-white rounded-full opacity-80 cloud-float" style={{ animationDelay: '0s' }}></div>
+    <div className="absolute top-[15%] left-[8%] w-20 h-10 bg-white rounded-full opacity-80 cloud-float" style={{ animationDelay: '0.5s' }}></div>
+    
+    <div className="absolute top-[25%] right-[10%] w-40 h-14 bg-white rounded-full opacity-80 cloud-float" style={{ animationDelay: '1s' }}></div>
+    <div className="absolute top-[30%] right-[12%] w-24 h-12 bg-white rounded-full opacity-80 cloud-float" style={{ animationDelay: '1.5s' }}></div>
+
+    <div className="absolute top-[50%] left-[40%] w-28 h-10 bg-white rounded-full opacity-60 cloud-float" style={{ animationDelay: '2s' }}></div>
+
+    {/* Mario Hills */}
+    <div className="absolute bottom-[2%] left-[-5%] w-64 h-32 bg-[#43B047] rounded-t-full border-t-4 border-[#256B28] opacity-40"></div>
+    <div className="absolute bottom-0 right-[-10%] w-[40rem] h-48 bg-[#43B047] rounded-t-full border-t-4 border-[#256B28] opacity-30"></div>
+    
+    {/* Ground */}
+    <div className="absolute bottom-0 left-0 w-full h-8 bg-[#43B047] border-t-4 border-[#256B28]"></div>
   </div>
 );
 
@@ -136,6 +149,9 @@ const App: React.FC = () => {
     setIsQuotaError(false);
     try {
       const data = await generateGameContent(selectedGrade, selectedGameType, selectedTextbook, selectedSubSkill || undefined, apiKeyInput);
+      if (!data.questions || data.questions.length === 0) {
+        throw new Error("Không tìm thấy câu hỏi phù hợp. Vui lòng thử chọn kỹ năng khác hoặc giáo trình khác bạn nhé!");
+      }
       setGameData({
         grade: selectedGrade,
         gameType: selectedGameType,
@@ -228,7 +244,7 @@ const App: React.FC = () => {
   const currentBadge = BADGE_LEVELS.slice().reverse().find(b => totalPoints >= b.score);
 
   return (
-    <div className="relative min-h-screen font-sans text-gray-100">
+    <div className="relative min-h-screen font-sans text-[#7c3a2a]">
       <BackgroundDecor />
       
       {showBadges && (
@@ -263,31 +279,31 @@ const App: React.FC = () => {
       {showFeedbackModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !isSendingFeedback && setShowFeedbackModal(false)}></div>
-          <div className="relative bg-[#1a0505] border-2 border-yellow-500/30 rounded-[2rem] w-full max-w-lg p-8 shadow-2xl animate-fade-in">
+          <div className="relative glass-panel bg-[#E8D5A3] w-full max-w-lg p-8 shadow-2xl animate-fade-in border-4 border-[#8B6914]">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-2xl font-black text-yellow-400 flex items-center gap-2 tracking-tighter uppercase">Góp Ý Đầu Xuân 🧧</h3>
-              <button onClick={() => !isSendingFeedback && setShowFeedbackModal(false)} className="text-white/40 hover:text-white transition-colors"><Icons.Close /></button>
+              <h3 className="pixel-font text-xs text-[#E52521] flex items-center gap-2 uppercase">SEND A TIP! 🧧</h3>
+              <button onClick={() => !isSendingFeedback && setShowFeedbackModal(false)} className="text-[#5C3010]/40 hover:text-[#5C3010] transition-colors"><Icons.Close /></button>
             </div>
-            <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-6">Chúng tôi luôn lắng nghe lộc ý của bạn</p>
+            <p className="pixel-font text-[7px] text-[#5C3010]/60 uppercase tracking-widest mb-6">WE ARE LISTENING TO YOUR FEEDBACK</p>
             {feedbackSuccess ? (
               <div className="py-12 flex flex-col items-center animate-fade-in text-center">
-                 <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4"><Icons.Check /></div>
-                 <p className="font-black text-white text-xl">Đã gửi lộc ý thành công! 🌸</p>
-                 <p className="text-white/40 text-sm mt-2 font-bold">Cảm ơn bạn đã đóng góp.</p>
+                 <div className="w-16 h-16 bg-[#43B047]/20 rounded-full flex items-center justify-center mb-4 border-4 border-[#43B047]"><Icons.Check className="text-[#43B047]" /></div>
+                 <p className="pixel-font text-[10px] text-[#43B047]">SUCCESS! 🌸</p>
+                 <p className="pixel-font text-[7px] text-[#5C3010]/60 mt-4 uppercase">THANKS FOR YOUR CONTRIBUTION.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] text-yellow-500/70 font-black uppercase tracking-widest mb-2 px-1">Email của bạn</label>
-                  <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="example@gmail.com" className="w-full bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all placeholder:text-white/20" />
+                  <label className="block pixel-font text-[7px] text-[#5C3010]/70 uppercase tracking-widest mb-2 px-1">YOUR EMAIL</label>
+                  <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="example@gmail.com" className="w-full bg-white/20 border-4 border-[#8B6914]/20 rounded-xl p-3 text-[#5D2E17] font-bold outline-none focus:border-[#049CD8] transition-all placeholder:text-[#5D2E17]/30" />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-yellow-500/70 font-black uppercase tracking-widest mb-2 px-1">Nội dung góp ý</label>
-                  <textarea value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)} placeholder="Nhập góp ý hoặc báo lỗi tại đây..." className="w-full h-32 bg-white/5 border-2 border-white/10 rounded-xl p-3 text-white font-bold outline-none focus:border-yellow-500/50 transition-all resize-none placeholder:text-white/20" />
+                  <label className="block pixel-font text-[7px] text-[#5C3010]/70 uppercase tracking-widest mb-2 px-1">MESSAGE</label>
+                  <textarea value={feedbackText} onChange={(e) => setFeedbackText(e.target.value)} placeholder="Nhập góp ý hoặc báo lỗi tại đây..." className="w-full h-32 bg-white/20 border-4 border-[#8B6914]/20 rounded-xl p-3 text-[#5D2E17] font-bold outline-none focus:border-[#049CD8] transition-all resize-none placeholder:text-[#5D2E17]/30" />
                 </div>
-                <Button onClick={submitFeedback} disabled={!feedbackText.trim() || isSendingFeedback} variant="primary" fullWidth className="py-4 bg-red-600 border-red-800 text-white shadow-[0_10px_20px_rgba(220,38,38,0.2)]">
-                  {isSendingFeedback ? "Đang gửi..." : "Gửi ngay 🧧"}
-                </Button>
+                <button onClick={submitFeedback} disabled={!feedbackText.trim() || isSendingFeedback} className="w-full py-5 bg-[#E52521] border-4 border-[#8B1A18] text-white pixel-font text-[10px] shadow-[0_6px_0_#8B1A18] active:translate-y-1 active:shadow-none transition-all rounded-xl disabled:opacity-50">
+                  {isSendingFeedback ? "SENDING..." : "SEND NOW! 🧧"}
+                </button>
               </div>
             )}
           </div>
@@ -295,53 +311,39 @@ const App: React.FC = () => {
       )}
 
       <div className="relative p-2 md:p-8 max-w-7xl mx-auto z-10">
-        <header className="flex flex-col md:flex-row items-stretch md:items-center mb-8 gap-4 glass-panel p-4 rounded-[2rem] md:rounded-3xl transition-all duration-500 md:justify-between">
+        <header className="flex flex-col md:flex-row items-stretch md:items-center mb-8 gap-4 brick-panel p-4 rounded-xl transition-all duration-500 md:justify-between shadow-[0_4px_0_#5C3010]">
            <div className="flex items-center justify-between w-full md:w-auto gap-4 shrink-0">
-              <div className="font-black text-2xl md:text-3xl text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] cursor-pointer whitespace-nowrap hover:scale-105 transition-transform flex items-center gap-2" onClick={handleReset}>
-                StudyBloom <span className="text-yellow-500">🧧</span>
+              <div className="pixel-font text-lg md:text-2xl tracking-tighter cursor-pointer whitespace-nowrap hover:scale-105 transition-transform flex items-center gap-2 text-[#FBD000] drop-shadow-[2px_2px_0_#8B6914]" onClick={handleReset}>
+                StudyBloom <span className="text-2xl">🍄</span>
               </div>
               <div className="flex md:hidden shrink-0">
-                <button onClick={() => setShowBadges(true)} className="flex items-center gap-2 transition-all active:scale-90 px-2 py-1">
-                  <span className="text-2xl drop-shadow-[0_0_8px_rgba(255,183,3,0.8)]">{currentBadge?.icon || "🧭"}</span>
-                  <span className="font-black text-white text-[10px] tracking-tighter drop-shadow-md">{totalPoints} pts</span>
+                <button onClick={() => setShowBadges(true)} className="flex items-center gap-2 transition-all active:scale-90 px-3 py-1.5 bg-[#1A1A2E] border-2 border-[#FBD000] rounded-full">
+                  <div className="w-4 h-4 bg-[#FBD000] border-2 border-[#C8980A] rounded-full animate-pulse"></div>
+                  <span className="pixel-font text-[#FBD000] text-[8px] tracking-tighter">{totalPoints} pts</span>
                 </button>
               </div>
            </div>
 
            {keyVerificationStatus !== 'success' && (
-             <div className="w-full md:flex-1 md:max-w-md order-3 md:order-2 flex flex-col items-center animate-fade-in relative pb-8">
+             <div className="w-full md:flex-1 md:max-w-md order-3 md:order-2 flex flex-col items-center animate-fade-in relative">
                 <div className="relative flex items-center group w-full">
-                  <div className="absolute left-3 flex items-center pointer-events-none text-white/30 group-focus-within:text-yellow-400 transition-colors"><Icons.Key /></div>
-                  <input type="password" value={apiKeyInput} onChange={handleApiKeyChange} placeholder="Dán Google API Key..." className={`w-full bg-white/5 hover:bg-white/10 focus:bg-white/20 backdrop-blur-xl border-2 transition-all pl-11 pr-28 md:pr-24 py-3 rounded-2xl text-yellow-400 text-sm font-black placeholder:text-white/30 cursor-text outline-none ${keyVerificationStatus === 'fail' ? 'border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-white/10'}`} />
-                  <button onClick={handleVerifyKey} disabled={isVerifyingKey || !apiKeyInput} className={`absolute right-1 px-4 py-2 rounded-xl font-black text-[11px] uppercase tracking-tighter transition-all flex items-center justify-center min-w-[80px] ${keyVerificationStatus === 'fail' ? 'bg-red-500 text-white' : 'bg-yellow-500 hover:bg-yellow-600 text-black'} disabled:opacity-50 active:scale-95`}>
-                    {isVerifyingKey ? <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin"></div> : keyVerificationStatus === 'success' ? <Icons.Check /> : 'Xác nhận'}
+                  <input type="password" value={apiKeyInput} onChange={handleApiKeyChange} placeholder="Paste Google API Key..." className={`w-full bg-white/20 border-2 transition-all px-4 py-2 rounded-xl pixel-font text-[10px] text-white placeholder:text-white/40 cursor-text outline-none ${keyVerificationStatus === 'fail' ? 'border-red-500' : 'border-white/30 focus:border-[#FBD000]'}`} />
+                  <button onClick={handleVerifyKey} disabled={isVerifyingKey || !apiKeyInput} className={`absolute right-1 px-3 py-1.5 rounded-lg pixel-font text-[8px] uppercase transition-all flex items-center justify-center min-w-[60px] ${keyVerificationStatus === 'fail' ? 'bg-[#E52521] text-white shadow-[0_3px_0_#8B1A18]' : 'bg-[#43B047] hover:bg-[#256B28] text-white shadow-[0_3px_0_#256B28]'} disabled:opacity-50 active:translate-y-[2px] active:shadow-none`}>
+                    {isVerifyingKey ? <div className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'OK!'}
                   </button>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[10px] text-yellow-500/70 hover:text-yellow-400 font-black uppercase tracking-widest transition-colors flex items-center gap-1">Lấy API key ở đây <span className="text-xs">🔑</span></a>
-                </div>
-                <div className="absolute -bottom-14 left-0 w-full flex justify-between items-end px-2 pointer-events-none">
-                  <div className="flex flex-col items-center">
-                    <div className="w-px h-5 bg-yellow-600/60"></div>
-                    <span className="text-2xl lantern-sway -mt-1">🏮</span>
-                  </div>
-                  <div className="relative w-20 h-16 flex items-center justify-center mb-2">
-                    <BanhChung className="absolute left-0 top-1 transform rotate-[-12deg] z-10" />
-                    <BanhChung className="absolute right-0 bottom-0 transform rotate-[6deg] scale-105 z-20" />
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-px h-5 bg-yellow-600/60"></div>
-                    <span className="text-2xl lantern-sway -mt-1">🏮</span>
-                  </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[8px] text-white/60 hover:text-[#FBD000] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 pixel-font">GET KEY HERE <span className="text-xs">🔑</span></a>
                 </div>
              </div>
            )}
 
            <div className="hidden md:flex shrink-0 order-3">
-              <button onClick={() => setShowBadges(true)} className="glass-panel px-5 py-2.5 rounded-2xl shadow-[0_10px_30px_rgba(255,183,3,0.2)] flex items-center gap-3 border-b-4 border-yellow-600/50 hover:bg-white/10 transition-all active:translate-y-1 active:border-b-0 group">
-                {currentBadge ? (<><span className="text-xl md:text-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] group-hover:scale-110 transition-transform">{currentBadge.icon}</span><span className={`font-black text-xs md:text-sm text-yellow-400`}>{currentBadge.name}</span></>) : (<><Icons.Badge /><span className="font-black text-xs md:text-sm text-yellow-400">Huy hiệu</span></>)}
-                <span className="w-px h-5 bg-white/20"></span>
-                <span className="font-black text-white text-xs md:text-sm">{totalPoints} pts</span>
+              <button onClick={() => setShowBadges(true)} className="bg-[#1A1A2E] px-4 py-2 rounded-full border-2 border-[#FBD000] flex items-center gap-3 hover:scale-105 transition-all active:scale-95 group shadow-[0_3px_0_rgba(251,208,0,0.3)]">
+                <div className="w-4 h-4 bg-[#FBD000] border-2 border-[#C8980A] rounded-full animate-bounce flex items-center justify-center text-[8px] text-[#C8980A] font-bold">●</div>
+                <span className="pixel-font text-[9px] text-[#FBD000]">{currentBadge?.name || 'Explorer'}</span>
+                <span className="w-px h-4 bg-[#FBD000]/30 font-bold"></span>
+                <span className="pixel-font text-[#FBD000] text-[9px]">{totalPoints} pts</span>
               </button>
            </div>
         </header>
@@ -350,64 +352,189 @@ const App: React.FC = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
               <div className="relative w-24 h-24 md:w-32 md:h-32 mb-8">
-                 <div className="absolute inset-0 border-8 border-white/10 border-t-yellow-500 rounded-full animate-spin"></div>
+                 <div className="absolute inset-0 border-8 border-black/5 border-t-orange-500 rounded-full animate-spin"></div>
                  <div className="absolute inset-0 flex items-center justify-center text-3xl md:text-4xl animate-pulse">🌟</div>
               </div>
-              <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] mb-2 text-center uppercase tracking-tighter">Đợi xíu, mình đang chọn bài phù hợp cho bạn 😉</h3>
+              <h3 className="text-xl md:text-2xl font-black text-[#7c3a2a] drop-shadow-sm mb-2 text-center uppercase tracking-tighter">Đợi xíu, mình đang chọn bài phù hợp cho bạn 😉</h3>
             </div>
-          ) : (!isQuotaError && !selectedGrade) ? (
+          ) : isQuotaError ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in p-8 text-center bg-white/60 backdrop-blur-xl rounded-[3rem] border-4 border-orange-500 shadow-2xl max-w-3xl mx-auto mt-12">
+              <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mb-6 text-4xl shadow-inner border-2 border-orange-200">🔑</div>
+              <h3 className="text-2xl md:text-3xl font-black text-[#7c3a2a] mb-4 uppercase tracking-tighter">Cần Xác Thực API Key</h3>
+              <p className="text-[#7c3a2a]/70 font-bold mb-8 max-w-md">Vui lòng nhập Google AI API Key ở thanh công cụ phía trên hoặc kiểm tra lại kết nối bạn nhé!</p>
+              <div className="p-4 bg-orange-50 rounded-2xl border-2 border-orange-200 text-sm text-[#7c3a2a]/80 font-bold mb-6"> Quota bị giới hạn hoặc Key không hợp lệ. </div>
+              <Button onClick={() => setIsQuotaError(false)} variant="primary" className="bg-orange-600 border-orange-800 text-white px-10 py-4 rounded-2xl shadow-lg">Tôi đã hiểu</Button>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center min-h-[50vh] animate-fade-in p-8 text-center bg-white/40 rounded-[3rem] border-4 border-red-200">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 text-4xl shadow-inner">⚠️</div>
+              <h3 className="text-2xl font-black text-red-600 mb-4 uppercase tracking-tighter">Rất tiếc, đã có lỗi xảy ra!</h3>
+              <p className="text-[#7c3a2a]/70 font-bold mb-8 max-w-md">{error}</p>
+              <div className="flex gap-4">
+                <Button onClick={handleRetry} variant="primary" className="bg-orange-600 border-orange-800 text-white">Thử lại lần nữa</Button>
+                <Button onClick={handleReset} variant="outline" className="border-[#7c3a2a]/20">Về trang chủ</Button>
+              </div>
+            </div>
+          ) : !selectedGrade ? (
             <div className="animate-fade-in space-y-8">
               <div className="text-center space-y-4 mb-12 relative flex flex-col items-center">
                 <div className="relative inline-block mt-8">
-                  <h1 className="text-5xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_10px_50px_rgba(255,215,0,0.3)] relative z-10 flex items-center justify-center">StudyBl<LetterFlower /><LetterFlower />m</h1>
+                  <h1 className="text-3xl md:text-7xl pixel-font tracking-tight relative z-10 flex items-center justify-center gap-1 md:gap-3 flex-wrap">
+                    <span className="text-[#E52521] drop-shadow-[4px_4px_0_#8B1A18]">S</span>
+                    <span className="text-[#049CD8] drop-shadow-[4px_4px_0_#025A80]">t</span>
+                    <span className="text-[#FBD000] drop-shadow-[4px_4px_0_#C8980A]">u</span>
+                    <span className="text-[#43B047] drop-shadow-[4px_4px_0_#256B28]">d</span>
+                    <span className="text-[#E52521] drop-shadow-[4px_4px_0_#8B1A18]">y</span>
+                    <span className="text-[#FBD000] drop-shadow-[4px_4px_0_#C8980A]">B</span>
+                    <span className="text-[#E52521] drop-shadow-[4px_4px_0_#8B1A18]">l</span>
+                    <span className="text-[#049CD8] drop-shadow-[4px_4px_0_#025A80]">o</span>
+                    <span className="text-[#43B047] drop-shadow-[4px_4px_0_#256B28]">o</span>
+                    <span className="text-[#E52521] drop-shadow-[4px_4px_0_#8B1A18]">m</span>
+                  </h1>
                 </div>
-                <p className="text-[10px] md:text-base text-yellow-400 font-black max-w-3xl mx-auto drop-shadow-lg px-4 uppercase tracking-tight whitespace-nowrap mt-4">Khai bút đầu xuân cùng Tiếng Anh Cấp 2-3</p>
+                <p className="pixel-font text-[8px] md:text-xs text-white drop-shadow-[2px_2px_0_#3A5FAA] max-w-3xl mx-auto px-4 uppercase tracking-widest mt-6">— Explore the English World —</p>
               </div>
-              <div className="grid gap-8">
+              <div className="grid gap-12">
               {Object.entries(GRADE_GROUPS).map(([groupName, grades]) => (
-                <div key={groupName} className="glass-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-2xl border-t-4 border-t-yellow-600/50 hover:bg-white/5 transition-all">
-                  <h3 className="text-lg md:text-2xl font-black text-white mb-6 md:mb-8 flex items-center gap-4"><span className="p-2 md:p-3 rounded-2xl bg-white/5 text-yellow-400 shadow-inner"><Icons.Book /></span>{groupName} 🌸</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                <div key={groupName} className="glass-panel p-6 md:p-10 border-t-8 border-[#C4A96B] bg-[#E8D5A3]">
+                  <h3 className="text-sm md:text-xl pixel-font text-[#5C3010] mb-6 md:mb-10 flex items-center gap-4">
+                    <div className="w-8 h-8 md:w-10 md:h-10 bg-[#E52521] border-4 border-[#8B1A18] rounded-lg flex items-center justify-center text-lg shadow-[0_3px_0_#8B1A18]">📚</div>
+                    {groupName.toUpperCase()}
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                     {grades.map((grade) => (
-                      <Button key={grade} onClick={() => setSelectedGrade(grade)} variant="outline" className="hover:scale-105 transition-all bg-white/5 hover:bg-white/10 border-white/10 text-white text-sm md:text-xl font-black h-16 md:h-20 rounded-[1.2rem] md:rounded-[1.5rem]">{grade.replace('Grade ', 'Lớp ')}</Button>
+                      <div key={grade} onClick={() => setSelectedGrade(grade)} className="q-block group p-6 md:p-8 flex items-center justify-center cursor-pointer relative overflow-hidden">
+                        <span className="pixel-font text-[10px] md:text-xs text-[#5C3010] relative z-10">{grade.toUpperCase()}</span>
+                        <div className="absolute top-1 right-2 text-xl md:text-3xl text-black/10 font-black">?</div>
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
               </div>
             </div>
-          ) : (!isQuotaError && !gameData) ? (
-            <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-              <Button onClick={() => setSelectedGrade(null)} variant="outline" size="sm" className="bg-white/5 border-white/10 text-white font-bold px-6 hover:bg-white/10 rounded-xl">← Trở lại</Button>
-              <div className="glass-panel rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-12 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border-b-8 border-yellow-600/30">
-                <h2 className="text-2xl md:text-4xl font-black text-white mb-8 md:mb-10 tracking-tighter flex items-center gap-4">Lớp học: <span className="text-yellow-400">{selectedGrade?.replace('Grade ', 'Lớp ')}</span> 🍊</h2>
-                <div className="grid md:grid-cols-2 gap-8 md:gap-10">
-                  <div>
-                    <label className="block text-yellow-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Giáo trình 📚</label>
-                    <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-3 custom-scrollbar">
-                      <div onClick={() => setSelectedTextbook('')} className={`cursor-pointer p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === '' ? 'border-yellow-500 bg-yellow-500/10' : 'border-white/5 bg-black/20 hover:border-white/20'}`}><div className="font-black text-white text-lg md:text-xl">Tổng hợp (General) 🌍</div></div>
+          ) : !gameData ? (
+            <div className="max-w-7xl mx-auto animate-fade-in">
+              {/* Sky Part */}
+              <div className="p-6 md:p-12 pb-2">
+                <button onClick={() => setSelectedGrade(null)} className="pixel-font text-[10px] text-[#E52521] hover:underline mb-8 flex items-center gap-2 drop-shadow-sm">
+                  ← BACK TO MAP
+                </button>
+                <div className="flex items-center gap-4 mb-2">
+                  <h2 className="text-3xl md:text-6xl pixel-font text-[#E52521] drop-shadow-[4px_4px_0_#8B1A18] tracking-tighter uppercase">{selectedGrade?.toUpperCase()} 🍊</h2>
+                </div>
+              </div>
+
+              {/* Tan Ground Part */}
+              <div className="bg-[#E8D5A3] border-t-8 border-[#C4A96B] p-6 md:p-12 rounded-b-[2rem] shadow-2xl">
+                <div className="grid lg:grid-cols-2 gap-10 md:gap-16">
+                  {/* TEXTBOOK COLUMN */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-[#FBD000] border-2 border-[#C8980A] rounded-full animate-bounce flex items-center justify-center text-[10px] text-[#C8980A] font-bold">●</div>
+                      <label className="pixel-font text-[9px] text-[#8B4513] uppercase tracking-widest">Choose Textbook</label>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {/* GENERAL OPTION */}
+                      <div 
+                        onClick={() => setSelectedTextbook('')} 
+                        className={`group relative cursor-pointer p-6 md:p-8 rounded-xl border-4 transition-all ${
+                          selectedTextbook === '' 
+                          ? 'bg-[#E52521] border-[#8B1A18] shadow-[0_5px_0_#5C0F0C]' 
+                          : 'bg-[#FBD000] border-[#C8980A] shadow-[0_5px_0_#8B6914] hover:bg-[#FFE033] hover:-translate-y-1'
+                        }`}
+                      >
+                        <div className={`pixel-font text-[10px] uppercase ${selectedTextbook === '' ? 'text-white' : 'text-[#5C3010]'}`}>
+                          General 🌍
+                        </div>
+                        <div className={`absolute top-2 right-4 text-3xl font-black ${selectedTextbook === '' ? 'text-white/20' : 'text-black/10'}`}>?</div>
+                      </div>
+
+                      {/* TEXTBOOK LIST */}
                       {(parseInt(selectedGrade!.split(' ')[1]) <= 9 ? TEXTBOOKS_BY_GRADE['Secondary'] : TEXTBOOKS_BY_GRADE['High']).map(tb => (
-                        <div key={tb} onClick={() => setSelectedTextbook(tb)} className={`cursor-pointer p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all ${selectedTextbook === tb ? 'border-yellow-500 bg-yellow-500/10' : 'border-white/5 bg-black/20 hover:border-white/20'}`}><div className="font-black text-white text-lg md:text-xl">{tb.split('(')[0]}</div></div>
+                        <div 
+                          key={tb} 
+                          onClick={() => setSelectedTextbook(tb)} 
+                          className={`group relative cursor-pointer p-6 md:p-8 rounded-xl border-4 transition-all ${
+                            selectedTextbook === tb 
+                            ? 'bg-[#E52521] border-[#8B1A18] shadow-[0_5px_0_#5C0F0C]' 
+                            : 'bg-[#FBD000] border-[#C8980A] shadow-[0_5px_0_#8B6914] hover:bg-[#FFE033] hover:-translate-y-1'
+                          }`}
+                        >
+                          <div className={`pixel-font text-[10px] uppercase ${selectedTextbook === tb ? 'text-white' : 'text-[#5C3010]'}`}>
+                            {tb.split('(')[0]}
+                          </div>
+                          <div className={`absolute top-2 right-4 text-3xl font-black ${selectedTextbook === tb ? 'text-white/20' : 'text-black/10'}`}>?</div>
+                        </div>
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-yellow-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Kỹ năng ✨</label>
-                    <div className="grid grid-cols-2 gap-4 md:gap-5 mb-8">
-                      {Object.values(GameType).map((type) => (
-                        <Button key={type} variant={selectedGameType === type ? 'secondary' : 'outline'} onClick={() => { setSelectedGameType(type); if (type !== GameType.Grammar) setSelectedSubSkill(null); else setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); }} className={`py-6 md:py-8 h-full rounded-[1.5rem] md:rounded-[2rem] ${selectedGameType === type ? 'bg-red-600 border-red-800' : 'bg-black/20 border-white/5 hover:bg-white/10'}`}>
-                          <span className="text-sm md:text-lg font-black text-center leading-tight uppercase tracking-tighter text-white px-2">{type.split(' (')[0]}</span>
-                        </Button>
-                      ))}
+
+                  {/* SKILL COLUMN */}
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="text-xl animate-pulse">★</div>
+                      <label className="pixel-font text-[9px] text-[#8B4513] uppercase tracking-widest">Choose Skill</label>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4 md:gap-6">
+                      {Object.values(GameType).map((type) => {
+                        const isSpecial = type === GameType.TypeToFly;
+                        const isSelected = selectedGameType === type;
+                        
+                        return (
+                          <div 
+                            key={type}
+                            onClick={() => { 
+                              setSelectedGameType(type); 
+                              if (type !== GameType.Grammar) setSelectedSubSkill(null); 
+                              else if (!selectedSubSkill) setSelectedSubSkill(GrammarSubSkill.GrammarQuiz); 
+                            }}
+                            className={`cursor-pointer h-24 md:h-32 rounded-xl border-4 transition-all flex items-center justify-center text-center p-4 active:scale-95 active:shadow-none ${
+                                isSpecial ? 'col-span-2' : ''
+                            } ${
+                                isSelected 
+                                ? 'scale-105 z-10 brightness-110 shadow-none -translate-y-1' 
+                                : ''
+                            } ${
+                                isSpecial 
+                                ? 'bg-[#049CD8] border-[#025A80] shadow-[0_6px_0_#013D60] hover:bg-[#05b1f5] hover:-translate-y-1' 
+                                : 'bg-[#43B047] border-[#256B28] shadow-[0_6px_0_#174D0F] hover:bg-[#55D45A] hover:-translate-y-1'
+                            }`}
+                          >
+                            <span className="pixel-font text-[8px] md:text-[9px] text-white uppercase tracking-tighter drop-shadow-[1px_1px_0_rgba(0,0,0,0.5)]">
+                              {type === GameType.TypeToFly ? (
+                                <span className="flex items-center gap-3">
+                                  <span className="text-xl">🐦</span> 
+                                  FLAPPY BIRD
+                                </span>
+                              ) : type.includes('Grammar') ? 'Grammar' :
+                                  type.includes('Listening') ? 'Listening' :
+                                  type.includes('Speaking') ? 'Speaking' :
+                                  type.includes('Writing') ? 'Writing' : type.split(' (')[0].toUpperCase()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* GRAMMAR SUB-SKILLS */}
                     {selectedGameType === GameType.Grammar && (
-                      <div className="animate-fade-in-up">
-                        <label className="block text-yellow-400/60 font-black mb-4 uppercase text-[10px] tracking-[0.3em]">Chọn Dạng bài tập 📝</label>
-                        <div className="grid grid-cols-2 gap-3">
+                      <div className="mt-8 pt-8 border-t-4 border-[#8B6914]/10 animate-fade-in-up">
+                        <label className="block pixel-font text-[8px] text-[#8B4513] uppercase tracking-[0.2em] mb-4">Select Practice Mode 📝</label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {Object.values(GrammarSubSkill).map((sub) => (
-                            <button key={sub} onClick={() => setSelectedSubSkill(sub)} className={`px-4 py-3 rounded-xl border-2 transition-all font-black text-[10px] uppercase tracking-tighter leading-tight ${selectedSubSkill === sub ? 'bg-yellow-500 border-yellow-700 text-black shadow-lg' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}>
-                              {sub}
+                            <button 
+                              key={sub} 
+                              onClick={() => setSelectedSubSkill(sub)} 
+                              className={`px-3 py-4 rounded-xl border-4 transition-all pixel-font text-[7px] uppercase tracking-tighter leading-tight ${
+                                selectedSubSkill === sub 
+                                ? 'bg-[#E52521] border-[#8B1A18] text-white shadow-[0_4px_0_#5C0F0C]' 
+                                : 'bg-white/60 border-[#8B6914]/20 text-[#5C3010] hover:bg-white'
+                              }`}
+                            >
+                               {sub}
                             </button>
                           ))}
                         </div>
@@ -415,23 +542,33 @@ const App: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="mt-10 md:mt-12"><Button onClick={handleStartGame} fullWidth size="lg" variant="primary" disabled={!selectedGameType || (selectedGameType === GameType.Grammar && !selectedSubSkill)} className="text-xl md:text-2xl py-8 md:py-10 h-24 md:h-28 rounded-[1.5rem] md:rounded-[2rem] bg-red-600 border-red-800 hover:bg-red-700 uppercase tracking-tighter">Nhận lì xì bài học 🧧</Button></div>
+
+                <div className="mt-12 pt-12 border-t-8 border-[#C4A96B]/30 flex justify-center">
+                  <button 
+                    onClick={handleStartGame} 
+                    disabled={!selectedGameType || (selectedGameType === GameType.Grammar && !selectedSubSkill)} 
+                    className="w-full md:w-auto min-w-[300px] h-24 md:h-32 px-12 rounded-[2.5rem] bg-[#43B047] border-8 border-[#256B28] text-white pixel-font text-xs md:text-xl tracking-[0.3em] shadow-[0_12px_0_#174D0F] hover:bg-[#55D45A] hover:-translate-y-1 active:translate-y-2 active:shadow-none transition-all flex flex-col items-center justify-center gap-4 group disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                  >
+                    <span className="drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">START LEVEL! 🧧</span>
+                    <div className="w-16 h-3 bg-black/20 rounded-full group-hover:w-20 transition-all"></div>
+                  </button>
+                </div>
               </div>
             </div>
-          ) : (!isQuotaError && finalScore !== null) ? (
+          ) : (finalScore !== null) ? (
             <ResultCard score={finalScore} total={calculateTotalPossibleScore()} onRetry={handleRetry} onHome={handleReset} />
           ) : (
-            !isQuotaError && renderGameComponent()
+            renderGameComponent()
           )}
         </main>
       </div>
 
-      <footer className="flex flex-col items-center mt-16 pb-12 relative z-10 px-4">
-        <div className="text-center text-white/20 text-[9px] md:text-[10px] mb-6">
-          <p className="font-black uppercase tracking-[0.5em] mb-2">StudyBloom 🧧 Lunar New Year Edition</p>
+      <footer className="flex flex-col items-center mt-20 pb-20 relative z-10 px-4">
+        <div className="text-center text-white/40 mb-8">
+          <p className="pixel-font text-[7px] uppercase tracking-[0.4em] mb-2 drop-shadow-[1px_1px_0_rgba(0,0,0,0.2)]">StudyBloom 🍄 Mario Edition</p>
         </div>
-        <button onClick={() => setShowFeedbackModal(true)} className="flex items-center px-8 py-4 rounded-2xl glass-panel border-yellow-500/30 border-2 hover:bg-yellow-600/10 hover:border-yellow-500/60 transition-all duration-300 text-white/60 hover:text-white font-black text-sm shadow-xl group">
-          <Icons.Mail /><span className="group-hover:translate-x-0.5 transition-transform">Gửi phản hồi 🧧</span>
+        <button onClick={() => setShowFeedbackModal(true)} className="flex items-center px-10 py-5 rounded-2xl glass-panel border-[#8B6914] border-4 bg-[#FBD000] hover:bg-[#FFE033] transition-all duration-300 text-[#5D2E17] pixel-font text-[8px] shadow-[0_6px_0_#8B6914] active:translate-y-1 active:shadow-none group uppercase">
+          <Icons.Mail /><span className="ml-2">SEND FEEDBACK! 🧧</span>
         </button>
       </footer>
     </div>

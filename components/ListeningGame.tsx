@@ -117,26 +117,26 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
   if (!current) return null;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-[2.5rem] p-8 shadow-2xl animate-fade-in border-4 border-blue-50">
+    <div className="max-w-2xl mx-auto glass-panel p-8 animate-fade-in bg-[#E8D5A3]">
       <div className="text-center mb-8">
-        <h3 className="text-[10px] font-black text-gray-400 mb-6 uppercase tracking-[0.2em]">Listening Challenge {index + 1}/{questions.length}</h3>
+        <h3 className="pixel-font text-[8px] text-[#5C3010] mb-6 uppercase tracking-widest">WORLD {index + 1}-{questions.length}</h3>
         
         <div className="flex flex-col items-center">
           {readingCountdown > 0 ? (
-            <div className="animate-fade-in p-8 bg-blue-50/50 rounded-full border-2 border-dashed border-blue-100 flex flex-col items-center">
-              <div className="text-6xl font-black text-blue-500 mb-2 leading-none">{readingCountdown}s</div>
-              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest text-center max-w-[120px]">Hãy xem lướt qua các lựa chọn</p>
-              <button onClick={() => setReadingCountdown(0)} className="text-blue-600 font-black text-xs mt-4 hover:underline">Vào nghe luôn 🚀</button>
+            <div className="animate-fade-in p-8 bg-[#049CD8]/10 rounded-2xl border-4 border-[#049CD8]/30 flex flex-col items-center">
+              <div className="pixel-font text-4xl text-[#049CD8] mb-2 leading-none">{readingCountdown}</div>
+              <p className="pixel-font text-[8px] text-[#049CD8]/70 uppercase tracking-widest text-center mt-4">READ THE OPTIONS!</p>
+              <button onClick={() => setReadingCountdown(0)} className="pixel-font text-[7px] text-[#049CD8] mt-6 hover:underline">START NOW! →</button>
             </div>
           ) : (
             <div className="relative">
               <button 
                 onClick={playAudio} 
                 disabled={isPlaying || isLoadingAudio}
-                className={`rounded-full p-10 transition-all shadow-2xl relative z-10 ${
-                  isLoadingAudio ? 'bg-amber-400 scale-110' : 
-                  isPlaying ? 'bg-indigo-500 scale-105' : 
-                  'bg-blue-600 hover:scale-110 active:scale-95'
+                className={`rounded-full p-10 transition-all shadow-[0_8px_0_rgba(0,0,0,0.2)] relative z-10 border-4 border-white ${
+                  isLoadingAudio ? 'bg-[#FBD000]' : 
+                  isPlaying ? 'bg-[#E52521]' : 
+                  'bg-[#43B047] hover:scale-110 active:translate-y-1 active:shadow-none'
                 }`}
               >
                 {isLoadingAudio ? (
@@ -149,39 +149,39 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
               </button>
               
               {isPlaying && (
-                <div className="absolute inset-0 animate-ping rounded-full bg-indigo-400 opacity-20"></div>
+                <div className="absolute inset-0 animate-ping rounded-full bg-[#E52521] opacity-20"></div>
               )}
 
-              {audioError && <p className="text-red-500 text-[10px] mt-4 font-black uppercase tracking-widest">Lỗi kết nối âm thanh ❄️</p>}
-              <p className="mt-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] animate-fade-in">
-                {isLoadingAudio ? "AI đang chuẩn bị..." : isPlaying ? "Đang phát bài..." : "Nhấn để nghe giọng nói ấm áp"}
+              {audioError && <p className="pixel-font text-[7px] text-[#E52521] mt-6 uppercase tracking-widest">AUDIO ERROR! ❄️</p>}
+              <p className="mt-8 pixel-font text-[7px] text-[#5C3010]/50 uppercase tracking-widest animate-fade-in">
+                {isLoadingAudio ? "AI IS PREPARING..." : isPlaying ? "PLAYING SOUND..." : "TAP TO HEAR SOUND!"}
               </p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="bg-blue-50/50 rounded-3xl p-8 mb-8 border-2 border-dashed border-blue-100 shadow-inner">
-        <p className="text-xl md:text-2xl font-black text-gray-800 text-center leading-tight">{current.questionText}</p>
+      <div className="bg-white/40 rounded-2xl p-8 mb-8 border-4 border-[#8B6914]/10 shadow-inner">
+        <p className="mario-font text-lg md:text-2xl text-[#5C3010] text-center leading-tight">{current.questionText}</p>
       </div>
 
       <div className="grid gap-4">
         {current.options?.map((opt, i) => (
-          <Button 
+          <button 
             key={i} 
             onClick={() => handleAnswer(opt)} 
-            variant="outline" 
-            fullWidth 
             disabled={!!feedback || readingCountdown > 0} 
-            className={`text-lg py-5 rounded-2xl border-2 transition-all font-bold ${feedback ? 'opacity-50' : 'hover:border-blue-400 hover:bg-blue-50/50'}`}
+            className={`font-bold text-base md:text-lg py-6 px-6 rounded-xl border-4 transition-all shadow-[0_4px_0_rgba(0,0,0,0.1)] active:translate-y-1 active:shadow-none ${
+              feedback ? 'opacity-50 pointer-events-none' : 'bg-white border-[#8B6914]/20 hover:border-[#049CD8] text-[#5D2E17]'
+            }`}
           >
             {opt}
-          </Button>
+          </button>
         ))}
       </div>
 
       {feedback && (
-        <div className={`mt-8 p-6 rounded-3xl text-center font-black text-lg animate-fade-in-up border-4 ${feedback.includes('Chính xác') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+        <div className={`mt-8 p-6 rounded-2xl text-center pixel-font text-[10px] animate-fade-in-up border-4 ${feedback.includes('Chính xác') ? 'bg-[#43B047]/20 border-[#43B047] text-[#43B047]' : 'bg-[#E52521]/20 border-[#E52521] text-[#E52521]'}`}>
           {feedback}
         </div>
       )}
