@@ -162,7 +162,7 @@ const App: React.FC = () => {
       setKeyVerificationStatus('success');
     } catch (err: any) {
       const msg = err.message || "Unknown error";
-      if (msg.includes("QUOTA_EXCEEDED") || msg.includes("429") || msg.includes("entity was not found") || msg.includes("API_KEY_INVALID")) {
+      if (msg.includes("QUOTA_EXCEEDED") || msg.includes("429") || msg.includes("entity was not found") || msg.includes("API_KEY_INVALID") || msg.includes("leaked") || msg.includes("403") || msg.includes("401") || msg.includes("PERMISSION_DENIED")) {
         setIsQuotaError(true);
         setError(null);
         setKeyVerificationStatus('fail');
