@@ -85,7 +85,20 @@
             50% { transform: translateY(-24px); }
         }
         .jump {
-            animation: marioJump 0.4s ease;
+            animation: marioJump 0.4s ease forwards;
+        }
+
+        @keyframes marioRun {
+            0% { left: 0; }
+            100% { left: calc(100% - 56px); }
+        }
+        .mario-running-container {
+            position: absolute;
+            bottom: 0;
+            animation: marioRun 3s linear infinite;
+        }
+        .mario-running-container.paused {
+            animation-play-state: paused;
         }
 
         @keyframes shake {

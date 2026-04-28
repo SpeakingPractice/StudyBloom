@@ -17,7 +17,7 @@ const PIXEL_COLORS: Record<string, string> = {
   T: 'transparent'
 };
 
-const MARIO_MAP = [
+const MARIO_MAP_A = [
   ['T','T','T','T','T','R','R','R','R','R','T','T','T','T'],
   ['T','T','T','T','R','R','R','R','R','R','R','R','R','T'],
   ['T','T','T','T','Br','Br','Br','S','S','E','S','T','T','T'],
@@ -31,29 +31,51 @@ const MARIO_MAP = [
   ['T','T','S','S','R','B','G','B','B','G','B','S','S','T'],
   ['T','T','S','S','S','B','B','B','B','B','B','S','S','S'],
   ['T','T','S','S','B','B','B','B','B','B','B','B','S','S'],
-  ['T','T','T','T','B','B','B','T','T','B','B','B','T','T'],
-  ['T','T','T','Br','Br','Br','T','T','T','Br','Br','Br','T'],
-  ['T','T','Br','Br','Br','Br','T','T','Br','Br','Br','Br','T'],
+  ['T','T','T','B','B','B','T','T','B','B','B','T','T','T'],
+  ['T','T','Br','Br','Br','T','T','T','Br','Br','Br','T','T'],
+  ['T','Br','Br','Br','Br','T','T','T','Br','Br','Br','Br','T'],
 ];
 
-const PixelMario = () => (
-  <div className="flex flex-col">
-    {MARIO_MAP.map((row, i) => (
-      <div key={i} className="flex">
-        {row.map((pixel, j) => (
-          <div 
-            key={j} 
-            style={{ 
-              width: '4px', 
-              height: '4px', 
-              backgroundColor: PIXEL_COLORS[pixel] 
-            }} 
-          />
-        ))}
-      </div>
-    ))}
-  </div>
-);
+const MARIO_MAP_B = [
+  ['T','T','T','T','T','R','R','R','R','R','T','T','T','T'],
+  ['T','T','T','T','R','R','R','R','R','R','R','R','R','T'],
+  ['T','T','T','T','Br','Br','Br','S','S','E','S','T','T','T'],
+  ['T','T','T','Br','S','Br','S','S','S','E','S','S','S','T'],
+  ['T','T','T','Br','S','Br','Br','S','S','S','E','S','S','S'],
+  ['T','T','T','Br','Br','S','S','S','S','E','E','E','E','T'],
+  ['T','T','T','T','T','S','S','S','S','S','S','S','T','T'],
+  ['T','T','T','T','R','R','B','R','R','R','T','T','T','T'],
+  ['T','T','T','R','R','R','B','R','R','B','R','R','R','T'],
+  ['T','T','R','R','R','R','B','B','B','B','R','R','R','R'],
+  ['T','T','S','S','R','B','G','B','B','G','B','S','S','T'],
+  ['T','T','S','S','S','B','B','B','B','B','B','S','S','S'],
+  ['T','T','S','S','B','B','B','B','B','B','B','B','S','S'],
+  ['T','T','T','T','T','B','B','B','T','T','B','B','B','T'],
+  ['T','T','T','T','T','Br','Br','Br','T','T','Br','Br','Br'],
+  ['T','T','T','T','Br','Br','Br','Br','T','Br','Br','Br','Br'],
+];
+
+const PixelMario = ({ frame }: { frame: 'A' | 'B' }) => {
+  const map = frame === 'A' ? MARIO_MAP_A : MARIO_MAP_B;
+  return (
+    <div className="flex flex-col">
+      {map.map((row, i) => (
+        <div key={i} className="flex">
+          {row.map((pixel, j) => (
+            <div 
+              key={j} 
+              style={{ 
+                width: '4px', 
+                height: '4px', 
+                backgroundColor: PIXEL_COLORS[pixel] 
+              }} 
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -65,8 +87,58 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const [isJumping, setIsJumping] = useState(false);
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [showScorePopup, setShowScorePopup] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [marioFrame, setMarioFrame] = useState<'A' | 'B'>('A');
+  const [gameState, setGameState] = useState<'playing' | 'cleared' | 'over'>('playing');
+
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const winSoundRef = useRef<HTMLAudioElement | null>(null);
+  const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuestion = questions[currentIndex];
+
+  useEffect(() => {
+    // Initial audio setup
+    bgmRef.current = new Audio('https://www.myinstants.com/media/sounds/mario-theme-song.mp3');
+    bgmRef.current.loop = true;
+    bgmRef.current.volume = 0.35;
+
+    winSoundRef.current = new Audio('https://www.myinstants.com/media/sounds/ta-da.mp3');
+    winSoundRef.current.volume = 0.7;
+
+    const startAudio = () => {
+      bgmRef.current?.play().catch(() => {});
+      window.removeEventListener('click', startAudio);
+    };
+    window.addEventListener('click', startAudio);
+
+    // Frame animation
+    frameIntervalRef.current = setInterval(() => {
+      setMarioFrame(prev => prev === 'A' ? 'B' : 'A');
+    }, 180);
+
+    return () => {
+      bgmRef.current?.pause();
+      if (bgmRef.current) bgmRef.current.currentTime = 0;
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+      window.removeEventListener('click', startAudio);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (bgmRef.current) {
+      bgmRef.current.volume = isMuted ? 0 : 0.35;
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (gameState !== 'playing') {
+      bgmRef.current?.pause();
+      if (gameState === 'cleared') {
+        winSoundRef.current?.play().catch(() => {});
+      }
+    }
+  }, [gameState]);
 
   useEffect(() => {
     if (currentQuestion && currentQuestion.options) {
@@ -93,15 +165,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
       setHearts(h => {
         const newHearts = h - 1;
         if (newHearts <= 0) {
-          // Restart after short delay
-          setTimeout(() => {
-            setHearts(3);
-            setCurrentIndex(0);
-            setScore(0);
-            setShowFeedback(false);
-            setSelectedAnswer(null);
-            setIsCorrect(null);
-          }, 1500);
+          setGameState('over');
         }
         return newHearts;
       });
@@ -116,7 +180,21 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      onComplete(score);
+      setGameState('cleared');
+    }
+  };
+
+  const resetGame = () => {
+    setScore(0);
+    setHearts(3);
+    setCurrentIndex(0);
+    setGameState('playing');
+    setShowFeedback(false);
+    setSelectedAnswer(null);
+    setIsCorrect(null);
+    if (bgmRef.current) {
+      bgmRef.current.currentTime = 0;
+      bgmRef.current.play().catch(() => {});
     }
   };
 
@@ -126,9 +204,18 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     <div className="max-w-3xl mx-auto w-full flex flex-col items-center">
       {/* HUD */}
       <div className="w-full bg-[#1A1A2E] border-4 border-[#FBD000] p-4 rounded-xl mb-4 flex justify-between items-center z-20">
-        <div className="flex items-center gap-2">
-          <span className="text-[#FBD000] text-xl">⭐</span>
-          <span className="pixel-font text-[#FBD000] text-sm">{score}</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[#FBD000] text-xl">⭐</span>
+            <span className="pixel-font text-[#FBD000] text-sm">{score}</span>
+          </div>
+          <button 
+            onClick={() => setIsMuted(!isMuted)}
+            className="bg-black/40 px-3 py-1 rounded-full border-2 border-white/20 hover:bg-black/60 transition-all flex items-center gap-2"
+          >
+            <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
+            <span className="pixel-font text-white text-[8px] uppercase">{isMuted ? 'Muted' : 'Sound'}</span>
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[#E52521] text-xl">
@@ -214,9 +301,9 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
         </div>
 
         {/* Character */}
-        <div className="relative mb-[15%] z-20">
+        <div className={`mario-running-container z-20 ${isJumping || isCorrect === false ? 'paused' : ''}`}>
            <div className={`relative ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
-             <PixelMario />
+             <PixelMario frame={marioFrame} />
              <AnimatePresence>
                {showScorePopup && (
                  <motion.span 
@@ -241,6 +328,48 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
             ))}
           </div>
         </div>
+
+        {/* Victory/Game Over Overlay */}
+        <AnimatePresence>
+          {gameState !== 'playing' && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-6 backdrop-blur-sm"
+            >
+              <motion.div 
+                initial={{ scale: 0.8, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                className="bg-[#1A1A2E] border-8 border-[#FBD000] p-10 rounded-[2.5rem] w-full max-w-sm text-center shadow-[0_0_50px_rgba(251,208,0,0.3)]"
+              >
+                <h2 className={`pixel-font text-xl mb-6 ${gameState === 'cleared' ? 'text-[#FBD000]' : 'text-[#E52521]'}`}>
+                  {gameState === 'cleared' ? 'GAME CLEAR! ★' : 'GAME OVER! 💀'}
+                </h2>
+                
+                <div className="mb-8 p-6 bg-black/40 rounded-2xl border-4 border-white/10">
+                  <p className="pixel-font text-[8px] text-white/40 uppercase mb-2">Final Score</p>
+                  <p className="pixel-font text-4xl text-[#FBD000] drop-shadow-[2px_2px_0_#C8980A]">{score}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <button 
+                    onClick={resetGame}
+                    className="w-full h-16 bg-[#E52521] border-4 border-[#8B1A18] rounded-xl shadow-[0_6px_0_#5C0F0C] active:translate-y-1 active:shadow-none transition-all pixel-font text-white text-[10px] uppercase tracking-widest"
+                  >
+                    PLAY AGAIN
+                  </button>
+                  <button 
+                    onClick={() => onComplete(score)}
+                    className="w-full h-12 border-4 border-white/20 text-white/60 rounded-xl pixel-font text-[8px] uppercase hover:bg-white/5 transition-all"
+                  >
+                    Exit Map
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Next Button */}

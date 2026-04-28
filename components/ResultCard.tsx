@@ -17,10 +17,10 @@ export const ResultCard: React.FC<ResultCardProps> = ({ score, total, onRetry, o
   const percentage = Math.round((score / total) * 100);
   
   let message = "";
-  if (percentage === 100) message = "Khai bút tuyệt vời! (Perfect!) 🧧";
+  if (percentage === 100) message = "Perfect! (Perfect!) 🧧";
   else if (percentage >= 80) message = MOTIVATIONAL_MESSAGES[0];
   else if (percentage >= 60) message = MOTIVATIONAL_MESSAGES[1];
-  else message = "Lộc xuân đang đợi, cố lên! (Try again!) 🐉";
+  else message = "Try again! (Try again!) 🐉";
 
   useEffect(() => {
     // 1. Get previous total
