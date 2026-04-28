@@ -137,7 +137,7 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
         <div className="max-w-[1400px] ml-4 lg:ml-10 mr-auto pb-32">
           {!selectedFolder ? (
             /* Folders Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {folders.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center p-12 text-center space-y-10 mt-12">
                   <motion.div animate={{ y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
@@ -152,31 +152,35 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
                   <motion.div
                     key={folder.id}
                     whileHover={{ scale: 1.05, rotate: 1 }}
-                    className="relative group q-block bg-white p-6 cursor-pointer border-b-8 shadow-lg"
+                    className="relative group q-block bg-white p-6 md:p-5 lg:p-6 cursor-pointer border-b-8 shadow-lg min-h-[170px] md:min-h-[150px] lg:min-h-[130px] flex flex-col justify-between overflow-hidden"
                     style={{ borderColor: folder.color }}
                     onClick={() => setSelectedFolder(folder)}
                   >
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="text-5xl drop-shadow-md">{folder.icon}</div>
-                      <div className="flex-1">
-                        <h3 className="pixel-font text-[#5C3010] text-[10px] uppercase truncate font-bold">{folder.name}</h3>
-                        <div className="mt-2 inline-block px-2 py-1 bg-black/5 rounded pixel-font text-[#C8980A] text-[7px]">{folder.words.length} WORDS</div>
+                    {/* Decorative Corner details for desktop */}
+                    <div className="hidden lg:block absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-black/5"></div>
+                    <div className="hidden lg:block absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-black/5"></div>
+                    
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="text-5xl md:text-3xl lg:text-4xl drop-shadow-md shrink-0">{folder.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="pixel-font text-[#5C3010] text-[10px] md:text-[9px] lg:text-[10px] uppercase font-bold leading-tight break-words">{folder.name}</h3>
+                        <div className="mt-1 lg:mt-2 inline-block px-2 py-1 bg-black/5 rounded pixel-font text-[#C8980A] text-[7px] lg:text-[7px]">{folder.words.length} WORDS</div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-dashed border-[#C4A96B]/30">
+                    <div className="flex items-center justify-between mt-2 pt-3 border-t border-dashed border-[#C4A96B]/30">
                       <span className="pixel-font text-[7px] text-[#A67C52] uppercase opacity-60">
                         {new Date(folder.createdAt).toLocaleDateString()}
                       </span>
                       <div className="flex gap-2">
                         <button 
                           onClick={(e) => { e.stopPropagation(); setEditingFolder(folder); setShowFolderModal(true); }}
-                          className="w-10 h-10 bg-[#FBD000] border-b-4 border-[#8B6914] rounded-lg flex items-center justify-center hover:brightness-110 active:translate-y-1"
+                          className="w-10 h-10 md:w-8 md:h-8 lg:w-9 lg:h-9 bg-[#FBD000] border-b-4 border-[#8B6914] rounded-lg flex items-center justify-center hover:brightness-110 active:translate-y-1 text-sm md:text-xs"
                         >
                           ✏️
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'folder', id: folder.id }); }}
-                          className="w-10 h-10 bg-[#E52521] border-b-4 border-[#8B1A18] rounded-lg flex items-center justify-center hover:brightness-110 active:translate-y-1"
+                          className="w-10 h-10 md:w-8 md:h-8 lg:w-9 lg:h-9 bg-[#E52521] border-b-4 border-[#8B1A18] rounded-lg flex items-center justify-center hover:brightness-110 active:translate-y-1 text-sm md:text-xs"
                         >
                           🗑️
                         </button>
