@@ -46,6 +46,8 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
       const nextY = prev + velocityRef.current;
       
       if (nextY >= 90) {
+        const audio = new Audio("https://www.myinstants.com/media/sounds/movie_1.mp3");
+        audio.play().catch(e => console.log("Audio play blocked", e));
         setIsGameOver(true);
         return 90;
       }

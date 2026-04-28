@@ -102,7 +102,29 @@ const App: React.FC = () => {
   const [userEmail, setUserEmail] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
-  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!bgMusicRef.current) {
+      bgMusicRef.current = new Audio();
+      bgMusicRef.current.loop = true;
+      bgMusicRef.current.volume = 0.3;
+    }
+
+    const musicUrl = (gameData && !finalScore) 
+      ? "https://www.myinstants.com/media/sounds/mario-kart-wii-theme-song.mp3"
+      : "https://www.myinstants.com/media/sounds/super-mario-bros-theme-song.mp3";
+
+    if (isAudioEnabled) {
+      bgMusicRef.current.src = musicUrl;
+      bgMusicRef.current.play().catch(e => console.log("Audio play blocked", e));
+    } else {
+      bgMusicRef.current.pause();
+    }
+  }, [isAudioEnabled, gameData, finalScore]);
+
+  const toggleAudio = () => setIsAudioEnabled(!isAudioEnabled);
 
   useEffect(() => {
     const pts = localStorage.getItem('vieteng_points');
@@ -375,7 +397,14 @@ const App: React.FC = () => {
              </div>
            )}
 
-           <div className="hidden md:flex shrink-0 order-3">
+           <div className="hidden md:flex shrink-0 order-3 items-center gap-4">
+              <button 
+                onClick={toggleAudio}
+                className="w-10 h-10 rounded-full bg-[#1A1A2E] border-2 border-[#FBD000] flex items-center justify-center text-lg hover:scale-110 transition-all active:scale-95 shadow-[0_3px_0_rgba(251,208,0,0.3)]"
+                title={isAudioEnabled ? "Tắt nhạc" : "Bật nhạc"}
+              >
+                {isAudioEnabled ? '🔊' : '🔇'}
+              </button>
               <button onClick={() => setShowBadges(true)} className="bg-[#1A1A2E] px-4 py-2 rounded-full border-2 border-[#FBD000] flex items-center gap-3 hover:scale-105 transition-all active:scale-95 group shadow-[0_3px_0_rgba(251,208,0,0.3)]">
                 <div className="w-4 h-4 bg-[#FBD000] border-2 border-[#C8980A] rounded-full animate-bounce flex items-center justify-center text-[8px] text-[#C8980A] font-bold">●</div>
                 <span className="pixel-font text-[9px] text-[#FBD000]">{currentBadge?.name || 'Explorer'}</span>
@@ -418,7 +447,7 @@ const App: React.FC = () => {
             <div className="animate-fade-in space-y-8">
               <div className="text-center space-y-4 mb-12 relative flex flex-col items-center">
                 <div className="relative inline-block mt-8">
-                  <h1 className="text-3xl md:text-7xl pixel-font tracking-tight relative z-10 flex items-center justify-center gap-1 md:gap-3 flex-wrap">
+                  <h1 className="text-3xl md:text-5xl lg:text-7xl pixel-font tracking-tight relative z-10 flex items-center justify-center gap-1 md:gap-3 flex-wrap">
                     <span className="text-[#E52521] drop-shadow-[4px_4px_0_#8B1A18]">S</span>
                     <span className="text-[#049CD8] drop-shadow-[4px_4px_0_#025A80]">t</span>
                     <span className="text-[#FBD000] drop-shadow-[4px_4px_0_#C8980A]">u</span>
