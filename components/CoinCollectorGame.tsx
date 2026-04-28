@@ -97,6 +97,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuestion = questions[currentIndex];
+  if (!currentQuestion) return null;
 
   useEffect(() => {
     // Initial audio setup
@@ -201,45 +202,45 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const progress = ((currentIndex + 1) / questions.length) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto w-full flex flex-col items-center bg-[#1A1A2E] p-2 md:p-4 rounded-3xl min-h-[600px]">
-      {/* HUD */}
-      <div className="w-full bg-[#1A1A2E] border-4 border-[#FBD000] p-4 rounded-xl mb-4 flex justify-between items-center z-20">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[#FBD000] text-xl">⭐</span>
-            <span className="pixel-font text-[#FBD000] text-sm">{score}</span>
-          </div>
-          <button 
-            onClick={() => setIsMuted(!isMuted)}
-            className="bg-black/40 px-3 py-1 rounded-full border-2 border-white/20 hover:bg-black/60 transition-all flex items-center gap-2"
-          >
-            <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
-            <span className="pixel-font text-white text-[8px] uppercase">{isMuted ? 'Muted' : 'Sound'}</span>
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[#E52521] text-xl">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <span key={i} className={i < hearts ? 'opacity-100' : 'opacity-20'}>♥</span>
-            ))}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="pixel-font text-[#43B047] text-[10px]">LVL {currentIndex + 1}</span>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden border-2 border-[#8B6914] mb-4">
-        <div 
-          className="h-full bg-[#FBD000] transition-all duration-500" 
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
+    <div className="max-w-3xl mx-auto w-full flex flex-col items-center p-2 md:p-4 rounded-3xl">
       {/* Main Game Container (.wrap) */}
-      <div className="relative w-full flex flex-col bg-[#5C94FC] rounded-2xl border-4 md:border-8 border-[#8B6914] overflow-visible shadow-2xl">
+      <div className="relative w-full flex flex-col bg-[#5C94FC] rounded-2xl border-4 md:border-8 border-[#8B6914] shadow-2xl overflow-visible h-auto min-h-0">
         
+        {/* HUD (Inside .wrap) */}
+        <div className="w-full bg-[#1A1A2E] border-b-4 border-[#FBD000] p-4 flex justify-between items-center z-30 sticky top-0 rounded-t-xl">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-[#FBD000] text-xl">⭐</span>
+              <span className="pixel-font text-[#FBD000] text-sm">{score}</span>
+            </div>
+            <button 
+              onClick={() => setIsMuted(!isMuted)}
+              className="bg-black/40 px-3 py-1 rounded-full border-2 border-white/20 hover:bg-black/60 transition-all flex items-center gap-2"
+            >
+              <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
+              <span className="pixel-font text-white text-[8px] uppercase">{isMuted ? 'Muted' : 'Sound'}</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[#E52521] text-xl">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <span key={i} className={i < hearts ? 'opacity-100' : 'opacity-20'}>♥</span>
+              ))}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="pixel-font text-[#43B047] text-[10px]">LVL {currentIndex + 1}</span>
+          </div>
+        </div>
+
+        {/* Progress Bar (Inside .wrap) */}
+        <div className="w-full h-4 bg-black/20 overflow-hidden border-b-4 border-[#8B6914] z-20">
+          <div 
+            className="h-full bg-[#FBD000] transition-all duration-500" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
         {/* Interaction Overlay */}
         {needsInteraction && (
           <div 
@@ -258,7 +259,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           <div className="absolute top-[35%] right-[15%] w-20 h-8 bg-white/30 rounded-full"></div>
         </div>
 
-        {/* 2. Word Box Area */}
+        {/* 2. Word Area */}
         <div className="relative z-20 w-full flex flex-col items-center px-4 pb-4">
           <div className="bg-[#8B4513] border-4 border-[#FBD000] p-4 md:p-6 rounded-lg shadow-[0_6px_0_rgba(0,0,0,0.3)] text-center w-full max-w-sm">
             <h2 className="pixel-font text-lg md:text-xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">
@@ -321,7 +322,6 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
 
         {/* 4. Ground Area (Positioning Mario and Floor) */}
         <div className="relative w-full h-24 overflow-visible mt-4">
-          {/* Mario running container */}
           <div className={`mario-running-container z-20 ${isJumping || isCorrect === false ? 'paused' : ''}`} style={{ bottom: '24px' }}>
              <div className={`relative ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
                <PixelMario frame={marioFrame} />
@@ -340,7 +340,6 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
              </div>
           </div>
 
-          {/* Floor decoration */}
           <div className="absolute bottom-0 left-0 w-full h-[24px] flex flex-col z-0">
             <div className="h-2 bg-[#43B047] w-full border-t-2 border-[#256B28]"></div>
             <div className="flex-1 bg-[#E8D5A3] w-full grid grid-cols-16 gap-1 p-1">
@@ -351,7 +350,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           </div>
         </div>
 
-        {/* Victory/Game Over Overlay (The .overlay) */}
+        {/* Victory/Game Over Overlay (.overlay) */}
         <AnimatePresence>
           {gameState !== 'playing' && (
             <motion.div 
@@ -394,7 +393,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
         </AnimatePresence>
       </div>
 
-      {/* Next Level Button (Bottom) */}
+      {/* Next Level Button (Bottom, Outside .wrap) */}
       <AnimatePresence>
         {showFeedback && gameState === 'playing' && (
           <motion.div 
