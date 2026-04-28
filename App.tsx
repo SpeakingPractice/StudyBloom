@@ -114,10 +114,12 @@ const App: React.FC = () => {
 
     const musicUrl = (gameData && !finalScore) 
       ? "https://www.myinstants.com/media/sounds/mario-kart-wii-theme-song.mp3"
-      : "https://www.myinstants.com/media/sounds/super-mario-bros-theme-song.mp3";
+      : "https://www.myinstants.com/media/sounds/mario-game-theme_mD9VfO7.mp3";
 
     if (isAudioEnabled) {
-      bgMusicRef.current.src = musicUrl;
+      if (bgMusicRef.current.src !== musicUrl) {
+        bgMusicRef.current.src = musicUrl;
+      }
       bgMusicRef.current.play().catch(e => console.log("Audio play blocked", e));
     } else {
       bgMusicRef.current.pause();

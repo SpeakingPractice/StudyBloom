@@ -89,6 +89,8 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
     }
 
     if (cleanUser === cleanTarget && cleanTarget.length > 0) {
+      const audio = new Audio("https://www.myinstants.com/media/sounds/mario-coin-sound.mp3");
+      audio.play().catch(e => console.log("Audio play blocked", e));
       velocityRef.current = Math.max(maxUpwardVelocity, liftPerWord);
       
       setScore(s => s + 1);

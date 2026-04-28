@@ -111,6 +111,8 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     setIsCorrect(correct);
 
     if (correct) {
+      const audio = new Audio("https://www.myinstants.com/media/sounds/mario-coin-sound.mp3");
+      audio.play().catch(e => console.log("Audio play blocked", e));
       setScore(s => s + 10);
       setIsJumping(true);
       setShowScorePopup(true);
