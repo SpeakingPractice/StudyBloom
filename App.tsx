@@ -247,7 +247,7 @@ const App: React.FC = () => {
   const currentBadge = BADGE_LEVELS.slice().reverse().find(b => totalPoints >= b.score);
 
   return (
-    <div className="relative h-auto min-h-0 font-sans text-[#7c3a2a]">
+    <div className="relative min-h-screen font-sans text-[#7c3a2a]">
       <BackgroundDecor />
       
       {showBadges && (
@@ -351,7 +351,7 @@ const App: React.FC = () => {
            </div>
         </header>
 
-        <main className="min-h-[400px] flex flex-col justify-center">
+        <main>
           {loading ? (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
               <div className="relative w-24 h-24 md:w-32 md:h-32 mb-8">

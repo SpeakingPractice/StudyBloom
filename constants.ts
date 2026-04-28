@@ -21,10 +21,10 @@ export const GRADE_GROUPS = {
 };
 
 export const MOTIVATIONAL_MESSAGES = [
-  "Great job!",
-  "Keep it up!",
-  "You're doing great!",
-  "Awesome!"
+  "Giỏi lắm! (Great job!)",
+  "Tiếp tục phát huy nhé! (Keep it up!)",
+  "Bạn đang làm rất tốt! (You're doing great!)",
+  "Tuyệt vời! (Awesome!)"
 ];
 
 export interface Badge {

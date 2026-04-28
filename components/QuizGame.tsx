@@ -93,17 +93,15 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
     return "Hãy bắt đầu viết...";
   };
 
-  const percentage = ((currentIndex + 1) / questions.length) * 100;
-
   return (
     <div className="max-w-2xl mx-auto w-full">
       <div className="mb-8 relative pt-6">
         <div className="bg-[#1A1A2E] rounded-full h-6 border-4 border-[#FBD000] overflow-hidden relative">
           <div className="bg-[#E52521] h-full transition-all duration-500 shadow-[0_0_15px_rgba(229,37,33,0.5)]"
-            style={{ width: `${percentage}%` }} />
+            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }} />
         </div>
         <div className="absolute top-0 transition-all duration-500 flex items-center justify-center transform -translate-x-1/2"
-             style={{ left: `${percentage}%` }}>
+             style={{ left: `${((currentIndex + 1) / questions.length) * 100}%` }}>
           <span className="text-3xl filter drop-shadow-md animate-bounce">
             {percentage === 100 ? '⭐' : '🍄'}
           </span>

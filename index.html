@@ -11,8 +11,7 @@
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #5C94FC;
-            height: auto;
-            min-height: unset;
+            min-height: 100vh;
             overflow-x: hidden;
             margin: 0;
             color: #5D2E17;
@@ -83,22 +82,22 @@
 
         @keyframes marioJump {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-24px); }
+            50% { transform: translateY(-30px); }
         }
         .jump {
-            animation: marioJump 0.4s ease forwards;
+            animation: marioJump 0.4s ease;
         }
 
         @keyframes marioRun {
             0% { left: 0; }
             100% { left: calc(100% - 56px); }
         }
-        .mario-running-container {
-            position: absolute;
-            bottom: 0;
-            animation: marioRun 3s linear infinite;
+        .mario-walking {
+            animation: marioRun 4s linear infinite;
         }
-        .mario-running-container.paused {
+        
+        /* Pause walking during jump/shake */
+        .mario-active .mario-walking {
             animation-play-state: paused;
         }
 
