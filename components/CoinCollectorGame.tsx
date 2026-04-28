@@ -90,6 +90,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const [isMuted, setIsMuted] = useState(false);
   const [marioFrame, setMarioFrame] = useState<'A' | 'B'>('A');
   const [gameState, setGameState] = useState<'playing' | 'cleared' | 'over'>('playing');
+  const [needsInteraction, setNeedsInteraction] = useState(true);
 
   const bgmRef = useRef<HTMLAudioElement | null>(null);
   const winSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -106,12 +107,6 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     winSoundRef.current = new Audio('https://www.myinstants.com/media/sounds/ta-da.mp3');
     winSoundRef.current.volume = 0.7;
 
-    const startAudio = () => {
-      bgmRef.current?.play().catch(() => {});
-      window.removeEventListener('click', startAudio);
-    };
-    window.addEventListener('click', startAudio);
-
     // Frame animation
     frameIntervalRef.current = setInterval(() => {
       setMarioFrame(prev => prev === 'A' ? 'B' : 'A');
@@ -121,7 +116,6 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
       bgmRef.current?.pause();
       if (bgmRef.current) bgmRef.current.currentTime = 0;
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
-      window.removeEventListener('click', startAudio);
     };
   }, []);
 
@@ -146,8 +140,13 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     }
   }, [currentIndex, currentQuestion]);
 
+  const handleStartInteraction = () => {
+    setNeedsInteraction(false);
+    bgmRef.current?.play().catch(() => {});
+  };
+
   const handleAnswer = (answer: string) => {
-    if (showFeedback) return;
+    if (showFeedback || needsInteraction) return;
     
     setSelectedAnswer(answer);
     setShowFeedback(true);
@@ -162,6 +161,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
       setTimeout(() => setIsJumping(false), 600);
       setTimeout(() => setShowScorePopup(false), 800);
     } else {
+      setScore(s => s); // Trigger re-render even on fail if needed
       setHearts(h => {
         const newHearts = h - 1;
         if (newHearts <= 0) {
@@ -201,7 +201,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const progress = ((currentIndex + 1) / questions.length) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto w-full flex flex-col items-center">
+    <div className="max-w-3xl mx-auto w-full flex flex-col items-center bg-[#1A1A2E] p-2 md:p-4 rounded-3xl min-h-[600px]">
       {/* HUD */}
       <div className="w-full bg-[#1A1A2E] border-4 border-[#FBD000] p-4 rounded-xl mb-4 flex justify-between items-center z-20">
         <div className="flex items-center gap-4">
@@ -230,32 +230,51 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden border-2 border-[#8B6914] mb-8">
+      <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden border-2 border-[#8B6914] mb-4">
         <div 
           className="h-full bg-[#FBD000] transition-all duration-500" 
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Game Area */}
-      <div className="relative w-full min-h-[500px] bg-[#5C94FC] rounded-2xl border-8 border-[#8B6914] overflow-hidden flex flex-col items-center">
-        {/* Sky Stuff */}
-        <div className="absolute top-[10%] left-[10%] w-20 h-8 bg-white/40 rounded-full animate-pulse"></div>
-        <div className="absolute top-[20%] right-[15%] w-24 h-10 bg-white/30 rounded-full animate-pulse delay-75"></div>
-
-        {/* Word Box */}
-        <div className="relative z-20 w-full max-w-sm mt-8">
-          <div className="bg-[#8B4513] border-4 border-[#FBD000] p-6 rounded-lg shadow-[0_6px_0_rgba(0,0,0,0.3)] text-center">
-            <h2 className="pixel-font text-xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">{currentQuestion.questionText}</h2>
+      {/* Main Game Container (.wrap) */}
+      <div className="relative w-full flex flex-col bg-[#5C94FC] rounded-2xl border-4 md:border-8 border-[#8B6914] overflow-visible shadow-2xl">
+        
+        {/* Interaction Overlay */}
+        {needsInteraction && (
+          <div 
+            onClick={handleStartInteraction}
+            className="absolute inset-0 z-[100] cursor-pointer flex items-center justify-center bg-black/40 rounded-xl"
+          >
+             <div className="pixel-font text-white text-[10px] animate-bounce bg-[#1A1A2E] p-4 rounded-xl border-4 border-[#FBD000]">
+               TAP TO START
+             </div>
           </div>
-          <div className="mt-2 text-center">
-             <span className="pixel-font text-[9px] text-white/70 uppercase tracking-widest">{currentQuestion.hint}</span>
+        )}
+
+        {/* 1. Sky Area (Fixed height 80px) */}
+        <div className="relative h-20 w-full overflow-hidden pointer-events-none">
+          <div className="absolute top-[20%] left-[10%] w-16 h-6 bg-white/40 rounded-full"></div>
+          <div className="absolute top-[35%] right-[15%] w-20 h-8 bg-white/30 rounded-full"></div>
+        </div>
+
+        {/* 2. Word Box Area */}
+        <div className="relative z-20 w-full flex flex-col items-center px-4 pb-4">
+          <div className="bg-[#8B4513] border-4 border-[#FBD000] p-4 md:p-6 rounded-lg shadow-[0_6px_0_rgba(0,0,0,0.3)] text-center w-full max-w-sm">
+            <h2 className="pixel-font text-lg md:text-xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">
+              {currentQuestion.questionText}
+            </h2>
+          </div>
+          <div className="mt-2 text-center h-4">
+             <span className="pixel-font text-[9px] text-white/70 uppercase tracking-widest leading-none">
+               {currentQuestion.hint}
+             </span>
           </div>
         </div>
 
-        {/* Options Grid (Coins) */}
-        <div className="flex-1 w-full flex flex-col justify-center px-4 relative z-10">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[10px] p-[12px_16px] w-full max-w-2xl mx-auto">
+        {/* 3. Coin Options Grid */}
+        <div className="relative z-10 w-full p-[12px_16px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[10px] w-full max-w-2xl mx-auto">
             {shuffledOptions.map((opt, idx) => {
               const isSelected = selectedAnswer === opt;
               const isAnswerCorrect = opt === currentQuestion.correctAnswer;
@@ -287,8 +306,8 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
                   whileHover={!showFeedback ? { scale: 1.05 } : {}}
                   whileTap={!showFeedback ? { scale: 0.95 } : {}}
                   onClick={() => handleAnswer(opt)}
-                  disabled={showFeedback}
-                  className={`w-full min-h-[64px] rounded-lg border-4 p-[12px_8px] transition-all flex items-center justify-center text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'shake' : ''}`}
+                  disabled={showFeedback || needsInteraction}
+                  className={`relative w-full min-h-[64px] rounded-lg border-4 p-[12px_8px] transition-all flex items-center justify-center text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'shake' : ''}`}
                 >
                   <div className="absolute top-1 right-1 text-black/5 text-[8px] font-black">?</div>
                   <span className="pixel-font text-[7px] leading-[1.6] text-[#5C3010] uppercase tracking-tighter drop-shadow-sm">
@@ -300,48 +319,51 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           </div>
         </div>
 
-        {/* Character */}
-        <div className={`mario-running-container z-20 ${isJumping || isCorrect === false ? 'paused' : ''}`}>
-           <div className={`relative ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
-             <PixelMario frame={marioFrame} />
-             <AnimatePresence>
-               {showScorePopup && (
-                 <motion.span 
-                   initial={{ opacity: 0, y: 0, scale: 0.5 }}
-                   animate={{ opacity: 1, y: -40, scale: 1.2 }}
-                   exit={{ opacity: 0 }}
-                   className="absolute -top-12 left-1/2 -translate-x-1/2 pixel-font text-[#FBD000] text-sm whitespace-nowrap drop-shadow-[0_2px_0_#8B6914]"
-                 >
-                   +10
-                 </motion.span>
-               )}
-             </AnimatePresence>
-           </div>
-        </div>
+        {/* 4. Ground Area (Positioning Mario and Floor) */}
+        <div className="relative w-full h-24 overflow-visible mt-4">
+          {/* Mario running container */}
+          <div className={`mario-running-container z-20 ${isJumping || isCorrect === false ? 'paused' : ''}`} style={{ bottom: '24px' }}>
+             <div className={`relative ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
+               <PixelMario frame={marioFrame} />
+               <AnimatePresence>
+                 {showScorePopup && (
+                   <motion.span 
+                     initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                     animate={{ opacity: 1, y: -40, scale: 1.2 }}
+                     exit={{ opacity: 0 }}
+                     className="absolute -top-12 left-1/2 -translate-x-1/2 pixel-font text-[#FBD000] text-sm whitespace-nowrap drop-shadow-[0_2px_0_#8B6914]"
+                   >
+                     +10
+                   </motion.span>
+                 )}
+               </AnimatePresence>
+             </div>
+          </div>
 
-        {/* Ground inside game area */}
-        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col z-0">
-          <div className="h-4 bg-[#43B047] w-full border-t-2 border-[#256B28]"></div>
-          <div className="flex-1 bg-[#E8D5A3] w-full grid grid-cols-8 gap-1 p-2">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-[#8B4513] border-b-2 border-r-2 border-[#5C3010]"></div>
-            ))}
+          {/* Floor decoration */}
+          <div className="absolute bottom-0 left-0 w-full h-[24px] flex flex-col z-0">
+            <div className="h-2 bg-[#43B047] w-full border-t-2 border-[#256B28]"></div>
+            <div className="flex-1 bg-[#E8D5A3] w-full grid grid-cols-16 gap-1 p-1">
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div key={i} className="bg-[#8B4513] border-b border-r border-[#5C3010]"></div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Victory/Game Over Overlay */}
+        {/* Victory/Game Over Overlay (The .overlay) */}
         <AnimatePresence>
           {gameState !== 'playing' && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-6 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/80 z-[60] flex items-center justify-center p-6 backdrop-blur-sm rounded-xl"
             >
               <motion.div 
                 initial={{ scale: 0.8, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
-                className="bg-[#1A1A2E] border-8 border-[#FBD000] p-10 rounded-[2.5rem] w-full max-w-sm text-center shadow-[0_0_50px_rgba(251,208,0,0.3)]"
+                className="bg-[#1A1A2E] border-8 border-[#FBD000] p-8 rounded-[2.5rem] w-full max-w-sm text-center shadow-[0_0_50px_rgba(251,208,0,0.3)]"
               >
                 <h2 className={`pixel-font text-xl mb-6 ${gameState === 'cleared' ? 'text-[#FBD000]' : 'text-[#E52521]'}`}>
                   {gameState === 'cleared' ? 'GAME CLEAR! ★' : 'GAME OVER! 💀'}
@@ -363,7 +385,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
                     onClick={() => onComplete(score)}
                     className="w-full h-12 border-4 border-white/20 text-white/60 rounded-xl pixel-font text-[8px] uppercase hover:bg-white/5 transition-all"
                   >
-                    Exit Map
+                    EXIT MAP
                   </button>
                 </div>
               </motion.div>
@@ -372,9 +394,9 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
         </AnimatePresence>
       </div>
 
-      {/* Next Button */}
+      {/* Next Level Button (Bottom) */}
       <AnimatePresence>
-        {showFeedback && (
+        {showFeedback && gameState === 'playing' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -383,20 +405,13 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           >
             <button 
               onClick={handleNext}
-              className="w-full h-16 bg-[#E52521] border-4 border-[#8B1A18] rounded-xl shadow-[0_6px_0_#5C0F0C] active:translate-y-1 active:shadow-none transition-all pixel-font text-white text-xs uppercase tracking-[0.2em]"
+              className="w-full h-16 bg-[#E52521] border-4 border-[#8B1A18] rounded-xl shadow-[0_6px_0_#5C0F0C] active:translate-y-1 active:shadow-none transition-all pixel-font text-white text-[10px] uppercase tracking-[0.2em]"
             >
-              Next Level ▶
+              NEXT LEVEL ▶
             </button>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Heart Warning */}
-      {hearts <= 0 && (
-         <div className="mt-4 text-center">
-            <p className="pixel-font text-[#E52521] text-[10px] animate-pulse">GAME OVER! RESTARTING...</p>
-         </div>
-      )}
     </div>
   );
 };
