@@ -134,10 +134,10 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-6 relative">
-        <div className="max-w-4xl mx-auto pb-32">
+        <div className="max-w-[1400px] ml-4 lg:ml-10 mr-auto pb-32">
           {!selectedFolder ? (
             /* Folders Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
               {folders.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center p-12 text-center space-y-10 mt-12">
                   <motion.div animate={{ y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
@@ -346,6 +346,7 @@ const FolderModal = ({ onClose, onSave, editingFolder }: { onClose: () => void, 
         className="relative w-full max-w-lg bg-[#E8D5A3] border-t-8 border-[#C4A96B] rounded-t-3xl p-8 shadow-2xl space-y-8 pb-12"
       >
         <div className="space-y-4">
+          <h2 className="pixel-font text-xs text-[#E52521] uppercase text-center mb-6">{editingFolder ? 'RENAME FOLDER' : 'CREATE NEW FOLDER'}</h2>
           <label className="pixel-font text-[10px] text-[#8B4513] uppercase block">Folder Name</label>
           <input 
             type="text"
@@ -388,7 +389,7 @@ const FolderModal = ({ onClose, onSave, editingFolder }: { onClose: () => void, 
 
         <div className="flex gap-4 pt-4">
           <button onClick={onClose} className="flex-1 bg-white border-b-4 border-gray-300 p-4 pixel-font text-[10px] text-[#5C3010] rounded-xl">CANCEL</button>
-          <button onClick={handleSave} className="flex-1 bg-[#E52521] border-b-4 border-[#8B1A18] p-4 pixel-font text-[10px] text-white rounded-xl">SAVE FOLDER</button>
+          <button onClick={handleSave} className="flex-1 bg-[#E52521] border-b-4 border-[#8B1A18] p-4 pixel-font text-[10px] text-white rounded-xl">{editingFolder ? 'UPDATE' : 'SAVE FOLDER'}</button>
         </div>
       </motion.div>
     </div>
