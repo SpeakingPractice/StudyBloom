@@ -113,6 +113,24 @@
         .animate-shake {
             animation: shake 0.2s ease-in-out infinite;
         }
+
+        .scanlines {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scanlines::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.05) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+        }
     </style>
 <script type="importmap">
 {

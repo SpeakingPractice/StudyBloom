@@ -231,7 +231,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
                   className={`w-full min-h-[64px] rounded-lg border-4 p-[12px_8px] transition-all flex items-center justify-center text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'shake' : ''}`}
                 >
                   <div className="absolute top-1 right-1 text-black/5 text-[8px] font-black">?</div>
-                  <span className="pixel-font text-[7px] leading-[1.6] text-[#5C3010] uppercase tracking-tighter drop-shadow-sm">
+                  <span className="pixel-font text-[8px] sm:text-[10px] leading-[1.4] text-[#5C3010] uppercase tracking-tighter drop-shadow-sm break-words max-w-full">
                     {opt}
                   </span>
                 </motion.button>

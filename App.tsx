@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GradeLevel, GameType, GameSession, GrammarSubSkill } from './types';
+import { GradeLevel, GameType, GameSession, GrammarSubSkill, ViewMode, CustomFolder } from './types';
 import { GRADE_GROUPS, TEXTBOOKS_BY_GRADE, BADGE_LEVELS } from './constants';
 import { generateGameContent } from './services/geminiService';
 import { Button } from './components/Button';
@@ -11,6 +11,7 @@ import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
 import { CoinCollectorGame } from './components/CoinCollectorGame';
+import { VocabManager } from './components/VocabManager';
 
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
@@ -84,6 +85,7 @@ const App: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel | null>(null);
   const [selectedGameType, setSelectedGameType] = useState<GameType | null>(null);
   const [selectedSubSkill, setSelectedSubSkill] = useState<GrammarSubSkill | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Home);
   const [selectedTextbook, setSelectedTextbook] = useState<string>('');
   const [gameData, setGameData] = useState<GameSession | null>(null);
   const [loading, setLoading] = useState(false);
@@ -184,6 +186,38 @@ const App: React.FC = () => {
     setSelectedTextbook('');
     setError(null);
     setIsQuotaError(false);
+    setViewMode(ViewMode.Home);
+  };
+
+  const handlePracticeFolder = (folder: CustomFolder) => {
+    const customQuestions = folder.words.map((w, idx) => {
+      let otherWords = folder.words
+        .filter(other => other.id !== w.id)
+        .map(other => other.word);
+      
+      const wrongOptions = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
+      const options = [w.word, ...wrongOptions].sort(() => Math.random() - 0.5);
+
+      return {
+        id: idx,
+        questionText: w.definition,
+        options: options,
+        correctAnswer: w.word,
+        explanation: `${w.word} (${w.partOfSpeech.toLowerCase()}): ${w.definition}`,
+        topic: folder.name,
+        exampleSentence: w.example,
+        phonetic: w.pronunciation
+      };
+    });
+
+    setGameData({
+      grade: GradeLevel.Grade12,
+      gameType: GameType.CoinCollector,
+      questions: customQuestions as any,
+      textbookContext: folder.name
+    });
+    setSelectedGrade(GradeLevel.Grade12);
+    setViewMode(ViewMode.Home); 
   };
 
   const handleRetry = () => {
@@ -378,6 +412,8 @@ const App: React.FC = () => {
                 <Button onClick={handleReset} variant="outline" className="border-[#7c3a2a]/20">Về trang chủ</Button>
               </div>
             </div>
+          ) : viewMode === ViewMode.VocabManager ? (
+            <VocabManager onBack={() => { setViewMode(ViewMode.Home); setSelectedGrade(null); }} onPractice={handlePracticeFolder} />
           ) : !selectedGrade ? (
             <div className="animate-fade-in space-y-8">
               <div className="text-center space-y-4 mb-12 relative flex flex-col items-center">
@@ -411,6 +447,13 @@ const App: React.FC = () => {
                         <div className="absolute top-1 right-2 text-xl md:text-3xl text-black/10 font-black">?</div>
                       </div>
                     ))}
+                    {groupName.includes('High School') && (
+                      <div onClick={() => setViewMode(ViewMode.VocabManager)} className="q-block group p-6 md:p-8 flex items-center justify-center cursor-pointer relative overflow-hidden bg-[#FBD000] border-[#8B6914] shadow-[0_4px_0_#8B6914] hover:bg-[#FFE033] transition-all">
+                        <span className="pixel-font text-[10px] md:text-xs text-[#5C3010] relative z-10">ADD NEW WORDS ➕</span>
+                        <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none"></div>
+                        <div className="absolute top-1 right-2 text-xl md:text-3xl text-black/10 font-black">?</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -571,14 +614,16 @@ const App: React.FC = () => {
         </main>
       </div>
 
-      <footer className="flex flex-col items-center mt-20 pb-20 relative z-10 px-4">
-        <div className="text-center text-white/40 mb-8">
-          <p className="pixel-font text-[7px] uppercase tracking-[0.4em] mb-2 drop-shadow-[1px_1px_0_rgba(0,0,0,0.2)]">StudyBloom 🍄 Mario Edition</p>
-        </div>
-        <button onClick={() => setShowFeedbackModal(true)} className="flex items-center px-10 py-5 rounded-2xl glass-panel border-[#8B6914] border-4 bg-[#FBD000] hover:bg-[#FFE033] transition-all duration-300 text-[#5D2E17] pixel-font text-[8px] shadow-[0_6px_0_#8B6914] active:translate-y-1 active:shadow-none group uppercase">
-          <Icons.Mail /><span className="ml-2">SEND FEEDBACK! 🧧</span>
-        </button>
-      </footer>
+      {viewMode === ViewMode.Home && !selectedGrade && !gameData && !finalScore && (
+        <footer className="flex flex-col items-center mt-20 pb-20 relative z-10 px-4">
+          <div className="text-center text-white/40 mb-8">
+            <p className="pixel-font text-[7px] uppercase tracking-[0.4em] mb-2 drop-shadow-[1px_1px_0_rgba(0,0,0,0.2)]">StudyBloom 🍄 Mario Edition</p>
+          </div>
+          <button onClick={() => setShowFeedbackModal(true)} className="flex items-center px-10 py-5 rounded-2xl glass-panel border-[#8B6914] border-4 bg-[#FBD000] hover:bg-[#FFE033] transition-all duration-300 text-[#5D2E17] pixel-font text-[8px] shadow-[0_6px_0_#8B6914] active:translate-y-1 active:shadow-none group uppercase">
+            <Icons.Mail /><span className="ml-2">SEND FEEDBACK! 🧧</span>
+          </button>
+        </footer>
+      )}
     </div>
   );
 };

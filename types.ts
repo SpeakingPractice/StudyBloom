@@ -66,3 +66,31 @@ export interface UserProgress {
   totalScore: number;
   badges: string[];
 }
+
+export interface CustomWord {
+  id: string;
+  word: string;
+  partOfSpeech: 'Noun' | 'Verb' | 'Adjective' | 'Adverb' | 'Phrase';
+  definition: string;
+  example?: string;
+  pronunciation?: string;
+  addedAt: number;
+}
+
+export interface CustomFolder {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  createdAt: number;
+  words: CustomWord[];
+}
+
+export enum ViewMode {
+  Home,
+  PracticeSelection,
+  Questions,
+  Game,
+  Result,
+  VocabManager,
+}
