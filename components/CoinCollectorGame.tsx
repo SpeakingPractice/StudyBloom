@@ -7,6 +7,54 @@ interface CoinCollectorGameProps {
   onComplete: (score: number) => void;
 }
 
+const PIXEL_COLORS: Record<string, string> = {
+  R: '#E52521',
+  S: '#FFCA99',
+  B: '#049CD8',
+  Br: '#5C3010',
+  E: '#1A1A2E',
+  G: '#FBD000',
+  T: 'transparent'
+};
+
+const MARIO_MAP = [
+  ['T','T','T','T','T','R','R','R','R','R','T','T','T','T'],
+  ['T','T','T','T','R','R','R','R','R','R','R','R','R','T'],
+  ['T','T','T','T','Br','Br','Br','S','S','E','S','T','T','T'],
+  ['T','T','T','Br','S','Br','S','S','S','E','S','S','S','T'],
+  ['T','T','T','Br','S','Br','Br','S','S','S','E','S','S','S'],
+  ['T','T','T','Br','Br','S','S','S','S','E','E','E','E','T'],
+  ['T','T','T','T','T','S','S','S','S','S','S','S','T','T'],
+  ['T','T','T','T','R','R','B','R','R','R','T','T','T','T'],
+  ['T','T','T','R','R','R','B','R','R','B','R','R','R','T'],
+  ['T','T','R','R','R','R','B','B','B','B','R','R','R','R'],
+  ['T','T','S','S','R','B','G','B','B','G','B','S','S','T'],
+  ['T','T','S','S','S','B','B','B','B','B','B','S','S','S'],
+  ['T','T','S','S','B','B','B','B','B','B','B','B','S','S'],
+  ['T','T','T','T','B','B','B','T','T','B','B','B','T','T'],
+  ['T','T','T','Br','Br','Br','T','T','T','Br','Br','Br','T'],
+  ['T','T','Br','Br','Br','Br','T','T','Br','Br','Br','Br','T'],
+];
+
+const PixelMario = () => (
+  <div className="flex flex-col">
+    {MARIO_MAP.map((row, i) => (
+      <div key={i} className="flex">
+        {row.map((pixel, j) => (
+          <div 
+            key={j} 
+            style={{ 
+              width: '4px', 
+              height: '4px', 
+              backgroundColor: PIXEL_COLORS[pixel] 
+            }} 
+          />
+        ))}
+      </div>
+    ))}
+  </div>
+);
+
 export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -103,13 +151,13 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
       </div>
 
       {/* Game Area */}
-      <div className="relative w-full aspect-[4/3] bg-[#5C94FC] rounded-2xl border-8 border-[#8B6914] overflow-hidden flex flex-col items-center p-8">
+      <div className="relative w-full min-h-[500px] bg-[#5C94FC] rounded-2xl border-8 border-[#8B6914] overflow-hidden flex flex-col items-center">
         {/* Sky Stuff */}
         <div className="absolute top-[10%] left-[10%] w-20 h-8 bg-white/40 rounded-full animate-pulse"></div>
         <div className="absolute top-[20%] right-[15%] w-24 h-10 bg-white/30 rounded-full animate-pulse delay-75"></div>
 
         {/* Word Box */}
-        <div className="relative z-10 w-full max-w-sm">
+        <div className="relative z-20 w-full max-w-sm mt-8">
           <div className="bg-[#8B4513] border-4 border-[#FBD000] p-6 rounded-lg shadow-[0_6px_0_rgba(0,0,0,0.3)] text-center">
             <h2 className="pixel-font text-xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">{currentQuestion.questionText}</h2>
           </div>
@@ -118,60 +166,57 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           </div>
         </div>
 
-        {/* Options (Coins) */}
-        <div className="grid grid-cols-2 gap-6 mt-12 w-full max-w-md relative z-10">
-          {shuffledOptions.map((opt, idx) => {
-            const isSelected = selectedAnswer === opt;
-            const isAnswerCorrect = opt === currentQuestion.correctAnswer;
-            
-            let coinColor = "bg-[#FBD000]";
-            let borderColor = "border-[#C8980A]";
-            let shadowColor = "shadow-[0_5px_0_#8B6914]";
+        {/* Options Grid (Coins) */}
+        <div className="flex-1 w-full flex flex-col justify-center px-4 relative z-10">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[10px] p-[12px_16px] w-full max-w-2xl mx-auto">
+            {shuffledOptions.map((opt, idx) => {
+              const isSelected = selectedAnswer === opt;
+              const isAnswerCorrect = opt === currentQuestion.correctAnswer;
+              
+              let coinColor = "bg-[#FBD000]";
+              let borderColor = "border-[#C8980A]";
+              let shadowColor = "shadow-[0_5px_0_#8B6914]";
 
-            if (showFeedback) {
-              if (isSelected) {
-                if (isCorrect) {
-                  coinColor = "bg-[#43B047]";
+              if (showFeedback) {
+                if (isSelected) {
+                  if (isCorrect) {
+                    coinColor = "bg-[#43B047]";
+                    borderColor = "border-[#256B28]";
+                    shadowColor = "shadow-[0_5px_0_#174D0F]";
+                  } else {
+                    coinColor = "bg-[#E52521]";
+                    borderColor = "border-[#8B1A18]";
+                    shadowColor = "shadow-[0_5px_0_#5C0F0C]";
+                  }
+                } else if (isAnswerCorrect) {
+                  coinColor = "bg-[#43B047] opacity-60";
                   borderColor = "border-[#256B28]";
-                  shadowColor = "shadow-[0_5px_0_#174D0F]";
-                } else {
-                  coinColor = "bg-[#E52521]";
-                  borderColor = "border-[#8B1A18]";
-                  shadowColor = "shadow-[0_5px_0_#5C0F0C]";
                 }
-              } else if (isAnswerCorrect) {
-                // Flash current correct if user got it wrong
-                coinColor = "bg-[#43B047] opacity-60";
-                borderColor = "border-[#256B28]";
               }
-            }
 
-            return (
-              <motion.button
-                key={idx}
-                whileHover={!showFeedback ? { scale: 1.05 } : {}}
-                whileTap={!showFeedback ? { scale: 0.95 } : {}}
-                onClick={() => handleAnswer(opt)}
-                disabled={showFeedback}
-                className={`relative h-24 rounded-lg border-4 transition-all flex items-center justify-center p-4 text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'animate-shake' : ''}`}
-              >
-                <div className="absolute top-2 right-2 text-black/10 font-black">?</div>
-                <span className="pixel-font text-[8px] md:text-[10px] text-[#5C3010] uppercase tracking-tighter leading-tight drop-shadow-sm">
-                  {opt}
-                </span>
-              </motion.button>
-            );
-          })}
+              return (
+                <motion.button
+                  key={idx}
+                  whileHover={!showFeedback ? { scale: 1.05 } : {}}
+                  whileTap={!showFeedback ? { scale: 0.95 } : {}}
+                  onClick={() => handleAnswer(opt)}
+                  disabled={showFeedback}
+                  className={`w-full min-h-[64px] rounded-lg border-4 p-[12px_8px] transition-all flex items-center justify-center text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'shake' : ''}`}
+                >
+                  <div className="absolute top-1 right-1 text-black/5 text-[8px] font-black">?</div>
+                  <span className="pixel-font text-[7px] leading-[1.6] text-[#5C3010] uppercase tracking-tighter drop-shadow-sm">
+                    {opt}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Character */}
-        <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2">
-           <motion.div 
-             animate={isJumping ? { y: -80 } : { y: 0 }}
-             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-             className="text-6xl filter drop-shadow-lg relative"
-           >
-             {isCorrect === false ? '💀' : isCorrect === true ? '🎉' : '👨‍🔧'}
+        <div className="relative mb-[15%] z-20">
+           <div className={`relative ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
+             <PixelMario />
              <AnimatePresence>
                {showScorePopup && (
                  <motion.span 
@@ -184,11 +229,11 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
                  </motion.span>
                )}
              </AnimatePresence>
-           </motion.div>
+           </div>
         </div>
 
         {/* Ground inside game area */}
-        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col">
+        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col z-0">
           <div className="h-4 bg-[#43B047] w-full border-t-2 border-[#256B28]"></div>
           <div className="flex-1 bg-[#E8D5A3] w-full grid grid-cols-8 gap-1 p-2">
             {Array.from({ length: 8 }).map((_, i) => (

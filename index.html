@@ -80,11 +80,23 @@
             box-shadow: 0 2px 0 #8B6914;
         }
 
+        @keyframes marioJump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-24px); }
+        }
+        .jump {
+            animation: marioJump 0.4s ease;
+        }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
         .animate-shake {
             animation: shake 0.2s ease-in-out infinite;
         }

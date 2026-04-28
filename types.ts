@@ -19,15 +19,15 @@ export enum GameType {
 }
 
 export enum GrammarSubSkill {
-  Pronunciation = 'Trắc Nghiệm Phát Âm',
-  Stress = 'Trắc Nghiệm Nhấn Âm',
-  GrammarQuiz = 'Trắc Nghiệm Ngữ Pháp',
-  FillBlank = 'Điền Từ',
-  Synonym = 'Chọn Từ Đồng Nghĩa',
-  Antonym = 'Chọn Từ Trái Nghĩa',
-  Paragraph = 'Hoàn Thành Đoạn Văn',
-  WordForm = 'Từ Loại',
-  SentenceTrans = 'Viết Lại Câu',
+  Pronunciation = 'Pronunciation',
+  Stress = 'Word Stress',
+  GrammarQuiz = 'Grammar Quiz',
+  FillBlank = 'Fill in the Blank',
+  Synonym = 'Synonyms',
+  Antonym = 'Antonyms',
+  Paragraph = 'Complete the Passage',
+  WordForm = 'Word Form',
+  SentenceTrans = 'Rewrite the Sentence',
 }
 
 export interface QuestionData {

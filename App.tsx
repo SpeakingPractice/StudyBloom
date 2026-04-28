@@ -536,7 +536,7 @@ const App: React.FC = () => {
                             <button 
                               key={sub} 
                               onClick={() => setSelectedSubSkill(sub)} 
-                              className={`px-3 py-4 rounded-xl border-4 transition-all pixel-font text-[7px] uppercase tracking-tighter leading-tight ${
+                              className={`px-3 py-4 rounded-xl border-4 transition-all pixel-font text-[10px] uppercase tracking-tighter leading-tight ${
                                 selectedSubSkill === sub 
                                 ? 'bg-[#E52521] border-[#8B1A18] text-white shadow-[0_4px_0_#5C0F0C]' 
                                 : 'bg-white/60 border-[#8B6914]/20 text-[#5C3010] hover:bg-white'
