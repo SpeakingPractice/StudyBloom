@@ -244,20 +244,20 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 md:gap-6">
                         <div className="space-y-3 flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="pixel-font text-[#E52521] text-xs md:text-sm uppercase tracking-tighter">{word.word}</h3>
+                            <h3 className="font-sans font-black text-[#E52521] text-sm md:text-base lg:text-lg uppercase tracking-tight">{word.word}</h3>
                             <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 bg-[#43B047] text-white text-[7px] pixel-font rounded uppercase">
+                              <span className="px-2 py-0.5 bg-[#43B047] text-white text-[7px] md:text-[9px] font-bold rounded uppercase">
                                 {word.partOfSpeech}
                               </span>
                               {word.pronunciation && (
-                                <span className="text-[#5C3010] text-[10px] font-mono italic opacity-70">{word.pronunciation}</span>
+                                <span className="text-[#5C3010] text-[10px] md:text-sm font-mono italic opacity-70">{word.pronunciation}</span>
                               )}
-                              <button onClick={() => speak(word.word)} className="text-xl hover:scale-125 active:scale-95 transition-all">🔊</button>
+                              <button onClick={() => speak(word.word)} className="text-xl md:text-2xl hover:scale-125 active:scale-95 transition-all">🔊</button>
                             </div>
                           </div>
-                          <p className="text-[#5C3010] text-sm md:text-base font-medium leading-relaxed">{word.definition}</p>
+                          <p className="text-[#5C3010] text-sm md:text-base lg:text-lg font-bold leading-relaxed">{word.definition}</p>
                           {word.example && (
-                            <div className="text-[#8B6914] text-xs md:text-sm italic bg-[#FBD000]/5 p-3 rounded-lg border-l-4 border-[#FBD000] leading-relaxed">
+                            <div className="text-[#8B6914] text-xs md:text-sm lg:text-base italic bg-[#FBD000]/5 p-3 rounded-lg border-l-4 border-[#FBD000] leading-relaxed">
                               "{word.example}"
                             </div>
                           )}

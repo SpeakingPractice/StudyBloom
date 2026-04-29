@@ -162,7 +162,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
       </div>
 
       <div className="bg-white/40 rounded-2xl p-8 mb-8 border-4 border-[#8B6914]/10 shadow-inner">
-        <p className="mario-font text-lg md:text-2xl text-[#5C3010] text-center leading-tight">{current.questionText}</p>
+        <p className="font-sans font-black text-lg md:text-2xl lg:text-3xl text-[#5C3010] text-center leading-tight">{current.questionText}</p>
       </div>
 
       <div className="grid gap-4">
@@ -181,7 +181,7 @@ export const ListeningGame: React.FC<ListeningGameProps> = ({ questions, onCompl
       </div>
 
       {feedback && (
-        <div className={`mt-8 p-6 rounded-2xl text-center pixel-font text-[10px] animate-fade-in-up border-4 ${feedback.includes('Chính xác') ? 'bg-[#43B047]/20 border-[#43B047] text-[#43B047]' : 'bg-[#E52521]/20 border-[#E52521] text-[#E52521]'}`}>
+        <div className={`mt-8 p-6 rounded-2xl text-center font-sans font-bold text-sm md:text-base animate-fade-in-up border-4 ${feedback.includes('Chính xác') ? 'bg-[#43B047]/20 border-[#43B047] text-[#43B047]' : 'bg-[#E52521]/20 border-[#E52521] text-[#E52521]'}`}>
           {feedback}
         </div>
       )}

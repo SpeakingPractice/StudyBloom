@@ -103,7 +103,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
         <div className="absolute top-0 transition-all duration-500 flex items-center justify-center transform -translate-x-1/2"
              style={{ left: `${((currentIndex + 1) / questions.length) * 100}%` }}>
           <span className="text-3xl filter drop-shadow-md animate-bounce">
-            {percentage === 100 ? '⭐' : '🍄'}
+            {((currentIndex + 1) / questions.length) * 100 === 100 ? '⭐' : '🍄'}
           </span>
         </div>
       </div>
@@ -119,7 +119,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
         </div>
 
         <div className="text-center mb-10">
-           <h3 className="mario-font text-lg md:text-2xl text-[#5C3010] leading-relaxed drop-shadow-sm"
+           <h3 className="font-sans font-black text-lg md:text-2xl lg:text-3xl text-[#5C3010] leading-tight drop-shadow-sm"
             dangerouslySetInnerHTML={{ __html: currentQuestion.questionText }} />
           
           {isInputMode && (
@@ -143,7 +143,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
               onChange={(e) => setUserInput(e.target.value)} 
               disabled={showFeedback || isEvaluating}
               placeholder="YOUR ANSWER HERE..."
-              className={`w-full p-6 text-lg border-4 rounded-xl transition-all resize-none h-32 pixel-font text-[10px] ${
+              className={`w-full p-6 text-base md:text-lg lg:text-xl border-4 rounded-xl transition-all resize-none h-32 font-sans font-bold ${
                 isInputCorrect === true ? 'border-[#43B047] bg-[#43B047]/10' : isInputCorrect === false ? 'border-[#E52521] bg-[#E52521]/10' : 'border-[#8B6914]/20 bg-white'
               } focus:outline-none focus:border-[#049CD8] text-[#5D2E17] placeholder:text-[#5D2E17]/30 shadow-inner`} 
             />
@@ -156,9 +156,9 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
             )}
             {showFeedback && aiResult && (
               <div className={`p-6 rounded-2xl border-4 animate-fade-in ${isInputCorrect ? 'bg-[#43B047]/20 border-[#43B047]' : 'bg-[#E52521]/20 border-[#E52521]'}`}>
-                 <p className="pixel-font text-[8px] text-[#5D2E17] mb-2">{aiResult.feedback}</p>
-                 <p className="pixel-font text-[10px] text-[#5D2E17]">ANSWER: {currentQuestion.correctAnswer}</p>
-                 <p className="text-[10px] text-[#5D2E17]/70 font-bold mt-4 italic">{aiResult.explanation}</p>
+                 <p className="font-sans font-bold text-sm md:text-base text-[#5D2E17] mb-2">{aiResult.feedback}</p>
+                 <p className="font-sans font-bold text-xs md:text-sm lg:text-base text-[#5D2E17]">ANSWER: {currentQuestion.correctAnswer}</p>
+                 <p className="text-xs md:text-sm lg:text-base text-[#5D2E17]/70 font-bold mt-4 italic">{aiResult.explanation}</p>
               </div>
             )}
           </div>
@@ -181,7 +181,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
                   className={`flex items-center w-full text-left p-5 md:p-6 border-4 rounded-xl transition-all shadow-[0_4px_0_rgba(139,105,20,0.1)] active:translate-y-1 active:shadow-none ${bgColor} ${borderColor} ${textColor}`}
                 >
                   <span className={`mr-4 pixel-font text-[8px] ${variant === 'outline' ? 'text-[#049CD8]' : 'text-inherit'}`}>{String.fromCharCode(65 + idx)}.</span>
-                  <span className="font-bold text-sm md:text-base leading-relaxed" dangerouslySetInnerHTML={{ __html: option }} />
+                  <span className="font-bold text-sm md:text-base lg:text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: option }} />
                 </button>
               );
             })}
@@ -194,7 +194,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({ questions, onComplete, subSk
                <span className="text-2xl">💡</span>
                <p className="pixel-font text-[8px] text-[#049CD8] uppercase tracking-widest">TIPS & HINTS</p>
              </div>
-             <p className="text-[11px] font-bold text-[#5C3010] leading-relaxed">
+             <p className="text-xs md:text-sm lg:text-base font-bold text-[#5C3010] leading-relaxed">
                {currentQuestion.explanation || "Keep going, Mario!"}
              </p>
           </div>

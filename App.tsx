@@ -12,6 +12,7 @@ import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
 import { CoinCollectorGame } from './components/CoinCollectorGame';
 import { VocabManager } from './components/VocabManager';
+import { MarioAudioService, audioService } from './services/audioService';
 
 const Icons = {
   Book: () => <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
@@ -102,42 +103,36 @@ const App: React.FC = () => {
   const [userEmail, setUserEmail] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
-  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
+  const [audioVolume, setAudioVolume] = useState(80);
 
   useEffect(() => {
-    if (!bgMusicRef.current) {
-      bgMusicRef.current = new Audio();
-      bgMusicRef.current.loop = true;
-      bgMusicRef.current.volume = 0.3;
-    }
-
-    const musicUrl = (gameData && !finalScore) 
-      ? "https://www.myinstants.com/media/sounds/mario-kart-wii-theme-song.mp3"
-      : "https://www.myinstants.com/media/sounds/mario-game-theme_mD9VfO7.mp3";
-
     if (isAudioEnabled) {
-      if (bgMusicRef.current.src !== musicUrl) {
-        bgMusicRef.current.pause();
-        bgMusicRef.current.src = musicUrl;
-        bgMusicRef.current.load();
-        bgMusicRef.current.play().catch(e => console.log("Audio switch play failed", e));
-      } else if (bgMusicRef.current.paused) {
-        bgMusicRef.current.play().catch(e => console.log("Audio resume play failed", e));
-      }
-    } else if (bgMusicRef.current && !bgMusicRef.current.paused) {
-      bgMusicRef.current.pause();
+      audioService.start();
+      audioService.setVolume(audioVolume);
+    } else {
+      audioService.stop();
     }
-  }, [isAudioEnabled, gameData, finalScore]);
+    return () => audioService.stop();
+  }, [isAudioEnabled]);
+
+  useEffect(() => {
+    if (isAudioEnabled) {
+      audioService.stop();
+      audioService.start();
+      audioService.setVolume(audioVolume);
+    }
+  }, [gameData, finalScore]);
 
   const toggleAudio = () => {
-    const nextState = !isAudioEnabled;
-    setIsAudioEnabled(nextState);
-    
-    // Explicitly handle first play on interaction to satisfy some browser policies
-    if (nextState && bgMusicRef.current) {
-      bgMusicRef.current.play().catch(e => console.log("Direct play attempt failed", e));
-    }
+    setIsAudioEnabled(!isAudioEnabled);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value);
+    setAudioVolume(val);
+    audioService.setVolume(val);
   };
 
   useEffect(() => {
@@ -412,13 +407,23 @@ const App: React.FC = () => {
            )}
 
            <div className="hidden md:flex shrink-0 order-3 items-center gap-4">
-              <button 
-                onClick={toggleAudio}
-                className="w-10 h-10 rounded-full bg-[#1A1A2E] border-2 border-[#FBD000] flex items-center justify-center text-lg hover:scale-110 transition-all active:scale-95 shadow-[0_3px_0_rgba(251,208,0,0.3)]"
-                title={isAudioEnabled ? "Tắt nhạc" : "Bật nhạc"}
-              >
-                {isAudioEnabled ? '🔊' : '🔇'}
-              </button>
+              <div className="flex items-center gap-2 bg-[#1A1A2E] px-3 py-1 rounded-full border-2 border-[#FBD000] shadow-[0_3px_0_rgba(251,208,0,0.3)]">
+                <button 
+                  onClick={toggleAudio}
+                  className="w-8 h-8 flex items-center justify-center text-sm hover:scale-110 transition-all active:scale-95"
+                  title={isAudioEnabled ? "Mute" : "Unmute"}
+                >
+                  {isAudioEnabled ? '🔊' : '🔇'}
+                </button>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  value={audioVolume} 
+                  onChange={handleVolumeChange}
+                  className="w-20 h-1 bg-[#FBD000] rounded-lg appearance-none cursor-pointer accent-[#E52521]"
+                />
+              </div>
               <button onClick={() => setShowBadges(true)} className="bg-[#1A1A2E] px-4 py-2 rounded-full border-2 border-[#FBD000] flex items-center gap-3 hover:scale-105 transition-all active:scale-95 group shadow-[0_3px_0_rgba(251,208,0,0.3)]">
                 <div className="w-4 h-4 bg-[#FBD000] border-2 border-[#C8980A] rounded-full animate-bounce flex items-center justify-center text-[8px] text-[#C8980A] font-bold">●</div>
                 <span className="pixel-font text-[9px] text-[#FBD000]">{currentBadge?.name || 'Explorer'}</span>

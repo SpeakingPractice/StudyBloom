@@ -63,14 +63,14 @@ export const WritingGame: React.FC<WritingGameProps> = ({ questions, grade, onCo
            </div>
            <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
              <p className="text-[10px] text-green-500 font-black uppercase tracking-widest mb-1">Nhận xét từ AI</p>
-             <p className="text-gray-700 text-sm font-bold leading-relaxed">{result.feedback || "AI không có nhận xét gì thêm."}</p>
+             <p className="text-gray-700 text-sm md:text-base lg:text-lg font-bold leading-relaxed">{result.feedback || "AI không có nhận xét gì thêm."}</p>
            </div>
         </div>
         <div className="bg-yellow-50 p-6 rounded-2xl mb-8 border border-yellow-100 shadow-inner">
            <p className="font-black text-yellow-800 mb-2 flex items-center gap-2 uppercase text-xs">✍️ Gợi ý sửa đổi:</p>
-           <p className="italic text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{result.corrections || "Không có lỗi sai đáng kể!"}</p>
+           <p className="italic text-gray-700 text-sm md:text-base lg:text-lg leading-relaxed whitespace-pre-wrap">{result.corrections || "Không có lỗi sai đáng kể!"}</p>
         </div>
-        <Button onClick={handleNext} fullWidth size="lg" variant="secondary" className="py-6 rounded-2xl">
+        <Button onClick={handleNext} fullWidth size="lg" variant="secondary" className="py-6 rounded-2xl md:text-lg lg:text-xl">
           {currentIndex < questions.length - 1 ? "Bài tiếp theo →" : "Xem tổng kết"}
         </Button>
       </div>
@@ -85,12 +85,12 @@ export const WritingGame: React.FC<WritingGameProps> = ({ questions, grade, onCo
           <span className="text-gray-400 font-black text-[10px] uppercase tracking-widest">Writing Essay</span>
         </div>
         <div className="bg-blue-50/50 p-6 md:p-8 rounded-3xl border-2 border-dashed border-blue-100 mb-8 shadow-inner">
-          <h3 className="text-lg md:text-xl font-black text-gray-800 leading-tight mb-2">{current.questionText}</h3>
+          <h3 className="text-lg md:text-xl lg:text-2xl font-black text-gray-800 leading-tight mb-2">{current.questionText}</h3>
         </div>
       </div>
       <div className="relative">
         <textarea 
-          className="w-full h-80 p-6 border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:ring-0 text-lg resize-none mb-6 font-medium text-gray-700 bg-gray-50/30 transition-all shadow-inner"
+          className="w-full h-80 p-6 border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:ring-0 text-base md:text-lg lg:text-xl resize-none mb-6 font-medium text-gray-700 bg-gray-50/30 transition-all shadow-inner"
           placeholder="Viết bài của bạn tại đây..."
           value={input}
           onChange={(e) => setInput(e.target.value)}

@@ -193,10 +193,10 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
         {/* Word Box */}
         <div className="relative z-20 w-full max-w-sm mt-8">
           <div className="bg-[#8B4513] border-4 border-[#FBD000] p-6 rounded-lg shadow-[0_6px_0_rgba(0,0,0,0.3)] text-center">
-            <h2 className="pixel-font text-xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">{currentQuestion.questionText}</h2>
+            <h2 className="font-sans font-black text-xl md:text-2xl lg:text-3xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">{currentQuestion.questionText}</h2>
           </div>
           <div className="mt-2 text-center">
-             <span className="pixel-font text-[9px] text-white/70 uppercase tracking-widest">{currentQuestion.hint}</span>
+             <span className="font-sans font-bold text-[10px] md:text-xs lg:text-sm text-white/70 uppercase tracking-widest">{currentQuestion.hint}</span>
           </div>
         </div>
 
@@ -235,10 +235,10 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
                   whileTap={!showFeedback ? { scale: 0.95 } : {}}
                   onClick={() => handleAnswer(opt)}
                   disabled={showFeedback}
-                  className={`w-full min-h-[64px] rounded-lg border-4 p-[12px_8px] transition-all flex items-center justify-center text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'shake' : ''}`}
+                  className={`w-full min-h-[64px] rounded-lg border-4 p-[12px_8px] transition-all flex items-center justify-center text-center ${coinColor} ${borderColor} ${shadowColor} ${!isCorrect && isSelected ? 'shake' : ''} z-10`}
                 >
                   <div className="absolute top-1 right-1 text-black/5 text-[8px] font-black">?</div>
-                  <span className="pixel-font text-[8px] sm:text-[10px] leading-[1.4] text-[#5C3010] uppercase tracking-tighter drop-shadow-sm break-words max-w-full">
+                  <span className="font-sans font-bold text-[10px] sm:text-xs lg:text-sm leading-[1.4] text-[#5C3010] uppercase tracking-tighter drop-shadow-sm break-words max-w-full">
                     {opt}
                   </span>
                 </motion.button>
@@ -247,8 +247,8 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           </div>
         </div>
 
-        {/* Character Container */}
-        <div className={`absolute bottom-[15%] left-0 w-full z-20 ${isJumping || isCorrect === false ? 'mario-active' : ''}`}>
+        {/* Character Container - z-0 to be behind coins (z-10) on mobile/tablet, lg:z-20 on desktop if desired but user says "behind" to avoid obscuring */}
+        <div className={`absolute bottom-[15%] left-0 w-full z-0 lg:z-0 ${isJumping || isCorrect === false ? 'mario-active' : ''}`}>
            <div className={`absolute bottom-0 mario-walking ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
              <PixelMario frame={currentFrame} />
              <AnimatePresence>
@@ -266,8 +266,8 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
            </div>
         </div>
 
-        {/* Ground inside game area */}
-        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col z-0">
+        {/* Ground inside game area - z-[-1] to be behind Mario */}
+        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col z-[-1]">
           <div className="h-4 bg-[#43B047] w-full border-t-2 border-[#256B28]"></div>
           <div className="flex-1 bg-[#E8D5A3] w-full grid grid-cols-8 gap-1 p-2">
             {Array.from({ length: 8 }).map((_, i) => (
