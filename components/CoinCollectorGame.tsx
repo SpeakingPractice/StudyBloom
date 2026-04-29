@@ -201,7 +201,7 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
         </div>
 
         {/* Options Grid (Coins) */}
-        <div className="flex-1 w-full flex flex-col justify-center px-4 relative z-10">
+        <div className="flex-1 w-full flex flex-col justify-center px-4 relative z-20">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-[10px] p-[12px_16px] w-full max-w-2xl mx-auto">
             {shuffledOptions.map((opt, idx) => {
               const isSelected = selectedAnswer === opt;
@@ -247,8 +247,8 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           </div>
         </div>
 
-        {/* Character Container - z-0 to be behind coins (z-10) on mobile/tablet, lg:z-20 on desktop if desired but user says "behind" to avoid obscuring */}
-        <div className={`absolute bottom-[15%] left-0 w-full z-0 lg:z-0 ${isJumping || isCorrect === false ? 'mario-active' : ''}`}>
+        {/* Character Container - z-10 to be behind coins (z-20) */}
+        <div className={`absolute bottom-[15%] left-0 w-full z-10 ${isJumping || isCorrect === false ? 'mario-active' : ''}`}>
            <div className={`absolute bottom-0 mario-walking ${isJumping ? 'jump' : ''} ${isCorrect === false ? 'shake' : ''}`}>
              <PixelMario frame={currentFrame} />
              <AnimatePresence>
@@ -266,8 +266,8 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
            </div>
         </div>
 
-        {/* Ground inside game area - z-[-1] to be behind Mario */}
-        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col z-[-1]">
+        {/* Ground inside game area - z-5 to be below Mario (z-10) but above sky bg */}
+        <div className="absolute bottom-0 left-0 w-full h-[15%] flex flex-col z-5">
           <div className="h-4 bg-[#43B047] w-full border-t-2 border-[#256B28]"></div>
           <div className="flex-1 bg-[#E8D5A3] w-full grid grid-cols-8 gap-1 p-2">
             {Array.from({ length: 8 }).map((_, i) => (

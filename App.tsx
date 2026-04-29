@@ -220,7 +220,7 @@ const App: React.FC = () => {
     setViewMode(ViewMode.Home);
   };
 
-  const handlePracticeFolder = (folder: CustomFolder) => {
+  const handlePracticeFolder = (folder: CustomFolder, gameType: GameType = GameType.CoinCollector) => {
     const customQuestions = folder.words.map((w, idx) => {
       let otherWords = folder.words
         .filter(other => other.id !== w.id)
@@ -229,12 +229,15 @@ const App: React.FC = () => {
       const wrongOptions = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
       const options = [w.word, ...wrongOptions].sort(() => Math.random() - 0.5);
 
+      // Adapt mapping based on game type
+      // CoinCollector needs questionText as definition
+      // TypeToFly needs questionText as the word to type
       return {
         id: idx,
-        questionText: w.definition,
+        questionText: gameType === GameType.TypeToFly ? w.word : w.definition,
         options: options,
         correctAnswer: w.word,
-        explanation: `${w.word} (${w.partOfSpeech.toLowerCase()}): ${w.definition}`,
+        explanation: gameType === GameType.TypeToFly ? w.definition : `${w.word} (${w.partOfSpeech.toLowerCase()}): ${w.definition}`,
         topic: folder.name,
         exampleSentence: w.example,
         phonetic: w.pronunciation
@@ -243,7 +246,7 @@ const App: React.FC = () => {
 
     setGameData({
       grade: GradeLevel.Grade12,
-      gameType: GameType.CoinCollector,
+      gameType: gameType,
       questions: customQuestions as any,
       textbookContext: folder.name
     });

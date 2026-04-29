@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CustomFolder, CustomWord, ViewMode } from '../types';
+import { CustomFolder, CustomWord, ViewMode, GameType } from '../types';
 import { VocabularyService } from '../services/vocabularyService';
 
 interface VocabManagerProps {
   onBack: () => void;
-  onPractice: (folder: CustomFolder) => void;
+  onPractice: (folder: CustomFolder, gameType: GameType) => void;
 }
 
 const EMOJIS = ['🌍', '📚', '🎯', '🔥', '⭐', '🍄', '🎮', '🏆', '💡', '🧠', '🗺️', '🎵', '🐢', '🌸', '🚀', '🎪', '🦁', '🍕', '⚽', '🎨', '🌈', '🔑', '💎', '🐉', '🎭', '🏰', '🌙', '⚡', '🎲', '🦋'];
@@ -36,6 +36,7 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
   const [editingFolder, setEditingFolder] = useState<CustomFolder | null>(null);
   const [editingWord, setEditingWord] = useState<CustomWord | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'folder' | 'word', id: string } | null>(null);
+  const [showPracticeOptions, setShowPracticeOptions] = useState(false);
 
   useEffect(() => {
     setFolders(VocabularyService.getFolders());
@@ -217,12 +218,45 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
               <div className="flex items-center justify-between mb-8 px-2">
                 <div className="pixel-font text-white text-[8px] md:text-[10px] uppercase tracking-widest drop-shadow-md">{selectedFolder.words.length} WORDS TOTAL</div>
                 {selectedFolder.words.length >= 4 ? (
-                  <button 
-                    onClick={() => onPractice(selectedFolder)}
-                    className="bg-[#049CD8] border-b-4 border-[#025A80] px-6 py-4 pixel-font text-white text-[10px] rounded-xl hover:scale-105 active:translate-y-1 shadow-lg"
-                  >
-                    🎮 PRACTICE NOW
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowPracticeOptions(!showPracticeOptions)}
+                      className="bg-[#049CD8] border-b-4 border-[#025A80] px-6 py-4 pixel-font text-white text-[10px] rounded-xl hover:scale-105 active:translate-y-1 shadow-lg flex items-center gap-2"
+                    >
+                      🎮 PRACTICE NOW
+                    </button>
+                    
+                    <AnimatePresence>
+                      {showPracticeOptions && (
+                        <motion.div 
+                          initial={{ opacity: 0, x: 20, scale: 0.8 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: 20, scale: 0.8 }}
+                          className="absolute right-0 top-full mt-2 bg-white border-4 border-[#049CD8] rounded-xl p-3 shadow-2xl flex flex-col gap-2 min-w-[180px] z-30"
+                        >
+                          <p className="pixel-font text-[7px] text-[#049CD8] uppercase text-center mb-1">Choose your game:</p>
+                          <button 
+                            onClick={() => {
+                              onPractice(selectedFolder, GameType.CoinCollector);
+                              setShowPracticeOptions(false);
+                            }}
+                            className="bg-[#FBD000] border-b-4 border-[#8B6914] px-4 py-3 rounded-lg pixel-font text-[#5C3010] text-[8px] uppercase flex items-center gap-3 hover:brightness-110 active:translate-y-1"
+                          >
+                            <span className="text-xl">💰</span> Mario
+                          </button>
+                          <button 
+                            onClick={() => {
+                              onPractice(selectedFolder, GameType.TypeToFly);
+                              setShowPracticeOptions(false);
+                            }}
+                            className="bg-[#43B047] border-b-4 border-[#256B28] px-4 py-3 rounded-lg pixel-font text-white text-[8px] uppercase flex items-center gap-3 hover:brightness-110 active:translate-y-1"
+                          >
+                            <span className="text-xl">🐦</span> Flappy Bird
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 ) : (
                   <div className="bg-[#8B6914]/60 p-4 pixel-font text-white text-[8px] rounded-xl border-2 border-white/20">
                     ADD {4 - selectedFolder.words.length} MORE WORDS TO PRACTICE! 🍄
