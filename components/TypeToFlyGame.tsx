@@ -46,8 +46,9 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
       const nextY = prev + velocityRef.current;
       
       if (nextY >= 90) {
-        const audio = new Audio("https://www.myinstants.com/media/sounds/movie_1.mp3");
-        audio.play().catch(e => console.log("Audio play blocked", e));
+        const bruhAudio = new Audio("https://www.myinstants.com/media/sounds/movie_1.mp3");
+        bruhAudio.volume = 0.5;
+        bruhAudio.play().catch(e => console.log("Audio play blocked", e));
         setIsGameOver(true);
         return 90;
       }
@@ -89,8 +90,9 @@ export const TypeToFlyGame: React.FC<TypeToFlyGameProps> = ({ questions, onCompl
     }
 
     if (cleanUser === cleanTarget && cleanTarget.length > 0) {
-      const audio = new Audio("https://www.myinstants.com/media/sounds/mario-coin-sound.mp3");
-      audio.play().catch(e => console.log("Audio play blocked", e));
+      const coinAudio = new Audio("https://www.myinstants.com/media/sounds/mario-coin-sound.mp3");
+      coinAudio.volume = 0.4;
+      coinAudio.play().catch(e => console.log("Audio play blocked", e));
       velocityRef.current = Math.max(maxUpwardVelocity, liftPerWord);
       
       setScore(s => s + 1);

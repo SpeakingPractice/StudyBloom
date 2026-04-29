@@ -121,23 +121,44 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#5C94FC] overflow-hidden">
+      {/* Decorative Mario Elements */}
+      <div className="hidden xl:block pointer-events-none">
+        {/* Left Pipe */}
+        <div className="fixed left-8 bottom-0 z-0 scale-150 transform-gpu">
+          <div className="w-16 h-32 bg-[#43B047] border-x-4 border-t-4 border-black relative">
+            <div className="absolute top-0 -left-2 -right-2 h-8 bg-[#43B047] border-4 border-black">
+              <div className="absolute top-1 left-1 w-1 h-4 bg-white/20"></div>
+            </div>
+          </div>
+        </div>
+        {/* Right Cloud */}
+        <div className="fixed right-12 top-24 z-0 opacity-60">
+          <div className="w-24 h-10 bg-white rounded-full relative">
+            <div className="absolute -top-6 left-4 w-12 h-12 bg-white rounded-full"></div>
+            <div className="absolute -top-4 right-4 w-14 h-14 bg-white rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
-      <div className="p-4 md:p-6 bg-[#E52521] border-b-8 border-[#8B1A18] flex items-center justify-between shadow-xl relative z-20">
-        <button onClick={selectedFolder ? () => setSelectedFolder(null) : onBack} className="pixel-font text-white hover:underline text-[10px] md:text-sm flex items-center gap-2">
-          {selectedFolder ? '← BACK TO LIST' : '← BACK TO HOME'}
-        </button>
-        <h1 className="pixel-font text-white text-[10px] md:text-xl drop-shadow-[2px_2px_0_#8B1A18] uppercase tracking-wider truncate mx-4">
-          {selectedFolder ? `${selectedFolder.icon} ${selectedFolder.name}` : 'MY VOCABULARY'}
-        </h1>
-        <div className="w-10"></div>
+      <div className="relative z-20 px-3 sm:px-5">
+        <div className="max-w-[860px] mx-auto bg-[#E52521] border-x-4 border-b-8 border-[#8B1A18] shadow-xl rounded-b-[10px] p-4 md:p-6 flex items-center justify-between">
+          <button onClick={selectedFolder ? () => setSelectedFolder(null) : onBack} className="pixel-font text-white hover:underline text-[10px] md:text-sm flex items-center gap-2">
+            {selectedFolder ? '← BACK' : '← HOME'}
+          </button>
+          <h1 className="pixel-font text-white text-[10px] md:text-xl drop-shadow-[2px_2px_0_#8B1A18] uppercase tracking-wider truncate mx-4">
+            {selectedFolder ? `${selectedFolder.icon} ${selectedFolder.name}` : 'MY VOCABULARY'}
+          </h1>
+          <div className="w-10"></div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6 relative">
-        <div className="max-w-[1400px] ml-4 lg:ml-10 mr-auto pb-32">
+      <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+        <div className="max-w-[860px] mx-auto px-3 sm:px-5 pt-5 pb-32">
           {!selectedFolder ? (
             /* Folders Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {folders.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center p-12 text-center space-y-10 mt-12">
                   <motion.div animate={{ y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
@@ -193,62 +214,64 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
           ) : (
             /* Word List View */
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-8">
-                <div className="pixel-font text-white text-[8px] uppercase tracking-widest">{selectedFolder.words.length} WORDS TOTAL</div>
+              <div className="flex items-center justify-between mb-8 px-2">
+                <div className="pixel-font text-white text-[8px] md:text-[10px] uppercase tracking-widest drop-shadow-md">{selectedFolder.words.length} WORDS TOTAL</div>
                 {selectedFolder.words.length >= 4 ? (
                   <button 
                     onClick={() => onPractice(selectedFolder)}
-                    className="bg-[#049CD8] border-b-4 border-[#025A80] p-4 pixel-font text-white text-[10px] rounded-lg hover:scale-105 active:translate-y-1 shadow-lg"
+                    className="bg-[#049CD8] border-b-4 border-[#025A80] px-6 py-4 pixel-font text-white text-[10px] rounded-xl hover:scale-105 active:translate-y-1 shadow-lg"
                   >
                     🎮 PRACTICE NOW
                   </button>
                 ) : (
-                  <div className="bg-[#8B6914]/40 p-4 pixel-font text-white text-[8px] rounded-lg">
+                  <div className="bg-[#8B6914]/60 p-4 pixel-font text-white text-[8px] rounded-xl border-2 border-white/20">
                     ADD {4 - selectedFolder.words.length} MORE WORDS TO PRACTICE! 🍄
                   </div>
                 )}
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-[14px]">
                 {selectedFolder.words.length === 0 ? (
-                  <div className="text-center py-12 text-white/60 pixel-font text-[8px] uppercase">This folder is empty...</div>
+                  <div className="text-center py-20 text-white pixel-font text-xs uppercase drop-shadow-md bg-white/10 rounded-2xl border-4 border-dashed border-white/20">This folder is empty...</div>
                 ) : (
                   selectedFolder.words.map(word => (
                     <motion.div
                       key={word.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-white q-block border-b-8 border-[#E8D5A3] p-6 relative group"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white border-2 border-[#C4A96B] rounded-[10px] shadow-[0_4px_0_#C4A96B] p-3 md:p-6 relative group w-full"
                     >
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="pixel-font text-[#E52521] text-xs md:text-sm uppercase">{word.word}</h3>
-                            <span className="px-2 py-0.5 bg-[#43B047] text-white text-[7px] pixel-font rounded uppercase">
-                              {word.partOfSpeech}
-                            </span>
-                            {word.pronunciation && (
-                              <span className="text-[#5C3010] text-[10px] font-mono italic">{word.pronunciation}</span>
-                            )}
-                            <button onClick={() => speak(word.word)} className="text-lg hover:scale-110 transition-transform">🔊</button>
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 md:gap-6">
+                        <div className="space-y-3 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <h3 className="pixel-font text-[#E52521] text-xs md:text-sm uppercase tracking-tighter">{word.word}</h3>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-[#43B047] text-white text-[7px] pixel-font rounded uppercase">
+                                {word.partOfSpeech}
+                              </span>
+                              {word.pronunciation && (
+                                <span className="text-[#5C3010] text-[10px] font-mono italic opacity-70">{word.pronunciation}</span>
+                              )}
+                              <button onClick={() => speak(word.word)} className="text-xl hover:scale-125 active:scale-95 transition-all">🔊</button>
+                            </div>
                           </div>
-                          <p className="text-[#5C3010] text-sm font-medium">{word.definition}</p>
+                          <p className="text-[#5C3010] text-sm md:text-base font-medium leading-relaxed">{word.definition}</p>
                           {word.example && (
-                            <p className="text-[#8B6914] text-xs italic bg-[#FBD000]/10 p-2 rounded border-l-4 border-[#FBD000]">
+                            <div className="text-[#8B6914] text-xs md:text-sm italic bg-[#FBD000]/5 p-3 rounded-lg border-l-4 border-[#FBD000] leading-relaxed">
                               "{word.example}"
-                            </p>
+                            </div>
                           )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col md:flex-row gap-2 shrink-0 self-end md:self-start">
                           <button 
                             onClick={() => { setEditingWord(word); setShowWordModal(true); }}
-                            className="w-10 h-10 bg-[#FBD000] border-2 border-[#8B6914] rounded flex items-center justify-center text-sm"
+                            className="w-10 h-10 md:w-11 md:h-11 bg-[#FBD000] border-b-4 border-[#8B6914] rounded-lg flex items-center justify-center text-sm hover:brightness-110 active:translate-y-1 transition-all"
                           >
                             ✏️
-                        </button>
+                          </button>
                           <button 
                             onClick={() => setConfirmDelete({ type: 'word', id: word.id })}
-                            className="w-10 h-10 bg-[#E52521] border-2 border-[#8B1A18] rounded flex items-center justify-center text-sm"
+                            className="w-10 h-10 md:w-11 md:h-11 bg-[#E52521] border-b-4 border-[#8B1A18] rounded-lg flex items-center justify-center text-sm hover:brightness-110 active:translate-y-1 transition-all"
                           >
                             🗑️
                           </button>

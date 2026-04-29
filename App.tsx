@@ -118,15 +118,27 @@ const App: React.FC = () => {
 
     if (isAudioEnabled) {
       if (bgMusicRef.current.src !== musicUrl) {
+        bgMusicRef.current.pause();
         bgMusicRef.current.src = musicUrl;
+        bgMusicRef.current.load();
+        bgMusicRef.current.play().catch(e => console.log("Audio switch play failed", e));
+      } else if (bgMusicRef.current.paused) {
+        bgMusicRef.current.play().catch(e => console.log("Audio resume play failed", e));
       }
-      bgMusicRef.current.play().catch(e => console.log("Audio play blocked", e));
-    } else {
+    } else if (bgMusicRef.current && !bgMusicRef.current.paused) {
       bgMusicRef.current.pause();
     }
   }, [isAudioEnabled, gameData, finalScore]);
 
-  const toggleAudio = () => setIsAudioEnabled(!isAudioEnabled);
+  const toggleAudio = () => {
+    const nextState = !isAudioEnabled;
+    setIsAudioEnabled(nextState);
+    
+    // Explicitly handle first play on interaction to satisfy some browser policies
+    if (nextState && bgMusicRef.current) {
+      bgMusicRef.current.play().catch(e => console.log("Direct play attempt failed", e));
+    }
+  };
 
   useEffect(() => {
     const pts = localStorage.getItem('vieteng_points');

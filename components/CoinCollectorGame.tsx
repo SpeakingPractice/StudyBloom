@@ -111,16 +111,18 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
     setIsCorrect(correct);
 
     if (correct) {
-      const audio = new Audio("https://www.myinstants.com/media/sounds/mario-coin-sound.mp3");
-      audio.play().catch(e => console.log("Audio play blocked", e));
+      const coinAudio = new Audio("https://www.myinstants.com/media/sounds/mario-coin-sound.mp3");
+      coinAudio.volume = 0.4;
+      coinAudio.play().catch(e => console.log("Audio play blocked", e));
       setScore(s => s + 10);
       setIsJumping(true);
       setShowScorePopup(true);
       setTimeout(() => setIsJumping(false), 600);
       setTimeout(() => setShowScorePopup(false), 800);
     } else {
-      const audio = new Audio("https://www.myinstants.com/media/sounds/movie_1.mp3");
-      audio.play().catch(e => console.log("Audio play blocked", e));
+      const bruhAudio = new Audio("https://www.myinstants.com/media/sounds/movie_1.mp3");
+      bruhAudio.volume = 0.5;
+      bruhAudio.play().catch(e => console.log("Audio play blocked", e));
 
       setHearts(h => {
         const newHearts = h - 1;
