@@ -253,6 +253,15 @@ export const VocabManager: React.FC<VocabManagerProps> = ({ onBack, onPractice }
                           >
                             <span className="text-xl">🐦</span> Flappy Bird
                           </button>
+                          <button 
+                            onClick={() => {
+                              onPractice(selectedFolder, GameType.WordBattle);
+                              setShowPracticeOptions(false);
+                            }}
+                            className="bg-[#9B59B6] border-b-4 border-[#6C3483] px-4 py-3 rounded-lg pixel-font text-white text-[8px] uppercase flex items-center gap-3 hover:brightness-110 active:translate-y-1"
+                          >
+                            <span className="text-xl">⚔️</span> Word Battle
+                          </button>
                         </motion.div>
                       )}
                     </AnimatePresence>

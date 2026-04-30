@@ -16,6 +16,7 @@ export enum GameType {
   Writing = 'Luyện Viết (Writing)',
   TypeToFly = 'Flappy Bird (Typing)',
   CoinCollector = 'Coin Collector (Vocab)',
+  WordBattle = 'Word Battle (Match-3)',
 }
 
 export enum GrammarSubSkill {
@@ -47,6 +48,7 @@ export interface QuestionData {
   exampleSentence?: string;
   wordType?: string;
   countability?: string;
+  isPractice?: boolean;
 }
 
 export interface GameSession {

@@ -11,6 +11,7 @@ import { SpeakingGame } from './components/SpeakingGame';
 import { WritingGame } from './components/WritingGame';
 import { TypeToFlyGame } from './components/TypeToFlyGame';
 import { CoinCollectorGame } from './components/CoinCollectorGame';
+import { WordBattleGame } from './components/WordBattleGame';
 import { VocabManager } from './components/VocabManager';
 import { MarioAudioService, audioService } from './services/audioService';
 
@@ -232,15 +233,22 @@ const App: React.FC = () => {
       // Adapt mapping based on game type
       // CoinCollector needs questionText as definition
       // TypeToFly needs questionText as the word to type
+      // WordBattle needs questionText as word, options as definitions
+      const pointsPerQuestion = Math.ceil(100 / folder.words.length);
       return {
         id: idx,
-        questionText: gameType === GameType.TypeToFly ? w.word : w.definition,
-        options: options,
-        correctAnswer: w.word,
-        explanation: gameType === GameType.TypeToFly ? w.definition : `${w.word} (${w.partOfSpeech.toLowerCase()}): ${w.definition}`,
+        questionText: (gameType === GameType.TypeToFly || gameType === GameType.WordBattle) ? w.word : w.definition,
+        options: gameType === GameType.WordBattle 
+          ? [w.definition, ...folder.words.filter(ow => ow.id !== w.id).map(ow => ow.definition).sort(() => Math.random() - 0.5).slice(0, 3)].sort(() => Math.random() - 0.5)
+          : options,
+        correctAnswer: gameType === GameType.WordBattle ? w.definition : w.word,
+        explanation: (gameType === GameType.TypeToFly || gameType === GameType.WordBattle) ? w.definition : `${w.word} (${w.partOfSpeech.toLowerCase()}): ${w.definition}`,
         topic: folder.name,
         exampleSentence: w.example,
-        phonetic: w.pronunciation
+        phonetic: w.pronunciation,
+        wordType: w.partOfSpeech,
+        isPractice: true,
+        pointsPerQuestion
       };
     });
 
@@ -270,6 +278,7 @@ const App: React.FC = () => {
       case GameType.Grammar: return <QuizGame {...commonProps} subSkill={gameData.subSkill} />;
       case GameType.TypeToFly: return <TypeToFlyGame {...commonProps} />;
       case GameType.CoinCollector: return <CoinCollectorGame {...commonProps} />;
+      case GameType.WordBattle: return <WordBattleGame {...commonProps} grade={gameData.grade} isPractice={gameData.questions[0]?.isPractice} pointsPerQuestion={gameData.questions[0]?.pointsPerQuestion} />;
       default: return <QuizGame {...commonProps} />;
     }
   };
@@ -281,6 +290,7 @@ const App: React.FC = () => {
       case GameType.Writing: return count * 10;
       case GameType.TypeToFly: return count;
       case GameType.CoinCollector: return count * 10;
+      case GameType.WordBattle: return count * 20;
       default: return count * 2;
     }
   };
@@ -577,7 +587,7 @@ const App: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4 md:gap-6">
                       {Object.values(GameType).map((type) => {
-                        const isSpecial = type === GameType.TypeToFly || type === GameType.CoinCollector;
+                        const isSpecial = type === GameType.TypeToFly || type === GameType.CoinCollector || type === GameType.WordBattle;
                         const isSelected = selectedGameType === type;
                         
                         return (
@@ -595,9 +605,11 @@ const App: React.FC = () => {
                                 ? 'scale-105 z-10 brightness-110 shadow-none -translate-y-1' 
                                 : ''
                             } ${
-                                isSpecial 
-                                ? (type === GameType.CoinCollector ? 'bg-[#FBD000] border-[#C8980A] shadow-[0_6px_0_#8B6914] hover:bg-[#FFE033] hover:-translate-y-1' : 'bg-[#049CD8] border-[#025A80] shadow-[0_6px_0_#013D60] hover:bg-[#05b1f5] hover:-translate-y-1')
-                                : 'bg-[#43B047] border-[#256B28] shadow-[0_6px_0_#174D0F] hover:bg-[#55D45A] hover:-translate-y-1'
+                                type === GameType.WordBattle
+                                ? 'bg-[#9B59B6] border-[#6C3483] shadow-[0_6px_0_#4A235A] hover:bg-[#AF7AC5] hover:-translate-y-1'
+                                : (isSpecial 
+                                  ? (type === GameType.CoinCollector ? 'bg-[#FBD000] border-[#C8980A] shadow-[0_6px_0_#8B6914] hover:bg-[#FFE033] hover:-translate-y-1' : 'bg-[#049CD8] border-[#025A80] shadow-[0_6px_0_#013D60] hover:bg-[#05b1f5] hover:-translate-y-1')
+                                  : 'bg-[#43B047] border-[#256B28] shadow-[0_6px_0_#174D0F] hover:bg-[#55D45A] hover:-translate-y-1')
                             }`}
                           >
                             <span className="pixel-font text-[8px] md:text-[9px] text-white uppercase tracking-tighter drop-shadow-[1px_1px_0_rgba(0,0,0,0.5)]">
@@ -610,6 +622,14 @@ const App: React.FC = () => {
                                 <span className="flex items-center gap-3 text-[#5C3010]">
                                   <span className="text-xl">💰</span> 
                                   COIN COLLECTOR
+                                </span>
+                              ) : type === GameType.WordBattle ? (
+                                <span className="flex flex-col items-center gap-1">
+                                  <span className="flex items-center gap-3">
+                                    <span className="text-xl">⚔️</span> 
+                                    WORD BATTLE
+                                  </span>
+                                  <span className="text-[6px] opacity-80">MATCH TILES • BEAT THE BOSS</span>
                                 </span>
                               ) : type.includes('Grammar') ? 'Grammar' :
                                   type.includes('Listening') ? 'Listening' :

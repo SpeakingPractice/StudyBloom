@@ -198,6 +198,25 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           <div className="mt-2 text-center">
              <span className="font-sans font-bold text-[10px] md:text-xs lg:text-sm text-white/70 uppercase tracking-widest">{currentQuestion.hint}</span>
           </div>
+
+          {/* Next Button moved here */}
+          <AnimatePresence>
+            {showFeedback && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="mt-4 flex justify-center w-full"
+              >
+                <button 
+                  onClick={handleNext}
+                  className="px-6 h-10 bg-[#E52521] border-4 border-[#8B1A18] rounded-lg shadow-[0_4px_0_#5C0F0C] active:translate-y-1 active:shadow-none transition-all pixel-font text-white text-[8px] uppercase tracking-widest z-50 whitespace-nowrap"
+                >
+                  Next Level ▶
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Options Grid (Coins) */}
@@ -276,25 +295,6 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
           </div>
         </div>
       </div>
-
-      {/* Next Button */}
-      <AnimatePresence>
-        {showFeedback && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="mt-8 w-full max-w-xs"
-          >
-            <button 
-              onClick={handleNext}
-              className="w-full h-16 bg-[#E52521] border-4 border-[#8B1A18] rounded-xl shadow-[0_6px_0_#5C0F0C] active:translate-y-1 active:shadow-none transition-all pixel-font text-white text-xs uppercase tracking-[0.2em]"
-            >
-              Next Level ▶
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Heart Warning */}
       {hearts <= 0 && (

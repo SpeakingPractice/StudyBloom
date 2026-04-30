@@ -150,6 +150,14 @@ export const generateGameContent = async (grade: GradeLevel, gameType: GameType,
     - 'options' MUST have 4 strings (unique, in English).
     - 'correctAnswer' MUST match one of the options.
     - 'explanation' is not used but provide Vietnamese meaning.`;
+  } else if (gameType === GameType.WordBattle) {
+    let cefrLevel = gradeInt <= 7 ? "A1-A2" : gradeInt <= 9 ? "B1" : "B2-C1";
+    specificInstruction = `Generate 20 vocabulary items for ${grade} (${cefrLevel} level). 
+    IMPORTANT: Distribute them eveny among 'wordType' (Categories): 'Noun', 'Verb', 'Adjective', 'Adverb', 'Phrase'.
+    - 'questionText' MUST be the English word itself.
+    - 'options' MUST be 4 possible VIETNAMESE meanings.
+    - 'correctAnswer' MUST be the correct Vietnamese meaning from options.
+    - 'explanation' field: provide example sentence in English.`;
   } else {
     specificInstruction = `Standard ${gameType} for ${grade} at ${difficultyRange} level. 'explanation' field MUST have 1 short Vietnamese sentence.`;
   }
