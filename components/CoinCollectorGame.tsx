@@ -157,11 +157,11 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
   const progress = ((currentIndex + 1) / questions.length) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto w-full flex flex-col items-center">
+    <div className="app relative w-full max-w-[420px] md:max-w-4xl mx-auto h-[780px] min-h-[600px] flex flex-col bg-[#5C94FC] border-8 border-[#8B6914] rounded-3xl overflow-hidden shadow-2xl mt-4 mb-20 z-50">
       {/* HUD */}
-      <div className="w-full bg-[#1A1A2E] border-4 border-[#FBD000] p-4 rounded-xl mb-4 flex justify-between items-center z-20">
+      <div className="w-full bg-[#1A1A2E] border-b-4 border-[#FBD000] p-4 flex justify-between items-center z-20">
         <div className="flex items-center gap-2">
-          <span className="text-[#FBD000] text-xl">⭐</span>
+          <span className="text-[#FBD000] text-xl">💠</span>
           <span className="pixel-font text-[#FBD000] text-sm">{score}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -176,22 +176,24 @@ export const CoinCollectorGame: React.FC<CoinCollectorGameProps> = ({ questions,
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden border-2 border-[#8B6914] mb-8">
-        <div 
-          className="h-full bg-[#FBD000] transition-all duration-500" 
-          style={{ width: `${progress}%` }}
-        />
+      {/* Progress Bar Area */}
+      <div className="w-full px-4 pt-4">
+        <div className="w-full h-4 bg-black/20 rounded-full overflow-hidden border-2 border-[#8B6914]">
+          <div 
+            className="h-full bg-[#FBD000] transition-all duration-500" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
 
-      {/* Game Area */}
-      <div className="relative w-full min-h-[500px] bg-[#5C94FC] rounded-2xl border-8 border-[#8B6914] overflow-hidden flex flex-col items-center">
+      {/* Main Game Area */}
+      <div className="relative flex-1 w-full overflow-hidden flex flex-col items-center">
         {/* Sky Stuff */}
         <div className="absolute top-[10%] left-[10%] w-20 h-8 bg-white/40 rounded-full animate-pulse"></div>
         <div className="absolute top-[20%] right-[15%] w-24 h-10 bg-white/30 rounded-full animate-pulse delay-75"></div>
 
         {/* Word Box */}
-        <div className="relative z-20 w-full max-w-sm mt-8">
+        <div className="relative z-20 w-full max-w-sm md:max-w-2xl mt-8">
           <div className="bg-[#8B4513] border-4 border-[#FBD000] p-6 rounded-lg shadow-[0_6px_0_rgba(0,0,0,0.3)] text-center">
             <h2 className="font-sans font-black text-xl md:text-2xl lg:text-3xl text-white drop-shadow-[2px_2px_0_#5C3010] uppercase tracking-wider">{currentQuestion.questionText}</h2>
           </div>

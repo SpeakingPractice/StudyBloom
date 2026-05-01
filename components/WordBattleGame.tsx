@@ -9,7 +9,11 @@ interface WordBattleGameProps {
   grade?: GradeLevel;
   isPractice?: boolean;
   pointsPerQuestion?: number;
+  folderName?: string;
 }
+
+const ATTACKS_PER_WORD = 2; // Fixed requirement: player must see each word 2 times
+const BASE_MATCH_DAMAGE = 20;
 
 const TILES = {
   SWORD: {
@@ -17,8 +21,8 @@ const TILES = {
     emoji: '⚔️',
     color: '#E52521',
     border: '#8B1A18',
-    effect: 'ATTACK',
-    damage: 25,
+    effect: 'atk',
+    damage: 20, // Updated to match base damage for scaling
     vocabCategory: 'Verb',
     label: 'ATTACK',
   },
@@ -27,17 +31,17 @@ const TILES = {
     emoji: '❤️',
     color: '#FF69B4',
     border: '#C0185A',
-    effect: 'HEAL',
+    effect: 'heal',
     healAmount: 20,
     vocabCategory: 'Adjective',
     label: 'HEAL',
   },
-  COIN: {
-    id: 'COIN',
+  MANA: {
+    id: 'MANA',
     emoji: '💠',
     color: '#FBD000',
     border: '#C8980A',
-    effect: 'MANA',
+    effect: 'mana',
     manaAmount: 25,
     vocabCategory: 'Noun',
     label: 'MANA',
@@ -45,30 +49,20 @@ const TILES = {
   SHIELD: {
     id: 'SHIELD',
     emoji: '🛡️',
-    color: '#049CD8',
-    border: '#025A80',
-    effect: 'DEFEND',
     vocabCategory: 'Noun',
     label: 'DEFEND',
+    color: '#049CD8',
+    border: '#025A80',
+    effect: 'defend',
   },
   STAR: {
     id: 'STAR',
     emoji: '⭐',
     color: '#FF8C00',
     border: '#B35E00',
-    effect: 'COMBO',
+    effect: 'combo',
     vocabCategory: 'Adverb',
     label: 'COMBO',
-  },
-  SCROLL: {
-    id: 'SCROLL',
-    emoji: '📜',
-    color: '#43B047',
-    border: '#256B28',
-    effect: 'SPECIAL',
-    damage: 50,
-    vocabCategory: 'Phrase',
-    label: 'SPECIAL',
   },
 };
 
@@ -107,9 +101,13 @@ const ENEMIES_BY_GRADE: Record<string, any> = {
   ['Grade 12']: { name: 'Overlord 👑', hp: 500, attack: 60, interval: 1, emoji: '👑' },
 };
 
-export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onComplete, grade, isPractice, pointsPerQuestion }) => {
+export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onComplete, grade, isPractice, folderName }) => {
   const [board, setBoard] = useState<string[][]>([]);
   const [selectedTile, setSelectedTile] = useState<{ r: number, c: number } | null>(null);
+  const [score, setScore] = useState(0);
+  const [wordQueue, setWordQueue] = useState<QuestionData[]>([]);
+  const [usedWords, setUsedWords] = useState<QuestionData[]>([]);
+  
   const [player, setPlayer] = useState<PlayerStats>({
     hp: 200, maxHp: 200,
     mp: 0, maxMp: 100,
@@ -118,29 +116,198 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
     comboMultiplier: 1,
   });
 
-  const enemyData = (grade && ENEMIES_BY_GRADE[grade]) || ENEMIES_BY_GRADE['Grade 6'];
+  const enemyInitial = (grade && ENEMIES_BY_GRADE[grade]) || ENEMIES_BY_GRADE['Grade 6'];
+  const initialHP = questions.length > 0 ? questions.length * ATTACKS_PER_WORD * BASE_MATCH_DAMAGE : enemyInitial.hp;
 
   const [enemy, setEnemy] = useState<EnemyStats>({
-    name: enemyData.name,
-    hp: enemyData.hp,
-    maxHp: enemyData.hp,
-    attackPower: enemyData.attack,
-    attackInterval: enemyData.interval,
+    name: folderName ? `QUEST: ${questions.length} WORDS` : enemyInitial.name,
+    hp: Math.max(initialHP, 100),
+    maxHp: Math.max(initialHP, 100),
+    attackPower: enemyInitial.attack,
+    attackInterval: enemyInitial.interval,
     turnsSinceAttack: 0,
-    emoji: enemyData.emoji,
+    emoji: enemyInitial.emoji,
   });
   const [comboCount, setComboCount] = useState(0);
   const [gameState, setGameState] = useState<'playing' | 'vocab' | 'animating' | 'won' | 'lost'>('playing');
   const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const [pendingMatch, setPendingMatch] = useState<{ type: keyof typeof TILES, size: number } | null>(null);
+  const [pendingMatch, setPendingMatch] = useState<{ type: keyof typeof TILES, size: number, positions: {r: number, c: number}[] } | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<QuestionData | null>(null);
   const [timer, setTimer] = useState(10);
   const [showDamage, setShowDamage] = useState<{ amount: number, isPlayer: boolean } | null>(null);
-  const [isUltimateReady, setIsUltimateReady] = useState(false);
   const [hint, setHint] = useState<{ r1: number, c1: number } | null>(null);
   
+  const appRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sound Engine
+  const playSwordHitSound = useCallback(() => {
+    try {
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+
+      // Metallic clang
+      const bufSize = Math.floor(ctx.sampleRate * 0.08);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/bufSize, 2);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const clangFilter = ctx.createBiquadFilter();
+      clangFilter.type = 'bandpass';
+      clangFilter.frequency.value = 3500;
+      clangFilter.Q.value = 2;
+      const clangGain = ctx.createGain();
+      clangGain.gain.setValueAtTime(0.6, now);
+      clangGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      noise.connect(clangFilter);
+      clangFilter.connect(clangGain);
+      clangGain.connect(ctx.destination);
+      noise.start(now); noise.stop(now + 0.08);
+
+      // Deep thud
+      const thud = ctx.createOscillator();
+      const thudGain = ctx.createGain();
+      thud.connect(thudGain); thudGain.connect(ctx.destination);
+      thud.type = 'sine';
+      thud.frequency.setValueAtTime(180, now);
+      thud.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+      thudGain.gain.setValueAtTime(0.5, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      thud.start(now); thud.stop(now + 0.15);
+
+      // Sharp scrape
+      const bufSize2 = Math.floor(ctx.sampleRate * 0.05);
+      const buf2 = ctx.createBuffer(1, bufSize2, ctx.sampleRate);
+      const data2 = buf2.getChannelData(0);
+      for (let i = 0; i < bufSize2; i++) {
+        data2[i] = (Math.random() * 2 - 1) * (1 - i/bufSize2);
+      }
+      const scrape = ctx.createBufferSource();
+      scrape.buffer = buf2;
+      const scrapeFilter = ctx.createBiquadFilter();
+      scrapeFilter.type = 'highpass'; 
+      scrapeFilter.frequency.value = 5000;
+      const scrapeGain = ctx.createGain();
+      scrapeGain.gain.setValueAtTime(0.3, now + 0.02);
+      scrapeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      scrape.connect(scrapeFilter);
+      scrapeFilter.connect(scrapeGain);
+      scrapeGain.connect(ctx.destination);
+      scrape.start(now + 0.02); scrape.stop(now + 0.07);
+    } catch (e) {
+      console.warn('Audio not available');
+    }
+  }, []);
+
+  const shakeScreen = useCallback((intensity = 5, duration = 300) => {
+    if (!appRef.current) return;
+    const app = appRef.current;
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      if (elapsed >= duration) {
+        app.style.transform = 'translate(0, 0)';
+        clearInterval(interval);
+        return;
+      }
+      const remaining = 1 - elapsed / duration;
+      const x = (Math.random() * 2 - 1) * intensity * remaining;
+      const y = (Math.random() * 2 - 1) * intensity * remaining;
+      app.style.transform = `translate(${x}px, ${y}px)`;
+    }, 16);
+  }, []);
+
+  const animateSwordAttack = async (matchPositions: {r: number, c: number}[]) => {
+    return new Promise<void>(resolve => {
+      const origins = matchPositions.slice(0, 3);
+      const bossEl = document.getElementById('boss-emoji');
+      if (!bossEl) return resolve();
+      
+      const bossRect = bossEl.getBoundingClientRect();
+      const projectiles: HTMLDivElement[] = [];
+
+      origins.forEach(({r, c}, i) => {
+        const tileEl = document.getElementById(`tile-${r}-${c}`);
+        if (!tileEl) return;
+        const tileRect = tileEl.getBoundingClientRect();
+
+        const sword = document.createElement('div');
+        sword.textContent = '🗡️';
+        sword.style.cssText = `
+          position: fixed;
+          font-size: 24px;
+          pointer-events: none;
+          z-index: 200;
+          left: ${tileRect.left + tileRect.width/2}px;
+          top: ${tileRect.top + tileRect.height/2}px;
+          transform: rotate(-45deg);
+          transition: left 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                      top 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                      opacity 0.1s ease 0.3s;
+        `;
+        document.body.appendChild(sword);
+        projectiles.push(sword);
+
+        setTimeout(() => {
+          sword.style.left = `${bossRect.left + bossRect.width/2}px`;
+          sword.style.top = `${bossRect.top + bossRect.height/2}px`;
+        }, i * 60);
+      });
+
+      setTimeout(() => {
+        projectiles.forEach(s => { s.style.opacity = '0'; });
+        playSwordHitSound();
+        shakeScreen();
+        setTimeout(() => {
+          projectiles.forEach(s => s.remove());
+          resolve();
+        }, 150);
+      }, 420);
+    });
+  };
+
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  const buildQueue = useCallback(() => {
+    const shuffled = shuffleArray(questions);
+    setWordQueue(shuffled);
+    setUsedWords([]);
+  }, [questions]);
+
+  useEffect(() => {
+    buildQueue();
+  }, [buildQueue]);
+
+  const getNextWord = () => {
+    let currentQueue = [...wordQueue];
+    let currentUsed = [...usedWords];
+
+    if (currentQueue.length === 0) {
+      const lastWord = currentUsed[currentUsed.length - 1];
+      const nextBatch = shuffleArray(questions).filter(w => w.id !== lastWord?.id);
+      currentQueue = nextBatch;
+      currentUsed = [];
+    }
+
+    const word = currentQueue.shift()!;
+    currentUsed.push(word);
+    
+    setWordQueue(currentQueue);
+    setUsedWords(currentUsed);
+    return word;
+  };
 
   // Initialize board
   const findMatches = (grid: string[][]) => {
@@ -273,12 +440,10 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
     const matchSize = matches.length;
 
     if (isPlayerTurn) {
-      setPendingMatch({ type: matchType, size: matchSize });
-      // Find question for category
-      const targetCat = TILES[matchType].vocabCategory;
-      let q = questions.find(q => (q.wordType || '').toLowerCase() === targetCat.toLowerCase());
-      if (!q) q = questions[Math.floor(Math.random() * questions.length)];
+      const matchPositions = matches.filter(({r, c}) => currentBoard[r][c] === matchType);
+      setPendingMatch({ type: matchType, size: matchSize, positions: matchPositions });
       
+      const q = getNextWord();
       setCurrentQuestion(q);
       setGameState('vocab');
       setTimer(10);
@@ -296,7 +461,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
       }, 1000);
     } else {
       // Cascade match - auto resolve with reduced power
-      applyEffect(matchType, matchSize, 0.25);
+      applyEffect(matchType, matchSize, 0.25, []);
       await processCascade(currentBoard, matches);
     }
   };
@@ -340,14 +505,17 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
     }, 300);
   };
 
-  const handleVocabAnswer = (answer: string | null) => {
+  const handleVocabAnswer = async (answer: string | null) => {
     if (timerRef.current) clearInterval(timerRef.current);
     const isCorrect = answer === currentQuestion?.correctAnswer;
     setAnswerFeedback(isCorrect ? 'correct' : 'wrong');
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      const effect = pendingMatch!;
       setAnswerFeedback(null);
+      
       if (isCorrect) {
+        setScore(prev => prev + 10);
         const newCombo = comboCount + 1;
         setComboCount(newCombo);
         let multiplier = 1;
@@ -355,11 +523,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
         if (newCombo === 3) multiplier = 2.0;
         if (newCombo >= 4) multiplier = 2.5;
         
-        applyEffect(pendingMatch!.type, pendingMatch!.size, multiplier);
-        setPlayer(prev => ({
-          ...prev,
-          xp: prev.xp + (pointsPerQuestion || 10),
-        }));
+        await applyEffect(effect.type, effect.size, multiplier, effect.positions);
       } else {
         setComboCount(0);
         enemyAttack();
@@ -372,38 +536,34 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
     }, 1000);
   };
 
-  const applyEffect = (type: keyof typeof TILES, size: number, multiplier: number) => {
+  const applyEffect = async (type: keyof typeof TILES, size: number, multiplier: number, positions: {r: number, c: number}[]) => {
     const tile = TILES[type];
     const baseValue = size;
     const finalMultiplier = multiplier * player.comboMultiplier;
 
+    if (tile.effect === 'atk' || tile.effect === 'special') {
+      await animateSwordAttack(positions);
+    }
+
     switch (tile.effect) {
-      case 'ATTACK':
+      case 'atk':
         const dmg = Math.floor(tile.damage! * baseValue * finalMultiplier);
         damageEnemy(dmg);
         break;
-      case 'HEAL':
+      case 'heal':
         const heal = Math.floor(tile.healAmount! * baseValue * finalMultiplier);
         setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + heal) }));
         break;
-      case 'MANA':
+      case 'mana':
         const mana = Math.floor(tile.manaAmount! * baseValue * finalMultiplier);
         setPlayer(prev => ({ ...prev, mp: Math.min(prev.maxMp, prev.mp + mana) }));
         break;
-      case 'DEFEND':
+      case 'defend':
         setPlayer(prev => ({ ...prev, defense: 0.5 }));
         break;
-      case 'COMBO':
+      case 'combo':
         setPlayer(prev => ({ ...prev, comboMultiplier: 2 }));
         break;
-      case 'SPECIAL':
-        const specDmg = Math.floor(tile.damage! * baseValue * finalMultiplier);
-        damageEnemy(specDmg);
-        break;
-    }
-
-    if (tile.effect !== 'COMBO') {
-       setPlayer(prev => ({ ...prev, comboMultiplier: 1 }));
     }
   };
 
@@ -420,6 +580,8 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
   const enemyAttack = () => {
     let amount = player.defense > 0 ? 5 : 10;
     setShowDamage({ amount, isPlayer: true });
+    playSwordHitSound();
+    shakeScreen(3, 200);
     setPlayer(prev => {
       const newHp = Math.max(0, prev.hp - amount);
       if (newHp === 0) setGameState('lost');
@@ -441,13 +603,17 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
     });
   };
 
-  const handleUltimate = () => {
+  const handleUltimate = async () => {
     if (player.mp < 100 || gameState !== 'playing') return;
     
-    // Choose a hard question (Scroll category or just any)
-    const q = questions[Math.floor(Math.random() * questions.length)];
+    // Ultimate hit effect
+    playSwordHitSound();
+    setTimeout(playSwordHitSound, 80);
+    shakeScreen(8, 400);
+
+    const q = getNextWord();
     setCurrentQuestion(q);
-    setPendingMatch({ type: 'SCROLL', size: 3 }); // Mock a match for the ultimate
+    setPendingMatch({ type: 'SWORD', size: 5, positions: [] }); 
     setGameState('vocab');
     setPlayer(prev => ({ ...prev, mp: 0 }));
   };
@@ -467,7 +633,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
   useEffect(() => {
     if (gameState === 'won') {
        const bonus = player.hp;
-       const finalScore = player.xp + bonus;
+       const finalScore = score + bonus;
        
        // Save stats
        const stats = localStorage.getItem('wb_progress');
@@ -477,16 +643,16 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
        
        setTimeout(() => onComplete(finalScore), 2000);
     }
-  }, [gameState, onComplete, player.hp, player.xp]);
+  }, [gameState, onComplete, player.hp, score]);
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto h-[95vh] md:h-[85vh] flex flex-col bg-[#1A1A2E] border-4 border-[#FBD000] rounded-3xl overflow-hidden shadow-2xl mt-4">
+    <div ref={appRef} className="app relative w-full max-w-[420px] md:max-w-4xl mx-auto h-[780px] min-h-[600px] flex flex-col bg-[#1A1A2E] border-8 border-[#FBD000] border-double rounded-3xl overflow-hidden shadow-2xl mt-4 mb-20 z-50">
       {/* Top Header Section: Split for Desktop */}
-      <div className="flex flex-col lg:grid lg:grid-cols-2 bg-[#101026] border-b-4 border-[#FBD000]">
+      <div className="flex flex-col md:grid md:grid-cols-2 bg-[#101026] border-b-4 border-[#FBD000]">
         
-        {/* Player Info (Top-Left on Desktop) */}
-        <div className="hidden lg:flex items-center gap-4 p-4 border-r-2 border-white/10 bg-gradient-to-tr from-[#11111e] to-[#1A1A2E]">
-          <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center text-6xl relative">
+        {/* Player Info (Top-Left on Desktop Only) */}
+        <div className="hidden md:flex flex-1 items-center gap-4 p-4 border-r-2 border-white/10 bg-gradient-to-tr from-[#11111e] to-[#1A1A2E]">
+          <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center text-4xl relative">
             <span role="img" aria-label="wizard">🧙</span>
             <AnimatePresence>
               {showDamage && showDamage.isPlayer && (
@@ -494,38 +660,38 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
                   initial={{ opacity: 0, y: 0 }}
                   animate={{ opacity: 1, y: -40 }}
                   exit={{ opacity: 0 }}
-                  className="absolute top-0 left-1/2 -translate-x-1/2 text-red-500 font-black text-2xl drop-shadow-md z-50 px-2 bg-black/40 rounded"
+                  className="absolute top-0 left-1/2 -translate-x-1/2 text-red-500 font-black text-xl drop-shadow-md z-50 px-2 bg-black/40 rounded"
                 >
                   -{showDamage.amount}
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-1">
              <div className="flex justify-between items-center px-1">
-               <span className="pixel-font text-green-400 text-[10px] uppercase">Player HP</span>
-               <span className="pixel-font text-white/60 text-[8px]">{player.hp}/{player.maxHp}</span>
+               <span className="pixel-font text-[#FBD000] text-[8px] uppercase">SCORE: {score}</span>
+               <span className="pixel-font text-white/60 text-[6px]">{player.hp}/{player.maxHp}</span>
              </div>
-             <div className="h-4 w-full bg-black/40 border-2 border-white/20 rounded-full overflow-hidden">
+             <div className="h-3 w-full bg-black/40 border-2 border-white/20 rounded-full overflow-hidden">
                <motion.div 
                  className="h-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
                  initial={{ width: '100%' }}
                  animate={{ width: `${(player.hp / player.maxHp) * 100}%` }}
                />
              </div>
-             <div className="h-3 w-full bg-black/40 border-2 border-white/20 rounded-full overflow-hidden">
+             <div className="h-2 w-full bg-black/40 border-2 border-white/20 rounded-full overflow-hidden">
                <motion.div 
                  className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
                  initial={{ width: '0%' }}
                  animate={{ width: `${(player.mp / player.maxMp) * 100}%` }}
                />
              </div>
-             <div className="flex justify-between text-[6px] pixel-font text-white/40">
-                <span>XP: {player.xp}/{player.xpToLevel}</span>
+             <div className="flex justify-between items-center mt-1">
+                <span className="pixel-font text-white/40 text-[5px] uppercase">MANA: {Math.floor(player.mp)}%</span>
                 <button 
                   onClick={handleUltimate}
                   disabled={player.mp < 100 || gameState !== 'playing'}
-                  className={`px-3 py-1 rounded-lg pixel-font text-[6px] uppercase transition-all ${
+                  className={`px-2 py-0.5 rounded pixel-font text-[5px] uppercase transition-all ${
                     player.mp >= 100 ? 'bg-yellow-400 text-black animate-pulse' : 'bg-gray-800 text-white/20'
                   }`}
                 >Ultimate</button>
@@ -533,12 +699,13 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
           </div>
         </div>
 
-        {/* Enemy Info (Top-Right on Desktop, Centered on Mobile) */}
-        <div className="flex flex-col items-center justify-center p-2 sm:p-4 bg-gradient-to-b from-[#3d0d0d] to-[#1A1A2E]">
+        {/* Enemy Info (Always Top) */}
+        <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 bg-gradient-to-b from-[#3d0d0d] to-[#1A1A2E]">
           <motion.div 
             animate={{ y: [0, -10, 0] }}
             transition={{ repeat: Infinity, duration: 2 }}
             className="text-4xl sm:text-6xl mb-1 sm:mb-2 relative"
+            id="boss-emoji"
           >
             {enemy.emoji}
             <AnimatePresence>
@@ -576,8 +743,8 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
       </div>
 
       {/* Grid Section */}
-      <div className="flex-1 flex flex-col md:flex-row items-center lg:justify-center p-1 sm:p-4 lg:p-8 gap-2 md:gap-8 lg:gap-12 overflow-y-auto pt-0 sm:pt-4">
-        <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5 lg:gap-2 bg-black/20 p-1 sm:p-3 rounded-xl border-4 border-[#049CD8]/30 max-w-full">
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col md:flex-row items-center justify-center p-2 sm:p-4 gap-4 md:gap-12 relative z-1">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 bg-black/40 p-2 sm:p-4 rounded-xl border-4 border-[#FBD000]/20 shadow-inner relative z-1">
           {board.map((row, r) => 
             row.map((cell, c) => {
               const tile = cell ? TILES[cell as keyof typeof TILES] : null;
@@ -587,14 +754,15 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
               return (
                 <motion.div
                   key={`${r}-${c}`}
+                  id={`tile-${r}-${c}`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleTileClick(r, c)}
                   layout
                   transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                   className={`
-                    w-6 h-6 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-14 lg:h-14 rounded flex items-center justify-center text-sm sm:text-xl lg:text-2xl cursor-pointer shadow-sm sm:shadow-md
-                    ${isSelected ? 'ring-2 sm:ring-4 ring-white ring-offset-1 sm:ring-offset-2 ring-offset-[#1A1A2E] z-10 scale-110' : ''}
+                    w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center text-xl sm:text-2xl md:text-3xl cursor-pointer shadow-md rounded-[10px] relative z-2
+                    ${isSelected ? 'ring-4 ring-white ring-offset-2 ring-offset-[#1A1A2E] z-20 scale-110' : ''}
                     ${isHint ? 'animate-[hintGlow_1s_infinite_alternate]' : ''}
                   `}
                   style={{
@@ -611,10 +779,10 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
           )}
         </div>
 
-        {/* Info Area (Mobile/Tablet: Below Grid, Desktop Sidebar) */}
-        <div className="flex flex-col gap-2 sm:gap-4 w-full md:w-auto min-w-[100px] sm:min-w-[140px] px-2 pb-2">
-          {/* Player Info (Mobile/Tablet) */}
-          <div className="lg:hidden flex flex-col gap-1.5 sm:gap-3 p-2 sm:p-3 bg-black/40 rounded-xl border-2 border-white/10 shadow-lg">
+        {/* Info Area (Player Section & Glossary) */}
+        <div className="flex flex-col gap-4 w-full md:w-auto px-2 pb-6">
+          {/* Player Info (Visible on Mobile Only below grid) */}
+          <div className="md:hidden flex flex-col gap-3 p-4 bg-black/40 rounded-xl border-2 border-white/10 shadow-lg">
              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-10 h-10 sm:w-14 sm:h-14 flex-shrink-0 flex items-center justify-center text-2xl sm:text-4xl relative bg-black/40 rounded-full border-2 border-[#FBD000]/30">
                   <span role="img" aria-label="wizard">🧙</span>
@@ -633,7 +801,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
                 </div>
                 <div className="flex-1 space-y-1 sm:space-y-1.5">
                    <div className="flex justify-between items-center px-1">
-                     <span className="pixel-font text-green-400 text-[5px] sm:text-[6px] uppercase tracking-widest">PLAYER HP</span>
+                     <span className="pixel-font text-[#FBD000] text-[5px] sm:text-[6px] uppercase tracking-widest">SCORE: {score}</span>
                      <span className="pixel-font text-white/60 text-[4px] sm:text-[5px]">{player.hp}/{player.maxHp}</span>
                    </div>
                    <div className="h-2 sm:h-3 w-full bg-black/60 border-2 border-white/10 rounded-full overflow-hidden">
@@ -653,7 +821,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
                 </div>
              </div>
              <div className="flex justify-between items-center bg-black/20 p-1 sm:p-2 rounded-lg">
-                <span className="pixel-font text-white/30 text-[4px] sm:text-[5px]">XP: {player.xp}/{player.xpToLevel}</span>
+                <span className="pixel-font text-white/30 text-[4px] sm:text-[5px]">📚 {questions.length - wordQueue.length}/{questions.length} WORDS</span>
                 <button 
                   onClick={handleUltimate}
                   disabled={player.mp < 100 || gameState !== 'playing'}
@@ -685,7 +853,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
       {/* Vocab Modal */}
       <AnimatePresence>
         {gameState === 'vocab' && currentQuestion && (
-          <div className="absolute inset-0 bg-black/90 flex items-center justify-center p-4 z-[100] animate-fade-in">
+          <div className="absolute inset-0 bg-black/95 flex items-center justify-center p-4 z-[100] scale-100 origin-center">
             <motion.div 
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -714,7 +882,7 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
                 {currentQuestion.phonetic && <p className="text-[#049CD8] text-[8px] pixel-font mt-2">{currentQuestion.phonetic}</p>}
               </div>
 
-              <div className="grid gap-3 relative">
+              <div className="grid gap-3 relative max-h-[50vh] overflow-y-auto custom-scrollbar p-1">
                 {currentQuestion.options?.map((opt, i) => (
                   <button
                     key={i}
@@ -765,11 +933,12 @@ export const WordBattleGame: React.FC<WordBattleGameProps> = ({ questions, onCom
              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-8xl mb-8">🏆</motion.div>
              <h2 className="pixel-font text-white text-4xl mb-4 drop-shadow-lg">VICTORY!</h2>
              <p className="pixel-font text-white text-xs uppercase tracking-widest mb-8">The realm is safe... for now.</p>
-             <div className="bg-white/20 p-6 rounded-2xl border-4 border-white/40 mb-8">
-               <p className="pixel-font text-white text-[10px] uppercase">EXP GAINED: +{player.xp}</p>
-               <p className="pixel-font text-white text-[10px] uppercase mt-2">HP BONUS: +{player.hp}</p>
-             </div>
-             <Button variant="outline" className="bg-white text-[#43B047] border-white" onClick={() => onComplete(player.xp + player.hp)}>Claim Rewards</Button>
+              <div className="bg-white/20 p-6 rounded-2xl border-4 border-white/40 mb-8">
+                <p className="pixel-font text-white text-[10px] uppercase">SCORE: {score} pts</p>
+                <p className="pixel-font text-white text-[10px] uppercase mt-2">HP REMAINING: {player.hp}</p>
+                <p className="pixel-font text-white text-[10px] uppercase mt-2">WORDS PRACTICED: {usedWords.length}</p>
+              </div>
+              <Button variant="outline" className="bg-white text-[#43B047] border-white" onClick={() => onComplete(score + player.hp)}>Claim Rewards</Button>
           </div>
         )}
 
